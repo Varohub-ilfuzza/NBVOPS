@@ -1,0 +1,2705 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ACARS Dispatch — AirNubeiro</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e0a348">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ACARS DSP">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg0: #060910; --bg1: #0b0f18; --bg2: #111722; --bg3: #0a0e17;
+    --brd: #1c2333; --brd-f: #d4953a;
+    --acc: #e0a348; --acc-d: #b07e2e; --acc-g: rgba(224,163,72,0.12);
+    --tx1: #e6eaef; --tx2: #7d8aa0; --tx3: #4a5568;
+    --ok: #34d399; --err: #f87171; --wrn: #fbbf24; --inf: #60a5fa; --cpdlc: #a78bfa;
+    --mono: 'JetBrains Mono','Courier New',monospace;
+    --sans: 'IBM Plex Sans',-apple-system,sans-serif;
+  }
+  html { font-size: 15px; }
+  body { font-family: var(--sans); background: var(--bg0); color: var(--tx1); min-height: 100dvh; -webkit-font-smoothing: antialiased; }
+
+  /* ── Layout ── */
+  .app { max-width: 560px; margin: 0 auto; padding: 12px; min-height: 100dvh; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ── Header ── */
+  .hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 8px; border-bottom: 1px solid var(--brd); }
+  .hdr-l { display: flex; align-items: center; gap: 10px; }
+  .hdr-ico { width: 34px; height: 34px; background: var(--acc); border-radius: 6px; display: flex; align-items: center; justify-content: center; font: 700 13px/1 var(--mono); color: var(--bg0); letter-spacing: -0.5px; }
+  .hdr-t h1 { font: 600 1rem/1.2 var(--mono); color: var(--tx1); letter-spacing: -0.3px; }
+  .hdr-t .sub { font: 400 0.62rem var(--mono); color: var(--tx3); letter-spacing: 0.5px; }
+  .hdr-r { display: flex; gap: 5px; align-items: center; }
+
+  .ib { background: 0; border: 1px solid var(--brd); color: var(--tx2); width: 33px; height: 33px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; transition: .15s; position: relative; }
+  .ib:hover { border-color: var(--acc-d); color: var(--acc); }
+  .ib.on { border-color: var(--acc); color: var(--acc); background: var(--acc-g); }
+
+  .bdg { position: absolute; top: -4px; right: -4px; background: var(--err); color: #fff; font: 700 0.52rem var(--mono); min-width: 15px; height: 15px; border-radius: 8px; display: none; align-items: center; justify-content: center; padding: 0 3px; }
+  .bdg.v { display: flex; }
+
+  /* Auto-poll indicator */
+  .poll-on { border-color: var(--ok) !important; color: var(--ok) !important; }
+  .poll-on .dot-pulse { width: 6px; height: 6px; background: var(--ok); border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.3 } }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 2px; background: var(--bg1); border-radius: 8px; padding: 3px; border: 1px solid var(--brd); }
+  .tab { flex: 1; padding: 7px 4px; background: 0; border: 0; color: var(--tx3); font: 600 0.68rem/1 var(--mono); letter-spacing: .7px; text-transform: uppercase; cursor: pointer; border-radius: 6px; transition: .15s; text-align: center; white-space: nowrap; }
+  .tab:hover { color: var(--tx2); }
+  .tab.on { background: var(--bg2); color: var(--acc); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .tab .tb { font-size: 0.55rem; background: var(--err); color: #fff; border-radius: 4px; padding: 0 3px; margin-left: 3px; vertical-align: middle; display: none; }
+  .tab .tb.v { display: inline; }
+
+  /* ── Panel ── */
+  .pnl { display: none; flex-direction: column; gap: 10px; }
+  .pnl.on { display: flex; }
+
+  /* ── Config ── */
+  .cfg { background: var(--bg2); border: 1px solid var(--brd); border-radius: 8px; padding: 14px; display: none; animation: sd .15s ease-out; }
+  .cfg.v { display: block; }
+  @keyframes sd { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
+  .cfg h3 { font: 600 0.68rem var(--mono); text-transform: uppercase; letter-spacing: 1.5px; color: var(--tx3); margin-bottom: 10px; }
+  .cfg-g { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cfg-g .f.fw { grid-column: 1/-1; }
+
+  /* ── Fields ── */
+  .f label { display: block; font: 600 0.66rem var(--mono); color: var(--tx2); margin-bottom: 3px; letter-spacing: .3px; }
+  .f input, .f textarea, .f select { width: 100%; background: var(--bg3); border: 1px solid var(--brd); border-radius: 6px; padding: 8px 10px; color: var(--tx1); font: 400 0.84rem var(--mono); transition: .15s; outline: 0; }
+  .f input:focus, .f textarea:focus, .f select:focus { border-color: var(--brd-f); box-shadow: 0 0 0 2px var(--acc-g); }
+  .f input::placeholder, .f textarea::placeholder { color: var(--tx3); }
+  .f input.uc { text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .f textarea { resize: vertical; min-height: 70px; max-height: 200px; line-height: 1.5; }
+  .f select { cursor: pointer; }
+
+  .chc { text-align: right; font: 400 0.62rem var(--mono); color: var(--tx3); margin-top: 2px; }
+  .chc.w { color: var(--wrn); } .chc.o { color: var(--err); }
+
+  /* ── Card ── */
+  .cd { background: var(--bg2); border: 1px solid var(--brd); border-radius: 10px; padding: 14px; }
+  .ct { font: 600 0.68rem var(--mono); text-transform: uppercase; letter-spacing: 1.5px; color: var(--acc-d); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .ct::before { content:''; width: 6px; height: 6px; background: var(--acc); border-radius: 50%; }
+  .ct.cp { color: var(--cpdlc); } .ct.cp::before { background: var(--cpdlc); }
+  .ct.inf { color: var(--inf); } .ct.inf::before { background: var(--inf); }
+
+  /* ── Buttons ── */
+  .bp { width: 100%; margin-top: 10px; padding: 12px; background: var(--acc); color: var(--bg0); border: 0; border-radius: 8px; font: 700 0.84rem var(--mono); letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: .15s; }
+  .bp:hover:not(:disabled) { background: #edb45c; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(224,163,72,.25); }
+  .bp:active:not(:disabled) { transform: translateY(0); }
+  .bp:disabled { opacity: .4; cursor: not-allowed; }
+  .bp.snd { background: var(--acc-d); pointer-events: none; }
+  .bp.ok { background: var(--ok); } .bp.er { background: var(--err); }
+  .bp.cpc { background: var(--cpdlc); } .bp.cpc:hover:not(:disabled) { background: #b99ef5; box-shadow: 0 4px 16px rgba(167,139,250,.25); }
+  .bp.ifc { background: var(--inf); } .bp.ifc:hover:not(:disabled) { background: #7db5fc; box-shadow: 0 4px 16px rgba(96,165,250,.25); }
+
+  .bs { padding: 8px 14px; background: var(--bg3); color: var(--tx2); border: 1px solid var(--brd); border-radius: 6px; font: 600 0.76rem var(--mono); cursor: pointer; transition: .15s; }
+  .bs:hover { border-color: var(--acc-d); color: var(--acc); }
+
+  .r2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* ── Templates / Presets ── */
+  .tpls { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tp { background: var(--bg3); border: 1px solid var(--brd); color: var(--tx2); padding: 4px 8px; border-radius: 5px; font: 400 0.65rem var(--mono); cursor: pointer; transition: .12s; white-space: nowrap; }
+  .tp:hover { border-color: var(--acc-d); color: var(--acc); background: var(--acc-g); }
+  .tp.cp { background: rgba(167,139,250,.06); border-color: rgba(167,139,250,.2); color: var(--cpdlc); }
+  .tp.cp:hover { background: rgba(167,139,250,.12); border-color: var(--cpdlc); }
+
+  /* ── Status Bar ── */
+  .sb { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 6px; font: 400 0.72rem var(--mono); background: var(--bg1); border: 1px solid var(--brd); min-height: 33px; transition: .2s; }
+  .sb .d { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .sb.idle .d { background: var(--tx3); }
+  .sb.ok .d { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .sb.err .d { background: var(--err); box-shadow: 0 0 6px var(--err); }
+  .sb.snd .d { background: var(--wrn); animation: pulse 1s infinite; }
+
+  /* ── Message List ── */
+  .ml { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; max-height: 50vh; padding-right: 4px; }
+  .ml::-webkit-scrollbar { width: 4px; } .ml::-webkit-scrollbar-track { background: 0; } .ml::-webkit-scrollbar-thumb { background: var(--brd); border-radius: 2px; }
+
+  .me { background: var(--bg1); border: 1px solid var(--brd); border-radius: 6px; padding: 8px 10px; font-size: 0.73rem; animation: fi .2s ease-out; }
+  .me.in { border-left: 3px solid var(--inf); } .me.out { border-left: 3px solid var(--acc); }
+  .me.cpm { border-left: 3px solid var(--cpdlc); } .me.erm { border-left: 3px solid var(--err); }
+  .me.logon { border-left: 3px solid var(--ok); background: rgba(52,211,153,.04); }
+  @keyframes fi { from { opacity:0; transform:translateY(-3px) } to { opacity:1; transform:translateY(0) } }
+
+  .mm { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+  .mr { font: 600 0.74rem var(--mono); }
+  .me.out .mr { color: var(--acc); } .me.in .mr { color: var(--inf); } .me.cpm .mr { color: var(--cpdlc); } .me.logon .mr { color: var(--ok); }
+  .mt { font: 400 0.63rem var(--mono); color: var(--tx3); }
+
+  .mb-t { font: 700 0.56rem var(--mono); letter-spacing: .8px; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
+  .b-tx { background: rgba(224,163,72,.12); color: var(--acc); }
+  .b-cp { background: rgba(167,139,250,.12); color: var(--cpdlc); }
+  .b-in { background: rgba(96,165,250,.12); color: var(--inf); }
+  .b-sy { background: rgba(125,138,160,.12); color: var(--tx2); }
+  .b-lo { background: rgba(52,211,153,.12); color: var(--ok); }
+
+  .mb { color: var(--tx2); font: 400 0.71rem/1.4 var(--mono); word-break: break-word; white-space: pre-wrap; }
+  .ms { margin-top: 2px; font: 400 0.61rem var(--mono); }
+  .ms.ok { color: var(--ok); } .ms.er { color: var(--err); }
+
+  .me-empty { text-align: center; color: var(--tx3); font: 400 0.76rem var(--mono); padding: 24px 0; }
+
+  .lh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .lh h3 { font: 600 0.66rem var(--mono); text-transform: uppercase; letter-spacing: 1.5px; color: var(--tx3); }
+  .lh-btns { display: flex; gap: 6px; }
+  .sm { background: 0; border: 0; color: var(--tx3); font: 400 0.65rem var(--mono); cursor: pointer; padding: 2px 5px; border-radius: 4px; transition: .15s; }
+  .sm:hover { color: var(--err); }
+  .sm.pl:hover { color: var(--inf); }
+
+  /* ── CPDLC Logon Actions ── */
+  .logon-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .logon-actions button { padding: 5px 12px; border: 0; border-radius: 5px; font: 600 0.68rem var(--mono); cursor: pointer; letter-spacing: .5px; transition: .12s; }
+  .la-accept { background: var(--ok); color: var(--bg0); }
+  .la-accept:hover { background: #4eeab0; }
+  .la-standby { background: var(--wrn); color: var(--bg0); }
+  .la-standby:hover { background: #fcd34d; }
+  .la-reject { background: var(--err); color: #fff; }
+  .la-reject:hover { background: #fca5a5; }
+
+  /* ── Connected stations list ── */
+  .conn-list { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .conn-tag { background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.3); color: var(--ok); padding: 3px 8px; border-radius: 4px; font: 600 0.65rem var(--mono); display: flex; align-items: center; gap: 4px; }
+  .conn-tag .cx { cursor: pointer; opacity: .6; font-size: 0.8rem; }
+  .conn-tag .cx:hover { opacity: 1; }
+
+  /* ── Footer ── */
+  .ftr { text-align: center; padding: 10px 0 6px; border-top: 1px solid var(--brd); }
+  .ftr .br { font: 600 0.66rem var(--mono); color: var(--acc); letter-spacing: .5px; }
+  .ftr .lg { font: 400 0.56rem var(--mono); color: var(--tx3); margin-top: 2px; }
+
+  /* ── Help ── */
+  .hi { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; border-radius: 50%; background: var(--brd); color: var(--tx3); font-size: .52rem; font-weight: 700; cursor: help; margin-left: 3px; position: relative; }
+  .hi .tt { display: none; position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--brd); border-radius: 6px; padding: 7px 9px; font: 400 .63rem/1.4 var(--sans); color: var(--tx2); width: 210px; z-index: 10; }
+  .hi:hover .tt, .hi:focus .tt { display: block; }
+
+  /* ── Responsive ── */
+  @media (max-width: 420px) {
+    html { font-size: 14px; }
+    .app { padding: 8px; }
+    .cfg-g, .r2 { grid-template-columns: 1fr; }
+  }
+
+  /* ── Dispatch ── */
+  .dsp-color { color: #f472b6; }
+  .ct.dsp { color: #f472b6; } .ct.dsp::before { background: #f472b6; }
+  .bp.dsp-btn { background: #f472b6; } .bp.dsp-btn:hover:not(:disabled) { background: #f9a8d4; box-shadow: 0 4px 16px rgba(244,114,182,.25); }
+  .dsp-card { background: var(--bg1); border: 1px solid var(--brd); border-radius: 8px; padding: 10px 12px; border-left: 3px solid #f472b6; }
+  .dsp-card h4 { font: 600 0.7rem var(--mono); color: #f472b6; letter-spacing: .5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .dsp-card h4 .ico { font-size: 0.85rem; }
+  .dsp-card pre { font: 400 0.68rem/1.5 var(--mono); color: var(--tx2); white-space: pre-wrap; word-break: break-word; margin: 4px 0 8px; max-height: 140px; overflow-y: auto; }
+  .dsp-card pre::-webkit-scrollbar { width: 3px; } .dsp-card pre::-webkit-scrollbar-thumb { background: var(--brd); border-radius: 2px; }
+  .dsp-send { padding: 5px 12px; background: rgba(244,114,182,.12); border: 1px solid rgba(244,114,182,.3); color: #f472b6; border-radius: 5px; font: 600 0.65rem var(--mono); cursor: pointer; transition: .12s; letter-spacing: .3px; }
+  .dsp-send:hover { background: rgba(244,114,182,.22); border-color: #f472b6; }
+  .dsp-send.sent { background: rgba(52,211,153,.1); border-color: rgba(52,211,153,.3); color: var(--ok); pointer-events: none; }
+  .dsp-send.fail { background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); color: var(--err); }
+  .dsp-cards { display: flex; flex-direction: column; gap: 8px; }
+  .dsp-summary { background: var(--bg2); border: 1px solid var(--brd); border-radius: 8px; padding: 12px; }
+  .dsp-summary .row { display: flex; justify-content: space-between; font: 400 0.72rem var(--mono); color: var(--tx2); padding: 2px 0; }
+  .dsp-summary .row .val { color: var(--tx1); font-weight: 600; }
+  .dsp-summary .head { font: 600 0.66rem var(--mono); color: #f472b6; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+  .dsp-loading { text-align: center; padding: 20px; color: var(--tx3); font: 400 0.76rem var(--mono); }
+  .dsp-loading .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+  /* ── OPS embedded ── */
+  .ops-flt { background: var(--bg1); border: 1px solid var(--brd); border-radius: 6px; padding: 8px 10px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
+  .ops-flt.ph-preflight { border-left: 3px solid var(--wrn); }
+  .ops-flt.ph-enroute { border-left: 3px solid var(--inf); }
+  .ops-flt.ph-descent { border-left: 3px solid var(--cpdlc); }
+  .ops-flt.ph-landed { border-left: 3px solid var(--ok); }
+  .ops-cs { font: 700 0.8rem var(--mono); color: var(--acc); min-width: 70px; }
+  .ops-rt { font: 400 0.65rem var(--mono); color: var(--tx2); flex: 1; }
+  .ops-ph { padding: 2px 8px; border-radius: 3px; font: 700 0.58rem var(--mono); letter-spacing: .5px; }
+  .ops-ph.preflight { background: rgba(251,191,36,.1); color: var(--wrn); }
+  .ops-ph.enroute { background: rgba(96,165,250,.1); color: var(--inf); }
+  .ops-ph.descent { background: rgba(167,139,250,.1); color: var(--cpdlc); }
+  .ops-ph.landed { background: rgba(52,211,153,.1); color: var(--ok); }
+  .ops-log-e { font: 400 0.6rem/1.4 var(--mono); color: var(--tx3); padding: 2px 0; border-bottom: 1px solid rgba(28,35,51,.3); }
+  .ops-log-e .t { color: var(--tx3); margin-right: 6px; }
+  .ops-log-e.ok { color: var(--ok); }
+  .ops-log-e.err { color: var(--err); }
+  .ops-log-e.ops { color: var(--ops); }
+
+  /* ── OCC Board ── */
+  .occ-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .occ-count { font: 600 0.72rem var(--mono); color: var(--tx2); }
+  .occ-count strong { color: var(--acc); }
+  .occ-refresh { font: 400 0.6rem var(--mono); color: var(--tx3); }
+  .occ-tbl { width: 100%; border-collapse: collapse; font: 400 0.62rem/1.3 var(--mono); }
+  .occ-tbl th { text-align: left; padding: 6px 5px; font-weight: 700; color: var(--tx3); letter-spacing: .8px; text-transform: uppercase; border-bottom: 1px solid var(--brd); white-space: nowrap; font-size: 0.56rem; }
+  .occ-tbl td { padding: 5px 5px; border-bottom: 1px solid rgba(28,35,51,.3); color: var(--tx2); white-space: nowrap; }
+  .occ-tbl tr:hover td { background: rgba(224,163,72,.03); }
+  .occ-cs { color: var(--acc) !important; font-weight: 700; }
+  .occ-state { padding: 1px 6px; border-radius: 3px; font-weight: 700; font-size: 0.55rem; letter-spacing: .5px; }
+  .st-gnd { background: rgba(74,85,104,.2); color: var(--tx3); }
+  .st-dep { background: rgba(251,191,36,.1); color: var(--wrn); }
+  .st-clb { background: rgba(251,191,36,.15); color: #f59e0b; }
+  .st-enr { background: rgba(96,165,250,.1); color: var(--inf); }
+  .st-crz { background: rgba(52,211,153,.1); color: var(--ok); }
+  .st-dsc { background: rgba(167,139,250,.1); color: var(--cpdlc); }
+  .st-app { background: rgba(248,113,113,.1); color: var(--err); }
+  .st-lnd { background: rgba(52,211,153,.15); color: #10b981; }
+  .occ-empty { text-align: center; padding: 40px 10px; color: var(--tx3); font: 400 0.78rem var(--mono); }
+  .occ-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Stream Mode ── */
+  .stream-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: #030508; color: #e6eaef; font-family: var(--mono); overflow-y: auto; padding: 30px 40px; }
+  .stream-overlay.on { display: flex; flex-direction: column; }
+  .str-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+  .str-icao { font: 700 3.5rem/1 var(--mono); color: var(--acc); letter-spacing: 4px; }
+  .str-sub { font: 400 0.9rem var(--mono); color: #4a5568; margin-top: 4px; }
+  .str-close { background: 0; border: 1px solid #1c2333; color: #4a5568; width: 44px; height: 44px; border-radius: 8px; font-size: 1.4rem; cursor: pointer; transition: .15s; flex-shrink: 0; }
+  .str-close:hover { border-color: var(--err); color: var(--err); }
+  .str-atis { background: #0b0f18; border: 1px solid #1c2333; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+  .str-atis-h { font: 700 0.7rem var(--mono); color: var(--acc); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+  .str-atis-body { font: 400 1rem/1.5 var(--mono); color: #c0c8d4; white-space: pre-wrap; word-break: break-word; }
+  .str-wx { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .str-wx-item { background: #0b0f18; border: 1px solid #1c2333; border-radius: 10px; padding: 14px; text-align: center; }
+  .str-wx-val { font: 700 1.8rem/1.2 var(--mono); }
+  .str-wx-lbl { font: 400 0.65rem var(--mono); color: #4a5568; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+  .str-flights { flex: 1; }
+  .str-tbl { width: 100%; border-collapse: collapse; font: 400 0.85rem/1.3 var(--mono); }
+  .str-tbl th { text-align: left; padding: 10px 8px; font-weight: 700; color: #4a5568; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid #1c2333; font-size: 0.7rem; }
+  .str-tbl td { padding: 10px 8px; border-bottom: 1px solid rgba(28,35,51,.4); color: #c0c8d4; }
+  .str-tbl tr:hover td { background: rgba(224,163,72,.04); }
+  .str-cs { color: var(--acc); font-weight: 700; font-size: 0.95rem; }
+  .str-state { padding: 3px 10px; border-radius: 4px; font-weight: 700; font-size: 0.7rem; letter-spacing: .5px; }
+  .str-empty { text-align: center; padding: 60px; color: #4a5568; font: 400 1.2rem var(--mono); }
+  .str-footer { text-align: center; padding: 12px 0; margin-top: auto; }
+  .str-footer span { font: 600 0.6rem var(--mono); color: #1c2333; letter-spacing: 2px; text-transform: uppercase; }
+  @media (max-width: 600px) {
+    .str-icao { font-size: 2.2rem; }
+    .stream-overlay { padding: 16px; }
+    .str-tbl { font-size: 0.7rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="hdr">
+    <div class="hdr-l">
+      <div class="hdr-ico">AN</div>
+      <div class="hdr-t">
+        <h1>ACARS Dispatch</h1>
+        <div class="sub">AirNubeiro v3.6</div>
+      </div>
+    </div>
+    <div class="hdr-r">
+      <!-- Auto-poll toggle -->
+      <button class="ib" id="btnAuto" onclick="toggleAutoPoll()" title="Auto-poll ON/OFF">
+        <span id="autoIco">⏱</span>
+      </button>
+      <!-- Manual poll -->
+      <button class="ib" id="btnPoll" onclick="doPoll()" title="Poll manual">
+        📥 <span class="bdg" id="rxBdg">0</span>
+      </button>
+      <!-- Sound -->
+      <button class="ib" id="btnSnd" onclick="toggleSound()" title="Sonido ON/OFF">🔔</button>
+      <!-- Stream Mode -->
+      <button class="ib" id="btnStream" onclick="openStream()" title="Stream Mode (F11)">📺</button>
+      <!-- Config -->
+      <button class="ib" id="btnCfg" onclick="toggleCfg()">⚙</button>
+    </div>
+  </div>
+
+  <!-- ═══ CONFIG ═══ -->
+  <div class="cfg" id="cfgP">
+    <h3>Configuración</h3>
+    <div class="cfg-g">
+      <div class="f"><label>LOGON CODE</label><input type="text" id="cL" placeholder="Tu código Hoppie" autocomplete="off" spellcheck="false"></div>
+      <div class="f"><label>CALLSIGN ESTACIÓN</label><input type="text" id="cS" class="uc" placeholder="LEMD_TWR" maxlength="12" autocomplete="off" spellcheck="false"></div>
+      <div class="f"><label>INTERVALO AUTO-POLL (seg)</label><input type="number" id="cI" value="20" min="5" max="120" step="5"></div>
+      <div class="f">
+        <label>CORS PROXY
+          <span class="hi" tabindex="0">?<span class="tt">La API de Hoppie no permite peticiones directas desde navegador. Se usa corsproxy.io por defecto.</span></span>
+        </label>
+        <input type="text" id="cP" value="https://corsproxy.io/?" spellcheck="false">
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STATUS ═══ -->
+  <div class="sb idle" id="sBar"><div class="d"></div><span id="sTxt">Configura logon y callsign</span></div>
+
+  <!-- Connected stations -->
+  <div id="connBox" style="display:none">
+    <div style="font:.6rem var(--mono);color:var(--tx3);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Estaciones conectadas (CPDLC)</div>
+    <div class="conn-list" id="connList"></div>
+  </div>
+
+  <!-- ═══ TABS ═══ -->
+  <div class="tabs">
+    <button class="tab on" data-t="telex" onclick="sw('telex')">Telex</button>
+    <button class="tab" data-t="info" onclick="sw('info')">INFO</button>
+    <button class="tab" data-t="cpdlc" onclick="sw('cpdlc')">CPDLC</button>
+    <button class="tab" data-t="dsp" onclick="sw('dsp')">DSP</button>
+    <button class="tab" data-t="ops" onclick="sw('ops')">OPS</button>
+    <button class="tab" data-t="occ" onclick="sw('occ');refreshOcc()">OCC</button>
+    <button class="tab" data-t="rx" onclick="sw('rx')">Recibidos <span class="tb" id="rxTab">0</span></button>
+    <button class="tab" data-t="tx" onclick="sw('tx')">Enviados</button>
+  </div>
+
+  <!-- ═══ TELEX ═══ -->
+  <div class="pnl on" id="p-telex">
+    <div class="cd">
+      <div class="ct">Enviar TELEX</div>
+      <div class="f" style="margin-bottom:7px"><label>DESTINO</label><input type="text" id="txD" class="uc" placeholder="IBE3456" maxlength="12" autocomplete="off" spellcheck="false"></div>
+      <div class="tpls">
+        <button class="tp" onclick="tT('GATE CHANGE: PROCEED TO GATE __')">GATE CHG</button>
+        <button class="tp" onclick="tT('DELAY EXPECTED. REVISED EOBT: ____Z')">DELAY</button>
+        <button class="tp" onclick="tT('CLEARED TO TAXI VIA __')">TAXI CLR</button>
+        <button class="tp" onclick="tT('CONFIRM READY FOR DEPARTURE')">RDY DEP?</button>
+        <button class="tp" onclick="tT('CONTACT __ ON FREQ ___.__')">FREQ CHG</button>
+        <button class="tp" onclick="tT('SQUAWK ____')">SQUAWK</button>
+      </div>
+      <div class="f"><label>MENSAJE</label><textarea id="txM" placeholder="Texto TELEX..." rows="3" maxlength="500"></textarea><div class="chc" id="txC">0 / 500</div></div>
+      <button class="bp" id="txB" onclick="sendTx()" disabled>ENVIAR TELEX</button>
+    </div>
+  </div>
+
+  <!-- ═══ METAR/ATIS ═══ -->
+  <div class="pnl" id="p-info">
+    <div class="cd">
+      <div class="ct inf">Solicitar METAR / ATIS / TAF</div>
+      <div class="r2" style="margin-bottom:8px">
+        <div class="f"><label>ICAO</label><input type="text" id="inI" class="uc" placeholder="LEMD" maxlength="4" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>TIPO</label>
+          <select id="inT">
+            <option value="metar">METAR (real)</option>
+            <option value="taf">TAF (pronóstico)</option>
+            <option value="vatatis">ATIS — VATSIM</option>
+            <option value="ivaoatis">ATIS — IVAO</option>
+          </select>
+        </div>
+      </div>
+      <button class="bp ifc" id="inB" onclick="sendInfo()" disabled>SOLICITAR</button>
+    </div>
+    <div class="cd" id="inR" style="display:none">
+      <div class="ct inf">Resultado</div>
+      <div class="mb" id="inRT"></div>
+      <div style="margin-top:10px;display:flex;gap:6px;align-items:end">
+        <div class="f" style="flex:1"><label>REENVIAR A (callsign)</label><input type="text" id="fwdTo" class="uc" placeholder="IBE3456" maxlength="12" autocomplete="off" spellcheck="false"></div>
+        <button class="bs" onclick="fwdInfo()" style="height:36px;white-space:nowrap">📤 Enviar TELEX</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CPDLC ═══ -->
+  <div class="pnl" id="p-cpdlc">
+    <div class="cd">
+      <div class="ct cp">CPDLC Uplink (ATC → Piloto)</div>
+      <div class="r2" style="margin-bottom:6px">
+        <div class="f"><label>DESTINO</label><input type="text" id="cpD" class="uc" placeholder="IBE3456" maxlength="12" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>MSG ID</label><input type="number" id="cpId" value="1" min="1" max="999"></div>
+      </div>
+      <div class="r2" style="margin-bottom:6px">
+        <div class="f"><label>RESPUESTA</label>
+          <select id="cpR">
+            <option value="WU">W/U — Wilco/Unable</option>
+            <option value="AN">A/N — Affirm/Negative</option>
+            <option value="R">R — Roger</option>
+            <option value="Y">Y — Libre</option>
+            <option value="N">N — No req (puede resp)</option>
+            <option value="NE">NE — Solo informativo</option>
+          </select>
+        </div>
+        <div class="f"><label>MENSAJE</label><input type="text" id="cpM" class="uc" placeholder="CLIMB TO FL350" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="tpls">
+        <button class="tp cp" onclick="tC('CLIMB TO FL___')">CLIMB</button>
+        <button class="tp cp" onclick="tC('DESCEND TO FL___')">DESCEND</button>
+        <button class="tp cp" onclick="tC('MAINTAIN FL___')">MAINTAIN</button>
+        <button class="tp cp" onclick="tC('TURN LEFT HDG ___')">TURN L</button>
+        <button class="tp cp" onclick="tC('TURN RIGHT HDG ___')">TURN R</button>
+        <button class="tp cp" onclick="tC('PROCEED DIRECT TO ___')">DIRECT</button>
+        <button class="tp cp" onclick="tC('CONTACT ___ ON ___.__')">CONTACT</button>
+        <button class="tp cp" onclick="tC('SQUAWK ____')">SQUAWK</button>
+        <button class="tp cp" onclick="tC('REPORT POSITION')">REPORT</button>
+        <button class="tp cp" onclick="tC('CLEARED TO ___ VIA ___')">CLR TO</button>
+        <button class="tp cp" onclick="tC('CROSS ___ AT FL___')">CROSS AT</button>
+        <button class="tp cp" onclick="tC('RESUME OWN NAVIGATION')">RESUME NAV</button>
+      </div>
+      <button class="bp cpc" id="cpB" onclick="sendCp()" disabled>ENVIAR CPDLC</button>
+    </div>
+  </div>
+
+  <!-- ═══ DISPATCH ═══ -->
+  <div class="pnl" id="p-dsp">
+    <div class="cd">
+      <div class="ct dsp">Dispatch Automatizado (SimBrief + IVAO)</div>
+      <div class="r2" style="margin-bottom:6px">
+        <div class="f"><label>SIMBRIEF USER / ID
+          <span class="hi" tabindex="0">?<span class="tt">Username de Navigraph o Pilot ID numérico de SimBrief. Lo encuentras en Account Settings de SimBrief.</span></span>
+        </label><input type="text" id="dspSb" placeholder="username o ID" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>CALLSIGN DESTINO</label><input type="text" id="dspTo" class="uc" placeholder="IBE3456" maxlength="12" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <button class="bp dsp-btn" id="dspFetch" onclick="fetchDispatch()">📋 GENERAR DISPATCH</button>
+    </div>
+
+    <!-- ═══ QUICK DISPATCH (sin SimBrief) ═══ -->
+    <div class="cd">
+      <div class="ct dsp">Quick Dispatch (sin SimBrief)</div>
+      <div class="r2" style="margin-bottom:6px">
+        <div class="f"><label>ICAO AEROPUERTO</label><input type="text" id="qdIcao" class="uc" placeholder="LEMD" maxlength="4" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>CALLSIGN DESTINO</label><input type="text" id="qdTo" class="uc" placeholder="IBE3456" maxlength="12" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="tpls">
+        <button class="tp cp" onclick="qdFetch('traffic')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">📡 TRÁFICO</button>
+        <button class="tp cp" onclick="qdFetch('metar')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">🌤️ METAR</button>
+        <button class="tp cp" onclick="qdFetch('taf')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">📋 TAF</button>
+        <button class="tp cp" onclick="qdFetch('atis-ivao')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">📻 ATIS IVAO</button>
+        <button class="tp cp" onclick="qdFetch('atis-vatsim')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">📻 ATIS VATSIM</button>
+      </div>
+    </div>
+
+    <!-- ═══ ROUTE INFO ═══ -->
+    <div class="cd">
+      <div class="ct dsp">Route Info (ATCs + SIGMETs + PIREPs)</div>
+      <div class="r2" style="margin-bottom:6px">
+        <div class="f"><label>CALLSIGN PILOTO EN IVAO
+          <span class="hi" tabindex="0">?<span class="tt">Callsign del piloto activo en IVAO. Se busca su posición y heading para calcular ATCs, SIGMETs y PIREPs en su ruta.</span></span>
+        </label><input type="text" id="riCs" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>ENVIAR A (callsign)</label><input type="text" id="riTo" class="uc" placeholder="(mismo si vacío)" maxlength="12" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <button class="bp dsp-btn" id="riBtn" onclick="fetchRouteInfo()">🗺️ GENERAR ROUTE INFO</button>
+    </div>
+
+    <!-- Route info result -->
+    <div class="dsp-card" id="riResult" style="display:none">
+      <h4 id="riTitle"><span class="ico">🗺️</span> —</h4>
+      <pre id="riBody"></pre>
+      <button class="dsp-send" id="riSend" onclick="riSendTelex()">📤 Enviar TELEX</button>
+    </div>
+
+    <!-- ═══ PAX CONNECTIONS (manual) ═══ -->
+    <div class="cd">
+      <div class="ct dsp">Conexiones PAX + Crew Info</div>
+      <div class="r2" style="margin-bottom:6px">
+        <div class="f"><label>ICAO DESTINO (llegada)
+          <span class="hi" tabindex="0">?<span class="tt">Aeropuerto donde aterriza el vuelo. Genera conexiones PAX con vuelos de aerolíneas del país + crew rotation.</span></span>
+        </label><input type="text" id="cxIcao" class="uc" placeholder="EGLL" maxlength="4" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>ENVIAR A (callsign)</label><input type="text" id="cxTo" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="tpls">
+        <button class="tp cp" onclick="manualPaxConn()" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">👥 CONEXIONES PAX</button>
+        <button class="tp cp" onclick="manualCrewInfo()" style="background:rgba(167,139,250,.06);border-color:rgba(167,139,250,.2);color:#a78bfa">👨‍✈️ CREW INFO</button>
+      </div>
+    </div>
+    <div class="dsp-card" id="cxResult" style="display:none">
+      <h4 id="cxTitle"><span class="ico">👥</span> —</h4>
+      <pre id="cxBody"></pre>
+      <button class="dsp-send" id="cxSend" onclick="cxSendTelex()">📤 Enviar TELEX</button>
+    </div>
+
+    <!-- Quick dispatch result -->
+    <div class="dsp-card" id="qdResult" style="display:none">
+      <h4 id="qdTitle"><span class="ico">📡</span> —</h4>
+      <pre id="qdBody"></pre>
+      <button class="dsp-send" id="qdSend" onclick="qdSendTelex()">📤 Enviar TELEX</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="dsp-loading" id="dspLoad" style="display:none"><span class="spin">⟳</span> Obteniendo OFP de SimBrief + tráfico IVAO...</div>
+
+    <!-- Flight summary -->
+    <div class="dsp-summary" id="dspSum" style="display:none">
+      <div class="head">Resumen del vuelo</div>
+      <div id="dspSumRows"></div>
+    </div>
+
+    <!-- Generated messages -->
+    <div class="dsp-cards" id="dspCards" style="display:none"></div>
+
+    <!-- Send all -->
+    <button class="bp dsp-btn" id="dspAll" onclick="sendAllDispatch()" style="display:none">📤 ENVIAR TODOS LOS TELEX</button>
+  </div>
+
+  <!-- ═══ OPS CENTER (embedded) ═══ -->
+  <div class="pnl" id="p-ops">
+    <div class="cd">
+      <div class="ct dsp">OPS Center — Monitor IVAO</div>
+      <div style="font:.62rem var(--mono);color:var(--tx3);margin-bottom:8px;line-height:1.4">Monitoriza vuelos NBV en IVAO y les envía automáticamente TELEX de tráfico, meteorología, ATIS, conexiones PAX y crew info según la fase de vuelo. <a href="ops-center.html" target="_blank" style="color:var(--inf)">Versión completa ↗</a></div>
+      <div class="r2" style="margin-bottom:6px">
+        <div class="f"><label>PREFIJO AEROLÍNEA</label><input type="text" id="opsPrefix" class="uc" value="NBV" maxlength="6" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>SCAN (seg)</label><input type="number" id="opsInterval" value="45" min="15" max="180" step="5"></div>
+      </div>
+      <div class="r2" style="margin-bottom:6px">
+        <div class="f"><label>ROUTE INFO CADA (min)
+          <span class="hi" tabindex="0">?<span class="tt">Envía ATCs+frecuencias, SIGMETs y PIREPs a pilotos en crucero cada X minutos.</span></span>
+        </label><input type="number" id="opsRI" value="10" min="5" max="60" step="1"></div>
+        <div class="f"></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="bp dsp-btn" id="opsBtn" onclick="toggleOpsMonitor()" style="flex:1">▶ INICIAR MONITOR</button>
+        <a href="ops-center.html" target="_blank" class="bp" style="flex:0;padding:0 14px;display:flex;align-items:center;font-size:.7rem;text-decoration:none;background:var(--bg2);color:var(--tx2);border:1px solid var(--brd)">↗ COMPLETO</a>
+      </div>
+    </div>
+    <!-- OPS stats -->
+    <div id="opsStats" style="display:none;font:.65rem var(--mono);color:var(--tx3);padding:6px 0;display:flex;gap:10px;flex-wrap:wrap">
+    </div>
+    <!-- Flight list -->
+    <div id="opsFlights"></div>
+    <!-- OPS log -->
+    <div id="opsLog" style="max-height:160px;overflow-y:auto"></div>
+  </div>
+
+  <!-- ═══ OCC BOARD ═══ -->
+  <div class="pnl" id="p-occ">
+    <div class="cd">
+      <div class="ct inf">OCC Board — Vuelos AirNubeiro</div>
+      <div class="occ-bar">
+        <div class="occ-count" id="occCount">Cargando...</div>
+        <div class="occ-refresh" id="occRefresh"></div>
+      </div>
+      <div class="occ-scroll">
+        <div id="occBody">
+          <div class="occ-empty">Cargando datos IVAO...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RECIBIDOS ═══ -->
+  <div class="pnl" id="p-rx">
+    <div class="lh">
+      <h3>Mensajes recibidos</h3>
+      <div class="lh-btns"><button class="sm pl" onclick="doPoll()">⟳ Poll</button><button class="sm" onclick="clr('rx')">Limpiar</button></div>
+    </div>
+    <div class="ml" id="rxL"><div class="me-empty" id="rxE">Sin mensajes — pulsa Poll o activa Auto-poll</div></div>
+  </div>
+
+  <!-- ═══ ENVIADOS ═══ -->
+  <div class="pnl" id="p-tx">
+    <div class="lh">
+      <h3>Mensajes enviados</h3>
+      <div class="lh-btns"><button class="sm" onclick="clr('tx')">Limpiar</button></div>
+    </div>
+    <div class="ml" id="txL"><div class="me-empty" id="txE">Sin mensajes enviados</div></div>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="ftr">
+    <div class="br">✈ AirNubeiro ACARS Dispatch</div>
+    <div class="lg">Creado por Varo para AirNubeiro — Todos los derechos reservados © 2025</div>
+  </div>
+
+</div>
+
+<!-- ═══ STREAM MODE OVERLAY ═══ -->
+<div class="stream-overlay" id="streamOverlay">
+  <div class="str-hdr">
+    <div>
+      <div class="str-icao" id="strIcao">----</div>
+      <div class="str-sub" id="strSub">AirNubeiro OPS — Stream Mode</div>
+    </div>
+    <button class="str-close" onclick="closeStream()" title="Cerrar (ESC)">✕</button>
+  </div>
+  <div class="str-atis" id="strAtisBox" style="display:none">
+    <div class="str-atis-h">ATIS</div>
+    <div class="str-atis-body" id="strAtis"></div>
+  </div>
+  <div class="str-wx" id="strWx"></div>
+  <div class="str-flights" id="strFlights">
+    <div class="str-empty">Cargando vuelos NBV...</div>
+  </div>
+  <div class="str-footer"><span>AirNubeiro ACARS Dispatch — Stream Mode</span></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  ACARS DISPATCH v3.6 — AirNubeiro
+//  Creado por Varo para AirNubeiro · Todos los derechos reservados
+// ══════════════════════════════════════════════════════════════════
+
+const HURL = 'http://www.hoppie.nl/acars/system/connect.html';
+const HPARSE = /\{(.*?)\}/gs;
+let busy = false, autoPoll = null, soundOn = true, rxCount = 0;
+const connStations = new Set(); // CPDLC connected callsigns
+
+const $ = id => document.getElementById(id);
+
+// ── Audio context (Web Audio API — sin archivos externos) ──
+let audioCtx;
+function beep(freq = 880, dur = 0.15, vol = 0.3) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.value = vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch(e) {}
+}
+function notifySound() { beep(800, 0.12); setTimeout(() => beep(1100, 0.15), 160); }
+function errorSound() { beep(300, 0.25, 0.2); }
+
+// ── Config persistence ──
+function saveCfg() {
+  try { localStorage.setItem('an3', JSON.stringify({ l: $('cL').value, s: $('cS').value, p: $('cP').value, i: $('cI').value, snd: soundOn, sb: $('dspSb').value })); } catch(e) {}
+}
+function loadCfg() {
+  try {
+    const c = JSON.parse(localStorage.getItem('an3'));
+    if (c) { $('cL').value = c.l||''; $('cS').value = c.s||''; if(c.p) $('cP').value = c.p; if(c.i) $('cI').value = c.i; if(c.snd !== undefined) soundOn = c.snd; if(c.sb) $('dspSb').value = c.sb; }
+  } catch(e) {}
+}
+[$('cL'),$('cS'),$('cP'),$('cI'),$('dspSb')].forEach(e => e.addEventListener('change', saveCfg));
+
+function toggleCfg() { $('cfgP').classList.toggle('v'); $('btnCfg').classList.toggle('on'); }
+function toggleSound() { soundOn = !soundOn; $('btnSnd').textContent = soundOn ? '🔔' : '🔕'; $('btnSnd').classList.toggle('on', !soundOn); saveCfg(); }
+
+// ── Tabs ──
+function sw(n) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.t === n));
+  document.querySelectorAll('.pnl').forEach(p => p.classList.toggle('on', p.id === 'p-' + n));
+  if (n === 'rx') { rxCount = 0; updBdg(); }
+}
+
+// ── Status ──
+function ss(c, t) { $('sBar').className = 'sb ' + c; $('sTxt').textContent = t; }
+
+// ── UC fields ──
+document.querySelectorAll('.uc').forEach(e => e.addEventListener('input', () => { e.value = e.value.toUpperCase(); }));
+
+// ── Char count ──
+$('txM').addEventListener('input', () => {
+  const l = $('txM').value.length;
+  $('txC').textContent = `${l} / 500`;
+  $('txC').className = 'chc' + (l > 450 ? (l >= 500 ? ' o' : ' w') : '');
+  updBtn();
+});
+
+// ── Buttons state ──
+function updBtn() {
+  const ok = $('cL').value.trim() && $('cS').value.trim();
+  $('txB').disabled = !ok || !$('txD').value.trim() || !$('txM').value.trim() || busy;
+  $('inB').disabled = !ok || !$('inI').value.trim() || busy;
+  $('cpB').disabled = !ok || !$('cpD').value.trim() || !$('cpM').value.trim() || busy;
+}
+[$('cL'),$('cS'),$('txD'),$('txM'),$('inI'),$('cpD'),$('cpM')].forEach(e => e.addEventListener('input', updBtn));
+
+// ── Badge ──
+function updBdg() {
+  $('rxBdg').textContent = rxCount; $('rxBdg').classList.toggle('v', rxCount > 0);
+  const t = $('rxTab'); t.textContent = rxCount; t.classList.toggle('v', rxCount > 0);
+}
+
+// ── Templates ──
+function tT(t) { $('txM').value = t; $('txM').focus(); $('txM').dispatchEvent(new Event('input')); }
+function tC(t) { $('cpM').value = t; $('cpM').focus(); updBtn(); }
+
+// ── Helpers ──
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function ts() { return new Date().toISOString().replace('T',' ').substring(0,19) + 'Z'; }
+
+// ── Connected stations UI ──
+function updConn() {
+  const box = $('connBox'), list = $('connList');
+  if (connStations.size === 0) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  list.innerHTML = '';
+  connStations.forEach(cs => {
+    const tag = document.createElement('span');
+    tag.className = 'conn-tag';
+    tag.innerHTML = `${esc(cs)} <span class="cx" onclick="disconnectStation('${esc(cs)}')" title="Desconectar">✕</span>`;
+    list.appendChild(tag);
+  });
+}
+
+async function disconnectStation(cs) {
+  try {
+    const mid = parseInt($('cpId').value);
+    await hReq(cs, 'cpdlc', `/data2/${mid}//N/LOGOFF`);
+    $('cpId').value = mid + 1;
+  } catch(e) {}
+  connStations.delete(cs);
+  updConn();
+  addMsg('tx', { cls: 'out', type: 'CPDLC', badge: 'b-cp', route: `${$('cS').value.toUpperCase()} → ${cs}`, body: 'LOGOFF', time: ts(), st: '✓ Desconectado', ok: true });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  HOPPIE API — POST
+// ══════════════════════════════════════════════════════════════════
+async function hReq(to, type, packet) {
+  const proxy = $('cP').value.trim();
+  const url = proxy ? `${proxy}${encodeURIComponent(HURL)}` : HURL;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ logon: $('cL').value.trim(), from: $('cS').value.trim().toUpperCase(), to, type, packet }).toString()
+  });
+  return (await r.text()).trim();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SEND TELEX
+// ══════════════════════════════════════════════════════════════════
+async function sendTx() {
+  if (busy) return;
+  const to = $('txD').value.trim().toUpperCase(), msg = $('txM').value.trim();
+  if (!to || !msg) return;
+  busy = true; const b = $('txB'); b.disabled = true; b.className = 'bp snd'; b.textContent = 'ENVIANDO...';
+  ss('snd', `Enviando TELEX a ${to}...`);
+  try {
+    const raw = await hReq(to, 'telex', msg);
+    const ok = raw.toLowerCase().startsWith('ok');
+    addMsg('tx', { cls: ok?'out':'erm', type: 'TELEX', badge: 'b-tx', route: `${$('cS').value.toUpperCase()} → ${to}`, body: msg, time: ts(), st: ok ? '✓ OK' : `✗ ${raw}`, ok });
+    if (ok) { ss('ok', `✓ TELEX → ${to}`); b.className = 'bp ok'; b.textContent = '✓ ENVIADO'; $('txM').value = ''; $('txM').dispatchEvent(new Event('input')); }
+    else { ss('err', `✗ ${raw}`); b.className = 'bp er'; b.textContent = '✗ ERROR'; errorSound(); }
+  } catch(e) {
+    addMsg('tx', { cls: 'erm', type: 'TELEX', badge: 'b-tx', route: `→ ${to}`, body: msg, time: ts(), st: `✗ ${e.message}`, ok: false });
+    ss('err', '✗ Error de red'); b.className = 'bp er'; b.textContent = '✗ ERROR'; errorSound();
+  }
+  setTimeout(() => { busy = false; b.className = 'bp'; b.textContent = 'ENVIAR TELEX'; updBtn(); }, 1400);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SEND METAR/ATIS
+// ══════════════════════════════════════════════════════════════════
+let lastInfoResult = '';
+
+async function sendInfo() {
+  if (busy) return;
+  const icao = $('inI').value.trim().toUpperCase(), type = $('inT').value;
+  if (!icao) return;
+  busy = true; $('inB').disabled = true; $('inB').textContent = 'SOLICITANDO...';
+  ss('snd', `${type.toUpperCase()} ${icao}...`);
+  try {
+    const raw = await hReq('SERVER', 'inforeq', `${type.toUpperCase()} ${icao}`);
+    const ok = raw.toLowerCase().startsWith('ok');
+    const txt = ok ? cleanHoppie(raw.substring(2).trim()) : raw;
+    $('inR').style.display = 'block'; $('inRT').textContent = txt || '(vacío)';
+    lastInfoResult = `${type.toUpperCase()} ${icao}: ${txt}`;
+    addMsg('rx', { cls: 'in', type: 'INFO', badge: 'b-in', route: `SERVER → ${$('cS').value.toUpperCase()}`, body: `${type.toUpperCase()} ${icao}:\n${txt}`, time: ts(), st: ok?'✓ OK':'✗ Error', ok });
+    ss(ok?'ok':'err', ok ? `✓ ${type.toUpperCase()} ${icao}` : `✗ ${raw}`);
+    if (ok) notifySound();
+  } catch(e) { $('inR').style.display = 'block'; $('inRT').textContent = `Error: ${e.message}`; ss('err', '✗ Error de red'); errorSound(); }
+  busy = false; $('inB').textContent = 'SOLICITAR'; updBtn();
+}
+
+// Strip Hoppie {type {content}} wrappers from inforeq responses
+function cleanHoppie(txt) {
+  if (!txt) return '';
+  let s = txt.trim();
+  // Pattern: {type {actual content}} → extract actual content
+  // Can be nested: {acars info {LEST 231300Z ...}} or {atis {LEST INFO A ...}}
+  const m = s.match(/^\{[^{]*\{(.+)\}\s*\}$/s);
+  if (m) return m[1].trim();
+  // Single wrapper: {content}
+  if (s.startsWith('{') && s.endsWith('}')) return s.substring(1, s.length - 1).trim();
+  return s;
+}
+
+async function fwdInfo() {
+  const to = $('fwdTo').value.trim().toUpperCase();
+  if (!to || !lastInfoResult) { ss('err', '✗ Indica callsign destino y solicita primero'); return; }
+  if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign'); return; }
+  ss('snd', `Reenviando a ${to}...`);
+  try {
+    const raw = await hReq(to, 'telex', lastInfoResult);
+    const ok = raw.toLowerCase().startsWith('ok');
+    addMsg('tx', { cls: ok?'out':'erm', type: 'TELEX', badge: 'b-tx', route: `${$('cS').value.toUpperCase()} → ${to}`, body: `[FWD] ${lastInfoResult}`, time: ts(), st: ok?'✓ OK':`✗ ${raw}`, ok });
+    ss(ok?'ok':'err', ok ? `✓ Reenviado a ${to}` : `✗ ${raw}`);
+    if (ok) notifySound(); else errorSound();
+  } catch(e) { ss('err', `✗ ${e.message}`); errorSound(); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SEND CPDLC
+// ══════════════════════════════════════════════════════════════════
+async function sendCp() {
+  if (busy) return;
+  const to = $('cpD').value.trim().toUpperCase(), mid = $('cpId').value, resp = $('cpR').value, msg = $('cpM').value.trim().toUpperCase();
+  if (!to || !msg) return;
+  const pkt = `/data2/${mid}//${resp}/${msg}`;
+  busy = true; const b = $('cpB'); b.disabled = true; b.className = 'bp cpc snd'; b.textContent = 'ENVIANDO...';
+  ss('snd', `CPDLC → ${to}...`);
+  try {
+    const raw = await hReq(to, 'cpdlc', pkt);
+    const ok = raw.toLowerCase().startsWith('ok');
+    addMsg('tx', { cls: ok?'cpm':'erm', type: 'CPDLC', badge: 'b-cp', route: `${$('cS').value.toUpperCase()} → ${to}`, body: `[${resp}] ${msg}`, time: ts(), st: ok?'✓ OK':`✗ ${raw}`, ok });
+    if (ok) { ss('ok', `✓ CPDLC → ${to}`); b.className = 'bp cpc ok'; b.textContent = '✓ ENVIADO'; $('cpId').value = parseInt(mid) + 1; $('cpM').value = ''; }
+    else { ss('err', `✗ ${raw}`); b.className = 'bp cpc er'; b.textContent = '✗ ERROR'; errorSound(); }
+  } catch(e) {
+    addMsg('tx', { cls: 'erm', type: 'CPDLC', badge: 'b-cp', route: `→ ${to}`, body: `[${resp}] ${msg}`, time: ts(), st: `✗ ${e.message}`, ok: false });
+    ss('err', '✗ Error de red'); b.className = 'bp cpc er'; b.textContent = '✗ ERROR'; errorSound();
+  }
+  setTimeout(() => { busy = false; b.className = 'bp cpc'; b.textContent = 'ENVIAR CPDLC'; updBtn(); }, 1400);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CPDLC LOGON MANAGEMENT
+// ══════════════════════════════════════════════════════════════════
+async function acceptLogon(sender) {
+  const mid = parseInt($('cpId').value);
+  try {
+    await hReq(sender, 'cpdlc', `/data2/${mid}//NE/LOGON ACCEPTED`);
+    $('cpId').value = mid + 1;
+    connStations.add(sender);
+    updConn();
+    addMsg('rx', { cls: 'logon', type: 'LOGON', badge: 'b-lo', route: `${sender} ↔ ${$('cS').value.toUpperCase()}`, body: `LOGON ACCEPTED — ${sender} conectado`, time: ts(), st: '✓ Conectado', ok: true });
+    ss('ok', `✓ ${sender} LOGON aceptado`);
+    notifySound();
+  } catch(e) { ss('err', `✗ Error aceptando logon: ${e.message}`); errorSound(); }
+  // Remove action buttons
+  document.querySelectorAll(`.la-${CSS.escape(sender)}`).forEach(el => el.remove());
+}
+
+async function standbyLogon(sender) {
+  const mid = parseInt($('cpId').value);
+  try {
+    await hReq(sender, 'cpdlc', `/data2/${mid}//NE/STANDBY`);
+    $('cpId').value = mid + 1;
+    addMsg('tx', { cls: 'cpm', type: 'CPDLC', badge: 'b-cp', route: `→ ${sender}`, body: 'STANDBY', time: ts(), st: '✓ OK', ok: true });
+  } catch(e) {}
+  document.querySelectorAll(`.la-${CSS.escape(sender)}`).forEach(el => el.remove());
+}
+
+async function rejectLogon(sender) {
+  const mid = parseInt($('cpId').value);
+  try {
+    await hReq(sender, 'cpdlc', `/data2/${mid}//NE/UNABLE`);
+    $('cpId').value = mid + 1;
+    addMsg('tx', { cls: 'erm', type: 'CPDLC', badge: 'b-cp', route: `→ ${sender}`, body: 'LOGON UNABLE', time: ts(), st: '✓ Rechazado', ok: true });
+  } catch(e) {}
+  document.querySelectorAll(`.la-${CSS.escape(sender)}`).forEach(el => el.remove());
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  POLL
+// ══════════════════════════════════════════════════════════════════
+async function doPoll() {
+  if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign'); return; }
+  ss('snd', 'Consultando...');
+  $('btnPoll').classList.add('on');
+  try {
+    const raw = await hReq('NONE', 'poll', '');
+    const t = raw.trim();
+    if (t.toLowerCase() === 'ok') { ss('ok', '✓ Sin mensajes'); }
+    else if (t.toLowerCase().startsWith('ok')) {
+      const matches = [...t.matchAll(HPARSE)];
+      if (!matches.length) { ss('ok', '✓ Sin mensajes'); }
+      else {
+        let cnt = 0;
+        for (const m of matches) {
+          const inner = m[1];
+          const parts = inner.split(' ');
+          const sender = (parts[0]||'???').toUpperCase();
+          const mtype = (parts[1]||'TELEX').toUpperCase();
+          const cMatch = inner.match(/\{(.+)/s);
+          let content = cMatch ? cMatch[1].replace(/\}$/, '').trim() : parts.slice(2).join(' ');
+          content = cleanHoppie(content); // strip nested {type {content}} wrappers
+
+          // Skip Hoppie system/error messages
+          if (!sender || !content || content.toLowerCase().includes('send anything') || sender === 'SERVER') continue;
+
+          // Detect CPDLC LOGON REQUEST
+          const isLogonReq = mtype === 'CPDLC' && content.includes('REQUEST LOGON');
+          const isCpdlc = mtype === 'CPDLC';
+
+          if (isLogonReq) {
+            addMsg('rx', {
+              cls: 'logon', type: 'LOGON REQ', badge: 'b-lo',
+              route: `${sender} → ${$('cS').value.toUpperCase()}`,
+              body: `REQUEST LOGON — ${sender} solicita conexión CPDLC`,
+              time: ts(), st: '⏳ Pendiente', ok: true,
+              actions: sender
+            });
+          } else {
+            addMsg('rx', {
+              cls: isCpdlc ? 'cpm' : 'in',
+              type: mtype, badge: isCpdlc ? 'b-cp' : 'b-tx',
+              route: `${sender} → ${$('cS').value.toUpperCase()}`,
+              body: content, time: ts(), st: '✓ Recibido', ok: true
+            });
+          }
+          cnt++;
+        }
+        rxCount += cnt; updBdg();
+        ss('ok', `✓ ${cnt} mensaje(s)`);
+        notifySound();
+      }
+    } else { ss('err', `✗ ${t}`); errorSound(); }
+  } catch(e) { ss('err', `✗ Red: ${e.message}`); errorSound(); }
+  $('btnPoll').classList.remove('on');
+}
+
+// ── Auto-poll ──
+function toggleAutoPoll() {
+  if (autoPoll) {
+    clearInterval(autoPoll); autoPoll = null;
+    $('btnAuto').classList.remove('poll-on');
+    $('btnAuto').innerHTML = '⏱';
+    ss('ok', 'Auto-poll desactivado');
+  } else {
+    if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign'); return; }
+    const iv = Math.max(5, parseInt($('cI').value) || 20) * 1000;
+    doPoll(); // immediate first poll
+    autoPoll = setInterval(doPoll, iv);
+    $('btnAuto').classList.add('poll-on');
+    $('btnAuto').innerHTML = '<span class="dot-pulse"></span>';
+    ss('ok', `Auto-poll cada ${iv/1000}s`);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MESSAGE MANAGEMENT (split RX/TX)
+// ══════════════════════════════════════════════════════════════════
+function addMsg(list, { cls, type, badge, route, body, time, st, ok, actions }) {
+  const container = $(list === 'rx' ? 'rxL' : 'txL');
+  const empty = $(list === 'rx' ? 'rxE' : 'txE');
+  empty.style.display = 'none';
+
+  const el = document.createElement('div');
+  el.className = `me ${cls}`;
+
+  let actionsHtml = '';
+  if (actions) {
+    const safe = actions.replace(/'/g, "\\'");
+    actionsHtml = `<div class="logon-actions la-${esc(actions)}">
+      <button class="la-accept" onclick="acceptLogon('${safe}')">✓ ACCEPT</button>
+      <button class="la-standby" onclick="standbyLogon('${safe}')">⏳ STANDBY</button>
+      <button class="la-reject" onclick="rejectLogon('${safe}')">✗ UNABLE</button>
+    </div>`;
+  }
+
+  el.innerHTML = `<div class="mm"><span class="mr">${esc(route)}</span><span class="mb-t ${badge}">${esc(type)}</span></div>
+    <div class="mt">${esc(time)}</div>
+    <div class="mb">${esc(body)}</div>
+    <div class="ms ${ok?'ok':'er'}">${esc(st)}</div>${actionsHtml}`;
+
+  // Insert at top (after empty placeholder)
+  if (container.children.length > 0) container.insertBefore(el, container.children[0].nextSibling || container.children[0]);
+  else container.appendChild(el);
+
+  saveList(list);
+}
+
+function clr(list) {
+  const c = $(list === 'rx' ? 'rxL' : 'txL');
+  c.querySelectorAll('.me').forEach(e => e.remove());
+  $(list === 'rx' ? 'rxE' : 'txE').style.display = 'block';
+  if (list === 'rx') { rxCount = 0; updBdg(); }
+  try { localStorage.removeItem('an3_' + list); } catch(e) {}
+}
+
+function saveList(list) {
+  try {
+    const c = $(list === 'rx' ? 'rxL' : 'txL');
+    const entries = [...c.querySelectorAll('.me')].map(e => e.outerHTML);
+    localStorage.setItem('an3_' + list, JSON.stringify(entries.slice(0, 150)));
+  } catch(e) {}
+}
+
+function loadList(list) {
+  try {
+    const entries = JSON.parse(localStorage.getItem('an3_' + list));
+    if (entries && entries.length) {
+      const c = $(list === 'rx' ? 'rxL' : 'txL');
+      $(list === 'rx' ? 'rxE' : 'txE').style.display = 'none';
+      entries.forEach(html => { const d = document.createElement('div'); d.innerHTML = html; c.appendChild(d.firstChild); });
+    }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  QUICK DISPATCH — Traffic / WX / ATIS standalone
+// ══════════════════════════════════════════════════════════════════
+let qdLastBody = '';
+
+// ATC matching: local positions (TWR/GND/APP/DEL) match 4-char ICAO,
+// regional positions (FSS/CTR) match 2-char country prefix
+function matchAtc(atcs, icao) {
+  const prefix4 = icao.substring(0, 4);
+  const prefix2 = icao.substring(0, 2);
+  return atcs.filter(a => {
+    if (!a.callsign) return false;
+    const cs = a.callsign.toUpperCase();
+    // Local positions: exact ICAO match
+    if (cs.startsWith(prefix4)) return true;
+    // Regional FSS/CTR: match country prefix (2 chars)
+    if ((cs.includes('_FSS') || cs.includes('_CTR')) && cs.startsWith(prefix2)) return true;
+    return false;
+  });
+}
+
+async function qdFetch(type) {
+  const icao = $('qdIcao').value.trim().toUpperCase();
+  const to = $('qdTo').value.trim().toUpperCase();
+  if (!icao || icao.length < 3) { ss('err', '✗ Introduce ICAO del aeropuerto'); return; }
+
+  const proxy = $('cP').value.trim();
+  $('qdResult').style.display = 'block';
+  $('qdBody').textContent = '⏳ Cargando...';
+  $('qdSend').className = 'dsp-send';
+  $('qdSend').textContent = '📤 Enviar TELEX';
+  qdLastBody = '';
+
+  try {
+    let title = '', body = '';
+
+    if (type === 'traffic') {
+      title = `📡 TRÁFICO ${icao}`;
+      ss('snd', `Tráfico IVAO ${icao}...`);
+      const ivUrl = IVAO_WHAZZUP;
+      const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
+      const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
+      const ivData = await ivResp.json();
+      const pilots = ivData.clients?.pilots || [];
+      const arriving = pilots.filter(p => p.flightPlan?.arrivalId === icao);
+      const departing = pilots.filter(p => p.flightPlan?.departureId === icao);
+      const total = arriving.length + departing.length;
+      const density = total === 0 ? 'NINGUNO' : total <= 3 ? 'BAJO' : total <= 8 ? 'MODERADO' : 'ALTO';
+
+      body = `TRAFFIC ${icao} — ${density} (${total})\n`;
+      body += `ARR: ${arriving.length}  |  DEP: ${departing.length}\n`;
+      if (arriving.length > 0) {
+        body += `--- LLEGADAS ---\n`;
+        for (const p of arriving.slice(0, 10)) {
+          const cs = p.callsign || '???';
+          const fp = p.flightPlan;
+          const from = fp?.departureId || '????';
+          const ac = fp?.aircraftId || '????';
+          const gs = p.lastTrack?.groundSpeed || 0;
+          const alt = p.lastTrack?.altitude || 0;
+          const st = p.lastTrack?.state || '';
+          body += `${cs} ${ac} FROM ${from} GS${gs} FL${Math.round(alt/100)} ${st}\n`;
+        }
+        if (arriving.length > 10) body += `... y ${arriving.length - 10} más\n`;
+      }
+      if (departing.length > 0) {
+        body += `--- SALIDAS ---\n`;
+        for (const p of departing.slice(0, 10)) {
+          const cs = p.callsign || '???';
+          const fp = p.flightPlan;
+          const to2 = fp?.arrivalId || '????';
+          const ac = fp?.aircraftId || '????';
+          const st = p.lastTrack?.state || '';
+          body += `${cs} ${ac} TO ${to2} ${st}\n`;
+        }
+        if (departing.length > 10) body += `... y ${departing.length - 10} más\n`;
+      }
+      // ATC online (local + regional FSS/CTR)
+      const atcs = ivData.clients?.atcs || [];
+      const destAtc = matchAtc(atcs, icao);
+      if (destAtc.length > 0) {
+        body += `--- ATC ONLINE ---\n`;
+        for (const a of destAtc) body += `${a.callsign}\n`;
+      } else {
+        body += `NO ATC ONLINE EN ${icao}\n`;
+      }
+
+    } else if (type === 'metar') {
+      title = `🌤️ METAR ${icao}`;
+      ss('snd', `METAR ${icao}...`);
+      // Try aviationweather.gov first, fallback Hoppie
+      try {
+        const mUrl = `${METAR_API}?ids=${icao}&format=raw&hours=2`;
+        const mFetch = proxy ? `${proxy}${encodeURIComponent(mUrl)}` : mUrl;
+        const mResp = await fetch(mFetch, { signal: AbortSignal.timeout(6000) });
+        const mTxt = await mResp.text();
+        body = mTxt.trim() || 'No METAR available';
+      } catch(e) {
+        const raw = await hReq('SERVER', 'inforeq', `METAR ${icao}`);
+        body = raw.toLowerCase().startsWith('ok') ? raw.substring(2).trim() : raw;
+      }
+
+    } else if (type === 'taf') {
+      title = `📋 TAF ${icao}`;
+      ss('snd', `TAF ${icao}...`);
+      try {
+        const tUrl = `https://aviationweather.gov/api/data/taf?ids=${icao}&format=raw&hours=6`;
+        const tFetch = proxy ? `${proxy}${encodeURIComponent(tUrl)}` : tUrl;
+        const tResp = await fetch(tFetch, { signal: AbortSignal.timeout(6000) });
+        const tTxt = await tResp.text();
+        body = tTxt.trim() || 'No TAF available';
+      } catch(e) {
+        const raw = await hReq('SERVER', 'inforeq', `TAF ${icao}`);
+        body = raw.toLowerCase().startsWith('ok') ? raw.substring(2).trim() : raw;
+      }
+
+    } else if (type === 'atis-ivao') {
+      title = `📻 ATIS IVAO ${icao}`;
+      ss('snd', `ATIS IVAO ${icao}...`);
+      const raw = await hReq('SERVER', 'inforeq', `IVAOATIS ${icao}`);
+      body = raw.toLowerCase().startsWith('ok') ? raw.substring(2).trim() : raw;
+
+    } else if (type === 'atis-vatsim') {
+      title = `📻 ATIS VATSIM ${icao}`;
+      ss('snd', `ATIS VATSIM ${icao}...`);
+      const raw = await hReq('SERVER', 'inforeq', `VATATIS ${icao}`);
+      body = raw.toLowerCase().startsWith('ok') ? raw.substring(2).trim() : raw;
+    }
+
+    $('qdTitle').innerHTML = `<span class="ico">${title.substring(0,2)}</span> ${esc(title.substring(2))}`;
+    $('qdBody').textContent = body;
+    qdLastBody = body;
+    ss('ok', `✓ ${title}`);
+    notifySound();
+
+  } catch(e) {
+    $('qdBody').textContent = `Error: ${e.message}`;
+    ss('err', `✗ ${e.message}`);
+    errorSound();
+  }
+}
+
+async function qdSendTelex() {
+  const to = $('qdTo').value.trim().toUpperCase();
+  if (!to) { ss('err', '✗ Indica callsign destino'); return; }
+  if (!qdLastBody) { ss('err', '✗ Primero genera un resultado'); return; }
+  if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign'); return; }
+
+  const btn = $('qdSend');
+  btn.textContent = '⏳ Enviando...';
+  const chunks = splitMsg(qdLastBody, 480);
+  let allOk = true;
+
+  for (let i = 0; i < chunks.length; i++) {
+    try {
+      const prefix = chunks.length > 1 ? `[${i+1}/${chunks.length}] ` : '';
+      const raw = await hReq(to, 'telex', prefix + chunks[i]);
+      if (!raw.toLowerCase().startsWith('ok')) { allOk = false; break; }
+      addMsg('tx', { cls: 'out', type: 'TELEX', badge: 'b-tx', route: `${$('cS').value.toUpperCase()} → ${to}`, body: `[QD] ${prefix}${chunks[i]}`, time: ts(), st: '✓ OK', ok: true });
+      if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 400));
+    } catch(e) { allOk = false; break; }
+  }
+
+  if (allOk) {
+    btn.textContent = '✓ Enviado'; btn.className = 'dsp-send sent';
+    ss('ok', `✓ TELEX → ${to}`);
+  } else {
+    btn.textContent = '✗ Error'; btn.className = 'dsp-send fail';
+    ss('err', '✗ Error en envío'); errorSound();
+    setTimeout(() => { btn.textContent = '📤 Enviar TELEX'; btn.className = 'dsp-send'; }, 2000);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  DISPATCH — SimBrief + IVAO + Weather
+// ══════════════════════════════════════════════════════════════════
+const SIMBRIEF_API = 'https://www.simbrief.com/api/xml.fetcher.php';
+const IVAO_WHAZZUP = 'https://api.ivao.aero/v2/tracker/whazzup';
+const METAR_API = 'https://aviationweather.gov/api/data/metar';
+const SIGMET_API = 'https://aviationweather.gov/api/data/airsigmet';
+const PIREP_API = 'https://aviationweather.gov/api/data/pirep';
+let dspMessages = []; // {id, label, icon, body, sent}
+let dspOFP = null;
+
+async function fetchDispatch() {
+  const sbUser = $('dspSb').value.trim();
+  const dest = $('dspTo').value.trim().toUpperCase();
+  if (!sbUser) { ss('err', '✗ Introduce usuario/ID de SimBrief'); return; }
+  if (!dest) { ss('err', '✗ Introduce callsign destino'); return; }
+  if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign primero'); return; }
+
+  $('dspFetch').disabled = true;
+  $('dspLoad').style.display = 'block';
+  $('dspSum').style.display = 'none';
+  $('dspCards').style.display = 'none';
+  $('dspAll').style.display = 'none';
+  dspMessages = [];
+  ss('snd', 'Obteniendo OFP...');
+
+  try {
+    // ── 1. Fetch SimBrief OFP ──
+    const isNumeric = /^\d+$/.test(sbUser);
+    const sbParam = isNumeric ? `userid=${sbUser}` : `username=${encodeURIComponent(sbUser)}`;
+    const proxy = $('cP').value.trim();
+    const sbUrl = `${SIMBRIEF_API}?${sbParam}&json=1`;
+    const sbFetch = proxy ? `${proxy}${encodeURIComponent(sbUrl)}` : sbUrl;
+    const sbResp = await fetch(sbFetch);
+    if (!sbResp.ok) throw new Error(`SimBrief HTTP ${sbResp.status}`);
+    dspOFP = await sbResp.json();
+
+    if (dspOFP.fetch && dspOFP.fetch.status === 'Error') {
+      throw new Error(dspOFP.fetch.result || 'OFP no encontrado');
+    }
+
+    const o = dspOFP;
+    const orig = o.origin?.icao_code || '????';
+    const dest_icao = o.destination?.icao_code || '????';
+    const altn = o.alternate?.icao_code || '????';
+    const acType = o.aircraft?.icaocode || o.general?.icao_airline || '????';
+    const fltNum = (o.general?.icao_airline||'') + (o.general?.flight_number||'');
+    const ci = o.general?.costindex || 'N/A';
+    const pax = o.weights?.pax_count || '0';
+    const cargo = o.weights?.cargo || '0';
+    const route = o.general?.route || '';
+
+    // Weights (in kg or lbs depending on OFP units)
+    const unit = o.params?.units === 'lbs' ? 'LBS' : 'KG';
+    const oew = o.weights?.oew || '0';
+    const zfw = o.weights?.est_zfw || '0';
+    const tow = o.weights?.est_tow || '0';
+    const ldw = o.weights?.est_ldw || '0';
+    const payload = o.weights?.payload || '0';
+
+    // Fuel
+    const fuelBlock = o.fuel?.plan_ramp || '0';
+    const fuelTrip = o.fuel?.enroute_burn || '0';
+    const fuelRes = o.fuel?.reserve || '0';
+    const fuelAltn = o.fuel?.alternate_burn || '0';
+    const fuelCont = o.fuel?.contingency || '0';
+    const fuelExtra = o.fuel?.extra || '0';
+    const fuelMinTO = o.fuel?.min_takeoff || '0';
+
+    // Times
+    const timeEnr = o.times?.est_time_enroute ? formatSeconds(o.times.est_time_enroute) : 'N/A';
+
+    // ── Show summary ──
+    $('dspSumRows').innerHTML = [
+      r('Vuelo', `${fltNum} · ${acType}`),
+      r('Ruta', `${orig} → ${dest_icao} (ALT: ${altn})`),
+      r('Tiempo en ruta', timeEnr),
+      r('CI', ci),
+      r('PAX / Cargo', `${pax} pax · ${Number(cargo).toLocaleString()} ${unit}`),
+      r('TOW / LDW', `${Number(tow).toLocaleString()} / ${Number(ldw).toLocaleString()} ${unit}`),
+      r('Block Fuel', `${Number(fuelBlock).toLocaleString()} ${unit}`),
+    ].join('');
+    $('dspSum').style.display = 'block';
+
+    // ── 2. Build LOADSHEET message ──
+    const loadsheet = [
+      `=== LOADSHEET ${fltNum} ===`,
+      `ACFT: ${acType}  CI: ${ci}`,
+      `${orig}/${dest_icao}  ALT: ${altn}`,
+      `PAX: ${pax}  CARGO: ${Number(cargo).toLocaleString()}${unit}`,
+      `---`,
+      `OEW:     ${pad(oew,8)} ${unit}`,
+      `PAYLOAD: ${pad(payload,8)} ${unit}`,
+      `ZFW:     ${pad(zfw,8)} ${unit}`,
+      `TOW:     ${pad(tow,8)} ${unit}`,
+      `LDW:     ${pad(ldw,8)} ${unit}`,
+      `--- FUEL ---`,
+      `BLOCK:   ${pad(fuelBlock,8)} ${unit}`,
+      `TRIP:    ${pad(fuelTrip,8)} ${unit}`,
+      `CONT:    ${pad(fuelCont,8)} ${unit}`,
+      `ALTN:    ${pad(fuelAltn,8)} ${unit}`,
+      `RESERVE: ${pad(fuelRes,8)} ${unit}`,
+      `EXTRA:   ${pad(fuelExtra,8)} ${unit}`,
+      `MIN T/O: ${pad(fuelMinTO,8)} ${unit}`,
+    ].join('\n');
+    dspMessages.push({ id: 'load', label: 'LOADSHEET', icon: '📦', body: loadsheet, sent: false });
+
+    // ── 3. Build WX BRIEFING message ──
+    const origMetar = o.weather?.orig_metar || 'N/A';
+    const destMetar = o.weather?.dest_metar || 'N/A';
+    const altnMetar = o.weather?.altn_metar || 'N/A';
+    const origTaf = o.weather?.orig_taf || '';
+    const destTaf = o.weather?.dest_taf || '';
+    const wxBrief = [
+      `=== WX BRIEFING ${fltNum} ===`,
+      `DEP ${orig} METAR:`,
+      origMetar,
+      origTaf ? `TAF: ${origTaf.substring(0,200)}` : '',
+      ``,
+      `ARR ${dest_icao} METAR:`,
+      destMetar,
+      destTaf ? `TAF: ${destTaf.substring(0,200)}` : '',
+      ``,
+      `ALT ${altn} METAR:`,
+      altnMetar,
+    ].filter(Boolean).join('\n');
+    dspMessages.push({ id: 'wx', label: 'WX BRIEFING', icon: '🌤️', body: wxBrief, sent: false });
+
+    // ── 4. Build WX EN-ROUTE from navlog ──
+    ss('snd', 'WX en-ruta...');
+    let enrouteWx = `=== WX EN-ROUTE ${orig}-${dest_icao} ===\n`;
+    try {
+      // Extract unique ICAO airports from navlog (4 chars, look like airports)
+      const fixes = o.navlog?.fix || [];
+      const enrAirports = new Set();
+      // Pick waypoints roughly at 25%, 50%, 75% of route
+      const cruiseFixes = fixes.filter(f => f.stage === 'CRZ' || f.stage === 'DSC');
+      const pickIdxs = [
+        Math.floor(cruiseFixes.length * 0.25),
+        Math.floor(cruiseFixes.length * 0.5),
+        Math.floor(cruiseFixes.length * 0.75)
+      ];
+      for (const idx of pickIdxs) {
+        if (cruiseFixes[idx]) {
+          const id = cruiseFixes[idx].ident;
+          // Check if it looks like ICAO airport (4 chars, starts with letter)
+          if (id && id.length === 4 && /^[A-Z]/.test(id)) enrAirports.add(id);
+        }
+      }
+      // Also pick from FIR entries if any
+      for (const f of fixes) {
+        if (f.type === 'apt' && f.ident && f.ident !== orig && f.ident !== dest_icao) {
+          enrAirports.add(f.ident);
+        }
+      }
+      // Fetch METARs for up to 5 en-route points via aviationweather.gov
+      const enrIcaos = [...enrAirports].slice(0, 5);
+      if (enrIcaos.length > 0) {
+        try {
+          const mUrl = `${METAR_API}?ids=${enrIcaos.join(',')}&format=raw&hours=2`;
+          const mFetch = proxy ? `${proxy}${encodeURIComponent(mUrl)}` : mUrl;
+          const mResp = await fetch(mFetch, { signal: AbortSignal.timeout(8000) });
+          const mTxt = await mResp.text();
+          if (mTxt.trim()) {
+            enrouteWx += mTxt.trim();
+          } else {
+            enrouteWx += 'No METAR data available for en-route points';
+          }
+        } catch(e) {
+          // Fallback: try via Hoppie INFOREQ for first 3
+          for (const ic of enrIcaos.slice(0,3)) {
+            try {
+              const raw = await hReq('SERVER', 'inforeq', `METAR ${ic}`);
+              if (raw.toLowerCase().startsWith('ok')) {
+                enrouteWx += raw.substring(2).trim() + '\n';
+              }
+            } catch(e2) {}
+          }
+          if (enrouteWx.split('\n').length <= 2) enrouteWx += 'Unable to fetch en-route weather';
+        }
+      } else {
+        // No identifiable airports in navlog, try route midpoint approach
+        enrouteWx += 'No en-route airport waypoints identified in navlog.\nUse INFO tab for manual METAR checks.';
+      }
+    } catch(e) {
+      enrouteWx += `Error: ${e.message}`;
+    }
+    dspMessages.push({ id: 'wxenr', label: 'WX EN-ROUTE', icon: '🛫', body: enrouteWx, sent: false });
+
+    // ── 5. Fetch IVAO traffic for destination ──
+    ss('snd', 'Tráfico IVAO...');
+    let trafficMsg = `=== TRAFFIC ${dest_icao} ===\n`;
+    try {
+      const ivUrl = IVAO_WHAZZUP;
+      const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
+      const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
+      const ivData = await ivResp.json();
+      const pilots = ivData.clients?.pilots || [];
+      const arriving = pilots.filter(p => p.flightPlan?.arrivalId === dest_icao);
+      const departing = pilots.filter(p => p.flightPlan?.departureId === dest_icao);
+
+      const arrCount = arriving.length;
+      const depCount = departing.length;
+      const total = arrCount + depCount;
+      const density = total === 0 ? 'NINGUNO' : total <= 3 ? 'BAJO' : total <= 8 ? 'MODERADO' : 'ALTO';
+
+      trafficMsg += `TRAFICO ${density} (${total} total)\n`;
+      trafficMsg += `LLEGADAS: ${arrCount}  |  SALIDAS: ${depCount}\n`;
+      if (arrCount > 0) {
+        trafficMsg += `--- ARR ---\n`;
+        for (const p of arriving.slice(0, 8)) {
+          const cs = p.callsign || '???';
+          const fp = p.flightPlan;
+          const from = fp?.departureId || '????';
+          const ac = fp?.aircraftId || '????';
+          const gs = p.lastTrack?.groundSpeed || 0;
+          const alt = p.lastTrack?.altitude || 0;
+          trafficMsg += `${cs} ${ac} FROM ${from} GS${gs} FL${Math.round(alt/100)}\n`;
+        }
+      }
+      if (depCount > 0) {
+        trafficMsg += `--- DEP ---\n`;
+        for (const p of departing.slice(0, 8)) {
+          const cs = p.callsign || '???';
+          const fp = p.flightPlan;
+          const to = fp?.arrivalId || '????';
+          const ac = fp?.aircraftId || '????';
+          trafficMsg += `${cs} ${ac} TO ${to}\n`;
+        }
+      }
+      // Also check ATC online for destination (local + regional FSS/CTR)
+      const atcs = ivData.clients?.atcs || [];
+      const destAtc = matchAtc(atcs, dest_icao);
+      if (destAtc.length > 0) {
+        trafficMsg += `--- ATC ONLINE ---\n`;
+        for (const a of destAtc) {
+          trafficMsg += `${a.callsign}\n`;
+        }
+      } else {
+        trafficMsg += `ATC: NO HAY ATC ONLINE EN ${dest_icao}\n`;
+      }
+    } catch(e) {
+      trafficMsg += `Error obteniendo tráfico: ${e.message}`;
+    }
+    dspMessages.push({ id: 'traf', label: 'TRAFFIC', icon: '📡', body: trafficMsg, sent: false });
+
+    // ── Render cards ──
+    renderDispatchCards();
+    $('dspAll').style.display = 'block';
+    ss('ok', `✓ Dispatch generado — ${dspMessages.length} mensajes`);
+    notifySound();
+
+  } catch(e) {
+    ss('err', `✗ SimBrief: ${e.message}`);
+    errorSound();
+  }
+  $('dspLoad').style.display = 'none';
+  $('dspFetch').disabled = false;
+}
+
+function renderDispatchCards() {
+  const c = $('dspCards');
+  c.innerHTML = '';
+  c.style.display = 'flex';
+  for (const m of dspMessages) {
+    const card = document.createElement('div');
+    card.className = 'dsp-card';
+    card.id = `dsp-${m.id}`;
+    card.innerHTML = `
+      <h4><span class="ico">${m.icon}</span> ${esc(m.label)}</h4>
+      <pre>${esc(m.body)}</pre>
+      <button class="dsp-send" id="dsb-${m.id}" onclick="sendDispatchMsg('${m.id}')">📤 Enviar TELEX</button>`;
+    c.appendChild(card);
+  }
+}
+
+async function sendDispatchMsg(id) {
+  const m = dspMessages.find(x => x.id === id);
+  if (!m || m.sent) return;
+  const to = $('dspTo').value.trim().toUpperCase();
+  if (!to) { ss('err', '✗ Indica callsign destino'); return; }
+  const btn = $(`dsb-${id}`);
+  btn.textContent = '⏳ Enviando...';
+
+  // TELEX max 500 chars — split if needed
+  const chunks = splitMsg(m.body, 480);
+  let allOk = true;
+  for (let i = 0; i < chunks.length; i++) {
+    try {
+      const prefix = chunks.length > 1 ? `[${m.label} ${i+1}/${chunks.length}]\n` : '';
+      const raw = await hReq(to, 'telex', prefix + chunks[i]);
+      const ok = raw.toLowerCase().startsWith('ok');
+      if (!ok) { allOk = false; break; }
+      addMsg('tx', { cls: 'out', type: 'TELEX', badge: 'b-tx', route: `${$('cS').value.toUpperCase()} → ${to}`, body: `[DSP:${m.label}] ${prefix}${chunks[i]}`, time: ts(), st: '✓ OK', ok: true });
+    } catch(e) { allOk = false; break; }
+  }
+
+  if (allOk) {
+    m.sent = true;
+    btn.textContent = '✓ Enviado';
+    btn.className = 'dsp-send sent';
+    ss('ok', `✓ ${m.label} → ${to}`);
+  } else {
+    btn.textContent = '✗ Error';
+    btn.className = 'dsp-send fail';
+    ss('err', `✗ Error enviando ${m.label}`);
+    errorSound();
+    setTimeout(() => { btn.textContent = '📤 Enviar TELEX'; btn.className = 'dsp-send'; }, 2000);
+  }
+}
+
+async function sendAllDispatch() {
+  const to = $('dspTo').value.trim().toUpperCase();
+  if (!to) { ss('err', '✗ Indica callsign destino'); return; }
+  $('dspAll').disabled = true; $('dspAll').textContent = '⏳ ENVIANDO...';
+  let ok = 0, fail = 0;
+  for (const m of dspMessages) {
+    if (!m.sent) {
+      await sendDispatchMsg(m.id);
+      if (m.sent) ok++; else fail++;
+      await new Promise(r => setTimeout(r, 600)); // rate limiting
+    }
+  }
+  $('dspAll').disabled = false;
+  $('dspAll').textContent = fail ? `✗ ${ok} enviados, ${fail} fallidos` : `✓ ${ok} mensajes enviados`;
+  setTimeout(() => { $('dspAll').textContent = '📤 ENVIAR TODOS LOS TELEX'; }, 3000);
+}
+
+// Helpers dispatch
+function r(k, v) { return `<div class="row"><span>${k}</span><span class="val">${v}</span></div>`; }
+function pad(n, w) { return String(Number(n).toLocaleString()).padStart(w); }
+function formatSeconds(s) { const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60); return `${h}h${String(m).padStart(2,'0')}m`; }
+function splitMsg(txt, max) {
+  if (txt.length <= max) return [txt];
+  const chunks = [];
+  let pos = 0;
+  while (pos < txt.length) {
+    let end = Math.min(pos + max, txt.length);
+    if (end < txt.length) { const nl = txt.lastIndexOf('\n', end); if (nl > pos + 50) end = nl; }
+    chunks.push(txt.substring(pos, end).trim());
+    pos = end;
+  }
+  return chunks;
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ══════════════════════════════════════════════════════════════════
+//  MANUAL PAX CONNECTIONS & CREW INFO DISPATCH
+// ══════════════════════════════════════════════════════════════════
+let cxLastBody = '';
+
+function manualPaxConn() {
+  const icao = $('cxIcao').value.trim().toUpperCase();
+  if (!icao || icao.length !== 4) { ss('err', '✗ Introduce ICAO destino (4 chars)'); return; }
+  const msg = genPaxConnections(icao);
+  if (!msg) { ss('err', '✗ Sin conexiones generadas'); return; }
+  $('cxResult').style.display = 'block';
+  $('cxTitle').innerHTML = `<span class="ico">👥</span> CONEXIONES PAX ${esc(icao)}`;
+  $('cxBody').textContent = msg;
+  $('cxSend').textContent = '📤 Enviar TELEX';
+  $('cxSend').className = 'dsp-send';
+  cxLastBody = msg;
+  ss('ok', `✓ Conexiones PAX generadas para ${icao}`);
+  notifySound();
+}
+
+function manualCrewInfo() {
+  const icao = $('cxIcao').value.trim().toUpperCase();
+  const to = $('cxTo').value.trim().toUpperCase();
+  if (!icao || icao.length !== 4) { ss('err', '✗ Introduce ICAO destino (4 chars)'); return; }
+  // Build a minimal flight object for crew gen
+  const mockFlt = { callsign: to || 'NBV???', dep: '????', arr: icao, aircraft: '???', enrouteStart: 0, firstSeen: 0 };
+  const crewMsg = genCrewInfo(mockFlt);
+  if (!crewMsg) { ss('err', '✗ Sin info crew generada'); return; }
+  const body = `=== CREW ${to || 'NBV'} ===\n${icao}\n${crewMsg}`;
+  $('cxResult').style.display = 'block';
+  $('cxTitle').innerHTML = `<span class="ico">👨‍✈️</span> CREW INFO ${esc(icao)}`;
+  $('cxBody').textContent = body;
+  $('cxSend').textContent = '📤 Enviar TELEX';
+  $('cxSend').className = 'dsp-send';
+  cxLastBody = body;
+  ss('ok', `✓ Crew info generada para ${icao}`);
+  notifySound();
+}
+
+async function cxSendTelex() {
+  const to = $('cxTo').value.trim().toUpperCase();
+  if (!to) { ss('err', '✗ Sin destinatario'); return; }
+  if (!cxLastBody) { ss('err', '✗ Genera primero'); return; }
+  if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign'); return; }
+  const btn = $('cxSend');
+  btn.textContent = '⏳ Enviando...';
+  const chunks = splitMsg(cxLastBody, 480);
+  let allOk = true;
+  for (let i = 0; i < chunks.length; i++) {
+    try {
+      const pfx = chunks.length > 1 ? `[${i+1}/${chunks.length}] ` : '';
+      const raw = await hReq(to, 'telex', pfx + chunks[i]);
+      if (!raw.toLowerCase().startsWith('ok')) { allOk = false; break; }
+      addMsg('tx', { cls:'out', type:'TELEX', badge:'b-tx', route:`${$('cS').value.toUpperCase()} → ${to}`, body:`[CX] ${pfx}${chunks[i]}`, time:ts(), st:'✓ OK', ok:true });
+      if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 400));
+    } catch(e) { allOk = false; break; }
+  }
+  if (allOk) { btn.textContent = '✓ Enviado'; btn.className = 'dsp-send sent'; ss('ok', `✓ → ${to}`); }
+  else { btn.textContent = '✗ Error'; btn.className = 'dsp-send fail'; ss('err', '✗ Error envío'); errorSound(); setTimeout(() => { btn.textContent = '📤 Enviar TELEX'; btn.className = 'dsp-send'; }, 2000); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ROUTE INFO — ATCs en ruta, SIGMETs, PIREPs, METAR
+// ══════════════════════════════════════════════════════════════════
+let riLastBody = '';
+
+function haversineNm(lat1, lon1, lat2, lon2) {
+  const R = 3440.065;
+  const dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function bearingTo(lat1, lon1, lat2, lon2) {
+  const dLon = (lon2-lon1)*Math.PI/180;
+  const y = Math.sin(dLon)*Math.cos(lat2*Math.PI/180);
+  const x = Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180) - Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos(dLon);
+  return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
+}
+function isAhead(pLat, pLon, hdg, tLat, tLon) {
+  let diff = Math.abs(bearingTo(pLat,pLon,tLat,tLon) - hdg);
+  if (diff > 180) diff = 360 - diff;
+  return diff < 100;
+}
+function fmtFreq(f) {
+  if (!f) return '---';
+  if (f > 100000) return (f/1000000).toFixed(3);
+  if (f > 100) return (f/1000).toFixed(3);
+  return String(f);
+}
+function atcTypeOf(cs) {
+  if (cs.includes('_DEL')) return 'DEL'; if (cs.includes('_GND')) return 'GND';
+  if (cs.includes('_TWR')) return 'TWR'; if (cs.includes('_APP')||cs.includes('_DEP')) return 'APP';
+  if (cs.includes('_CTR')) return 'CTR'; if (cs.includes('_FSS')) return 'FSS';
+  return 'ATC';
+}
+
+async function fetchRouteInfo() {
+  const pilotCs = $('riCs').value.trim().toUpperCase();
+  if (!pilotCs) { ss('err', '✗ Introduce callsign del piloto en IVAO'); return; }
+
+  $('riResult').style.display = 'block';
+  $('riBody').textContent = '⏳ Buscando piloto en IVAO...';
+  $('riSend').className = 'dsp-send';
+  $('riSend').textContent = '📤 Enviar TELEX';
+  riLastBody = '';
+  ss('snd', `Route Info para ${pilotCs}...`);
+
+  try {
+    const prx = $('cP').value.trim();
+    const pUrl = proxy(IVAO_WHAZZUP);
+    const resp = await fetch(pUrl, { signal: AbortSignal.timeout(15000) });
+    const data = await resp.json();
+    const pilots = data.clients?.pilots || [];
+    const pilot = pilots.find(p => p.callsign && p.callsign.toUpperCase() === pilotCs);
+
+    if (!pilot) { $('riBody').textContent = `Piloto ${pilotCs} no encontrado en IVAO`; ss('err', `✗ ${pilotCs} no online`); return; }
+
+    const pLat = pilot.lastTrack?.latitude || 0;
+    const pLon = pilot.lastTrack?.longitude || 0;
+    const hdg = pilot.lastTrack?.heading || pilot.lastTrack?.transponderHeading || 0;
+    const alt = pilot.lastTrack?.altitude || 0;
+    const gs = pilot.lastTrack?.groundSpeed || 0;
+    const fp = pilot.flightPlan;
+    const dep = fp?.departureId || '????', arr = fp?.arrivalId || '????';
+    const RADIUS = 400;
+
+    let body = `=== ROUTE INFO ${pilotCs} ===\n${dep}→${arr} FL${Math.round(alt/100)} GS${gs} HDG${Math.round(hdg)}\n`;
+
+    // ── ATCs ──
+    $('riBody').textContent = '⏳ Buscando ATCs en ruta...';
+    const atcs = data.clients?.atcs || [];
+    const relAtc = [];
+    for (const a of atcs) {
+      if (!a.callsign || !a.lastTrack) continue;
+      const aLat = a.lastTrack.latitude, aLon = a.lastTrack.longitude;
+      if (!aLat && !aLon) continue;
+      const type = atcTypeOf(a.callsign.toUpperCase());
+      if (type === 'GND' || type === 'DEL') continue;
+      const dist = haversineNm(pLat, pLon, aLat, aLon);
+      if (dist > RADIUS) continue;
+      const ahead = isAhead(pLat, pLon, hdg, aLat, aLon);
+      if (!ahead && type !== 'CTR' && type !== 'FSS' && dist > 100) continue;
+      const freq = a.atcSession?.frequency || a.frequency || null;
+      relAtc.push({ cs: a.callsign, type, freq: fmtFreq(freq), dist: Math.round(dist), ahead });
+    }
+    relAtc.sort((a, b) => (b.ahead - a.ahead) || (a.dist - b.dist));
+    if (relAtc.length) {
+      body += `--- ATC EN RUTA ---\n`;
+      for (const a of relAtc.slice(0,12)) body += `${a.cs} ${a.freq} ${a.type} ${a.dist}nm${a.ahead?'':' (lat)'}\n`;
+    } else {
+      body += `NO ATC EN RUTA (${RADIUS}nm)\n`;
+    }
+
+    // ── SIGMETs ──
+    $('riBody').textContent = '⏳ Consultando SIGMETs...';
+    try {
+      const sResp = await fetch(proxy(`${SIGMET_API}?format=json`), { signal: AbortSignal.timeout(8000) });
+      const sData = await sResp.json();
+      const relSig = [];
+      if (Array.isArray(sData)) {
+        for (const s of sData) {
+          const sLat = s.lat || s.coords?.[0]?.lat, sLon = s.lon || s.coords?.[0]?.lon;
+          if (sLat && sLon) {
+            const dist = haversineNm(pLat, pLon, sLat, sLon);
+            if (dist < RADIUS) relSig.push({ raw: (s.rawAirSigmet||s.rawSigmet||`${s.hazard||'?'} ${s.severity||''}`).substring(0,140), dist: Math.round(dist) });
+          } else {
+            const icao = s.icaoId || '';
+            if (icao.startsWith(dep.substring(0,2)) || icao.startsWith(arr.substring(0,2)))
+              relSig.push({ raw: (s.rawAirSigmet||s.rawSigmet||'').substring(0,140), dist: null });
+          }
+        }
+      }
+      if (relSig.length) { body += `--- SIGMET ---\n`; for (const s of relSig.slice(0,5)) body += `${s.raw}${s.dist?` (${s.dist}nm)`:''}\n`; }
+    } catch(e) {}
+
+    // ── PIREPs ──
+    $('riBody').textContent = '⏳ Consultando PIREPs...';
+    try {
+      const pResp = await fetch(proxy(`${PIREP_API}?format=json&age=4`), { signal: AbortSignal.timeout(8000) });
+      const pData = await pResp.json();
+      const relP = [];
+      if (Array.isArray(pData)) {
+        for (const p of pData) {
+          const prLat = p.lat||p.latitude, prLon = p.lon||p.longitude;
+          if (!prLat || !prLon) continue;
+          const dist = haversineNm(pLat, pLon, prLat, prLon);
+          if (dist > RADIUS) continue;
+          const turb = p.turbulenceCondition||p.tbInt||p.turbulence||'';
+          const ice = p.icingCondition||p.icInt||p.icing||'';
+          if (!turb && !ice) continue;
+          relP.push({ raw: (p.rawOb||`FL${p.altitude||'?'} TURB:${turb||'NIL'} ICE:${ice||'NIL'}`).substring(0,140), dist: Math.round(dist) });
+        }
+      }
+      if (relP.length) { body += `--- PIREP ---\n`; for (const p of relP.slice(0,5)) body += `${p.raw} (${p.dist}nm)\n`; }
+    } catch(e) {}
+
+    // ── METAR en ruta ──
+    const enrIcaos = new Set();
+    for (const a of relAtc) { if (a.type==='APP'||a.type==='TWR') { const ic = a.cs.split('_')[0]; if (ic.length===4&&ic!==dep&&ic!==arr) enrIcaos.add(ic); } }
+    const icaoList = [...enrIcaos].slice(0,4);
+    if (icaoList.length) {
+      try {
+        const mR = await fetch(proxy(`${METAR_API}?ids=${icaoList.join(',')}&format=raw&hours=2`), { signal: AbortSignal.timeout(6000) });
+        const mT = await mR.text();
+        if (mT.trim()) body += `--- METAR EN RUTA ---\n${mT.trim()}\n`;
+      } catch(e) {}
+    }
+
+    // Parking stand
+    const stand = genParkingStand(arr);
+    if (stand) body += `--- PARKING ASIGNADO ---\n${arr}: ${stand}\n`;
+
+    $('riTitle').innerHTML = `<span class="ico">🗺️</span> ROUTE INFO ${esc(pilotCs)}`;
+    $('riBody').textContent = body;
+    riLastBody = body;
+    ss('ok', `✓ Route Info ${pilotCs} — ${relAtc.length} ATCs`);
+    notifySound();
+
+  } catch(e) {
+    $('riBody').textContent = `Error: ${e.message}`;
+    ss('err', `✗ ${e.message}`);
+    errorSound();
+  }
+}
+
+async function riSendTelex() {
+  const pilotCs = $('riCs').value.trim().toUpperCase();
+  const to = $('riTo').value.trim().toUpperCase() || pilotCs;
+  if (!to) { ss('err', '✗ Sin destinatario'); return; }
+  if (!riLastBody) { ss('err', '✗ Genera route info primero'); return; }
+  if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign'); return; }
+
+  const btn = $('riSend');
+  btn.textContent = '⏳ Enviando...';
+  const chunks = splitMsg(riLastBody, 480);
+  let allOk = true;
+  for (let i = 0; i < chunks.length; i++) {
+    try {
+      const pfx = chunks.length > 1 ? `[${i+1}/${chunks.length}] ` : '';
+      const raw = await hReq(to, 'telex', pfx + chunks[i]);
+      if (!raw.toLowerCase().startsWith('ok')) { allOk = false; break; }
+      addMsg('tx', { cls:'out', type:'TELEX', badge:'b-tx', route:`${$('cS').value.toUpperCase()} → ${to}`, body:`[RI] ${pfx}${chunks[i]}`, time:ts(), st:'✓ OK', ok:true });
+      if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 400));
+    } catch(e) { allOk = false; break; }
+  }
+  if (allOk) { btn.textContent = '✓ Enviado'; btn.className = 'dsp-send sent'; ss('ok', `✓ Route Info → ${to}`); }
+  else { btn.textContent = '✗ Error'; btn.className = 'dsp-send fail'; ss('err', '✗ Error envío'); errorSound(); setTimeout(() => { btn.textContent = '📤 Enviar TELEX'; btn.className = 'dsp-send'; }, 2000); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  OPS CENTER (embedded) — Simplified monitor
+// ══════════════════════════════════════════════════════════════════
+let opsInterval = null;
+let opsFlights = {};
+let opsMsgCount = 0;
+
+function detectPhase(pilot, prev) {
+  const onGround = pilot.lastTrack?.onGround ?? true;
+  const gs = pilot.lastTrack?.groundSpeed || 0;
+  const alt = pilot.lastTrack?.altitude || 0;
+  const prevAlt = prev ? prev.alt : alt;
+  const prevPhase = prev ? prev.phase : 'PREFLIGHT';
+  if (onGround && (prevPhase === 'ENROUTE' || prevPhase === 'DESCENT')) return 'LANDED';
+  if (onGround && prevPhase === 'PREFLIGHT') return 'PREFLIGHT';
+  if (prevPhase === 'LANDED') return 'LANDED';
+  if (!onGround && prevPhase === 'ENROUTE' && prevAlt - alt > 1500) return 'DESCENT';
+  if (!onGround && prevPhase === 'DESCENT') return 'DESCENT';
+  if (!onGround) return 'ENROUTE';
+  if (onGround && gs < 5) return 'PREFLIGHT';
+  return prevPhase;
+}
+
+async function opsScan() {
+  const prefix = $('opsPrefix').value.trim().toUpperCase();
+  if (!prefix) return;
+  try {
+    const resp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(15000) });
+    const data = await resp.json();
+    const pilots = data.clients?.pilots || [];
+    const nbv = pilots.filter(p => p.callsign && p.callsign.toUpperCase().startsWith(prefix));
+    const onlineCs = new Set(nbv.map(p => p.callsign.toUpperCase()));
+
+    // Cleanup offline
+    for (const cs of Object.keys(opsFlights)) {
+      if (!onlineCs.has(cs)) {
+        if (!opsFlights[cs]._off) opsFlights[cs]._off = Date.now();
+        else if (Date.now() - opsFlights[cs]._off > 300000) delete opsFlights[cs];
+      }
+    }
+
+    for (const pilot of nbv) {
+      const cs = pilot.callsign.toUpperCase();
+      const fp = pilot.flightPlan;
+      const prev = opsFlights[cs] || null;
+      const newPhase = detectPhase(pilot, prev);
+      const phaseChanged = prev && prev.phase !== newPhase;
+
+      opsFlights[cs] = {
+        callsign: cs, phase: newPhase,
+        dep: fp?.departureId || prev?.dep || '????',
+        arr: fp?.arrivalId || prev?.arr || '????',
+        alt: pilot.lastTrack?.altitude || 0,
+        gs: pilot.lastTrack?.groundSpeed || 0,
+        heading: pilot.lastTrack?.heading || pilot.lastTrack?.transponderHeading || prev?.heading || 0,
+        lat: pilot.lastTrack?.latitude || 0,
+        lng: pilot.lastTrack?.longitude || 0,
+        onGround: pilot.lastTrack?.onGround ?? true,
+        aircraft: fp?.aircraftId || prev?.aircraft || '????',
+        plannedDepTime: prev?.plannedDepTime || fp?.departureTime || null,
+        firstSeen: prev?.firstSeen || Date.now(),
+        enrouteStart: prev?.enrouteStart || 0,
+        assignedParking: prev?.assignedParking || null,
+        lastRouteInfo: prev?.lastRouteInfo || 0,
+        _off: null,
+        sent: prev?.sent || { preflight: false, enroute: false, descent: false, landed: false },
+      };
+      const flt = opsFlights[cs];
+
+      // Record enroute start time
+      if (newPhase === 'ENROUTE' && !flt.enrouteStart) flt.enrouteStart = Date.now();
+
+      if (!prev) { opsLog(`✈ ${cs} detectado: ${flt.dep}→${flt.arr}`, 'ops'); notifySound(); }
+      if (phaseChanged) opsLog(`${cs}: ${prev.phase} → ${newPhase}`, 'ops');
+
+      // Auto-messages per phase
+      if (newPhase === 'PREFLIGHT' && !flt.sent.preflight) {
+        flt.sent.preflight = true;
+        opsAutoWx(flt, 'DEP');
+      }
+      if (newPhase === 'ENROUTE' && !flt.sent.enroute) {
+        flt.sent.enroute = true;
+        opsAutoTraffic(flt);
+      }
+      if (newPhase === 'DESCENT' && !flt.sent.descent) {
+        flt.sent.descent = true;
+        opsAutoWx(flt, 'ARR');
+      }
+      if (newPhase === 'LANDED' && !flt.sent.landed) {
+        flt.sent.landed = true;
+        opsAutoWelcome(flt);
+      }
+
+      // Periodic ROUTE INFO (configurable interval for enroute/descent)
+      if ((newPhase === 'ENROUTE' || newPhase === 'DESCENT') && flt.lat && flt.lng) {
+        const riMin = Math.max(5, parseInt($('opsRI').value) || 10);
+        const elapsed = (Date.now() - flt.lastRouteInfo) / 60000;
+        if (elapsed >= riMin) {
+          flt.lastRouteInfo = Date.now();
+          opsAutoRouteInfo(flt, data);
+        }
+      }
+    }
+    opsRender();
+    ss('ok', `OPS: ${Object.keys(opsFlights).filter(c=>!opsFlights[c]._off).length} vuelo(s) — ${tsShort()}`);
+  } catch(e) {
+    opsLog(`Error: ${e.message}`, 'err');
+  }
+}
+
+function proxy(url) { const p = $('cP').value.trim(); return p ? `${p}${encodeURIComponent(url)}` : url; }
+
+async function opsAutoWx(flt, type) {
+  const icao = type === 'DEP' ? flt.dep : flt.arr;
+  if (icao === '????') return;
+  try {
+    const mResp = await fetch(proxy(`${METAR_API}?ids=${icao}&format=raw&hours=2`), { signal: AbortSignal.timeout(6000) });
+    const metar = await mResp.text();
+    let body = `=== WX ${type} ${flt.callsign} ===\n${icao} METAR:\n${metar.trim()}`;
+    // Add ATIS on descent
+    if (type === 'ARR') {
+      try {
+        const raw = await hReq('SERVER', 'inforeq', `IVAOATIS ${icao}`);
+        if (raw.toLowerCase().startsWith('ok') && raw.length > 5) body += `\nATIS: ${raw.substring(2).trim()}`;
+      } catch(e) {}
+    }
+    await sendOpsTx(flt.callsign, body);
+    opsLog(`✓ WX ${type} → ${flt.callsign}`, 'ok');
+
+    // Send PAX connections on descent
+    if (type === 'ARR') {
+      const connMsg = genPaxConnections(icao);
+      if (connMsg) {
+        await sleep(600);
+        await sendOpsTx(flt.callsign, connMsg);
+        opsLog(`✓ PAX CONN → ${flt.callsign}`, 'ok');
+      }
+
+      // ATC congestion check
+      try {
+        const ivResp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(10000) });
+        const ivData = await ivResp.json();
+        const pilots = ivData.clients?.pilots || [];
+        const atcs = ivData.clients?.atcs || [];
+        const arrP = pilots.filter(p => p.flightPlan?.arrivalId === icao);
+        const depP = pilots.filter(p => p.flightPlan?.departureId === icao);
+        const total = arrP.length + depP.length;
+        const p2 = icao.substring(0,2);
+        const destAtc = atcs.filter(a => a.callsign && (a.callsign.startsWith(icao) || ((a.callsign.includes('_FSS')||a.callsign.includes('_CTR')) && a.callsign.startsWith(p2))));
+        const hasApp = destAtc.some(a => a.callsign.includes('_APP'));
+        if (total > 8 && destAtc.length > 0) {
+          await sleep(600);
+          let warn = `=== ATC ADVISORY ${icao} ===\n`;
+          if (total > 12) {
+            warn += `⚠ TRÁFICO MUY ALTO - ${total} ACFT (${arrP.length} ARR/${depP.length} DEP)\nPOSIBLE ATC DELAY EN LLEGADA\nEspere vectores extendidos o holdings.\n`;
+          } else {
+            warn += `⚠ TRÁFICO ALTO - ${total} ACFT (${arrP.length} ARR/${depP.length} DEP)\nPOSIBLE SECUENCIACIÓN EN LLEGADA\n`;
+          }
+          if (hasApp) warn += `APP activo — secuenciación probable.\n`;
+          warn += `ATC: ${destAtc.map(a=>a.callsign).join(', ')}\n`;
+          await sendOpsTx(flt.callsign, warn);
+          opsLog(`⚠ ATC ADVSY → ${flt.callsign} (${total} acft)`, 'wrn');
+        }
+      } catch(e) {}
+    }
+  } catch(e) { opsLog(`✗ WX ${type} ${flt.callsign}: ${e.message}`, 'err'); }
+}
+
+async function opsAutoTraffic(flt) {
+  if (flt.arr === '????') return;
+  try {
+    const resp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(10000) });
+    const data = await resp.json();
+    const pilots = data.clients?.pilots || [];
+    const arr = pilots.filter(p => p.flightPlan?.arrivalId === flt.arr);
+    const dep = pilots.filter(p => p.flightPlan?.departureId === flt.arr);
+    const total = arr.length + dep.length;
+    const d = total === 0 ? 'NINGUNO' : total <= 3 ? 'BAJO' : total <= 8 ? 'MODERADO' : 'ALTO';
+    let body = `=== TRAFFIC ${flt.arr} ===\n${d} (ARR:${arr.length} DEP:${dep.length})\n`;
+    for (const p of arr.slice(0,6)) body += `${p.callsign||'?'} ${p.flightPlan?.aircraftId||'?'} FL${Math.round((p.lastTrack?.altitude||0)/100)}\n`;
+    // ATC
+    const atcs = data.clients?.atcs || [];
+    const p2 = flt.arr.substring(0,2);
+    const online = atcs.filter(a => a.callsign && (a.callsign.startsWith(flt.arr) || ((a.callsign.includes('_FSS')||a.callsign.includes('_CTR')) && a.callsign.startsWith(p2))));
+    body += online.length ? `ATC: ${online.map(a=>a.callsign).join(', ')}\n` : `NO ATC ${flt.arr}\n`;
+    // Dest METAR
+    try {
+      const mR = await fetch(proxy(`${METAR_API}?ids=${flt.arr}&format=raw&hours=2`), { signal: AbortSignal.timeout(6000) });
+      const mT = await mR.text();
+      if (mT.trim()) body += `METAR ${flt.arr}:\n${mT.trim()}\n`;
+    } catch(e) {}
+    await sendOpsTx(flt.callsign, body);
+    opsLog(`✓ TRAFFIC+WX → ${flt.callsign}`, 'ok');
+  } catch(e) { opsLog(`✗ TRAFFIC ${flt.callsign}: ${e.message}`, 'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  AIRLINE & AIRPORT DB + PAX CONNECTIONS + CREW ROTATION
+// ══════════════════════════════════════════════════════════════════
+const AIRLINES_BY_PREFIX = {
+  'LE':['NBV','IBE','VLG','AEA','RYR','ANE','ELY'],'LP':['NBV','TAP','NTP','RYR'],
+  'LF':['NBV','AFR','EZY','TVF','BEE','HOP'],'EG':['NBV','BAW','EZY','RYR','TOM','LOG','VIR'],
+  'ED':['NBV','DLH','EWG','CFG','RYR','SXS'],'LI':['NBV','AZA','RYR','EZY','NOS','VOE'],
+  'EH':['NBV','KLM','TRA','EZY','RYR'],'EB':['NBV','BEL','TUI','RYR'],
+  'EI':['NBV','EIN','RYR','ASL'],'ES':['NBV','SAS','NAX','RYR'],
+  'EN':['NBV','SAS','NAX','WIF'],'EK':['NBV','SAS','NAX','RYR'],
+  'LO':['NBV','AUA','RYR','EZY','LWG'],'LS':['NBV','SWR','EZY','EZS'],
+  'LK':['NBV','CSA','TVS','RYR'],'EP':['NBV','LOT','RYR','WZZ'],
+  'LG':['NBV','AEE','RYR','OAL'],'LT':['NBV','THY','PGT','SXS','AJA'],
+};
+const DESTINATIONS_BY_PREFIX = {
+  'LE':['LEMD','LEBL','LEPA','LEAL','LEMG','LEZL','LEBB','LEST','LEVC','LEXJ','GCXO','GCLP','GCFV','GCTS'],
+  'LP':['LPPT','LPPR','LPFR','LPMA'],'LF':['LFPG','LFPO','LFBO','LFML','LFMN','LFLL','LFSB'],
+  'EG':['EGLL','EGKK','EGSS','EGGW','EGCC','EGGP','EGPH','EGBB'],
+  'ED':['EDDF','EDDM','EDDB','EDDL','EDDK','EDDS','EDDH'],
+  'LI':['LIRF','LIMC','LIPZ','LIPE','LIMF','LIRN','LICC','LICJ'],
+  'EH':['EHAM'],'EB':['EBBR','EBCI'],'EI':['EIDW','EICK'],
+  'ES':['ESSA','ESGG','ESMS'],'EN':['ENGM','ENBR','ENZV'],
+  'EK':['EKCH','EKBI'],'LO':['LOWW','LOWS','LOWG'],
+  'LS':['LSZH','LSGG','LSZA'],'LK':['LKPR','LKTB'],
+  'EP':['EPWA','EPKK','EPGD'],'LG':['LGAV','LGTS','LGIR','LGKR','LGSA'],
+  'LT':['LTFM','LTAI','LTBS','LTFE'],
+};
+const GALICIAN_BASES = ['LEST','LECO','LEVX'];
+const SPAIN_DOMESTIC = ['LEMD','LEBL','LEPA','LEAL','LEMG','LEZL','LEBB','LEVC','LEXJ','LEZG','GCXO','GCLP','GCFV','GCTS'];
+const EUROPE_DEST = ['LFPG','EGLL','EDDF','LIRF','EHAM','EBBR','LPPT','LFBO','EDDM','LSZH','LOWW','LKPR','EPWA','EKCH','ENGM','LGAV','EIDW','ESSA'];
+
+function genPaxConnections(arrIcao) {
+  if (!arrIcao || arrIcao === '????') return '';
+  // 40% probability: no connecting passengers
+  if (Math.random() < 0.40) {
+    return `=== CONEXIONES PAX ${arrIcao} ===\n0 PAX EN CONEXIÓN\nNo hay pasajeros con enlaces en este vuelo.`;
+  }
+  const prefix = arrIcao.substring(0,2);
+  const local = AIRLINES_BY_PREFIX[prefix] || ['NBV','RYR','EZY'];
+  const pool = [...new Set([...local,'NBV','IBE','AFR','BAW','DLH','KLM'])];
+  const localD = DESTINATIONS_BY_PREFIX[prefix] || [];
+  const allD = [...new Set([...localD,...EUROPE_DEST])].filter(d => d !== arrIcao);
+  const n = 2 + Math.floor(Math.random()*3);
+  const used = new Set(), conns = [], now = new Date();
+  const baseMin = 45 + Math.floor(Math.random()*75);
+  for (let i = 0; i < n && allD.length; i++) {
+    let dest, att = 0;
+    do { dest = allD[Math.floor(Math.random()*allD.length)]; att++; } while (used.has(dest) && att < 20);
+    if (used.has(dest)) continue; used.add(dest);
+    const al = Math.random() < 0.4 ? 'NBV' : pool[Math.floor(Math.random()*pool.length)];
+    const fn = `${al}${String(Math.floor(Math.random()*9000)+1000)}`;
+    const gate = genParkingStand(arrIcao) || `GATE ${Math.floor(Math.random()*40)+1}`;
+    const dt = new Date(now.getTime() + (baseMin + i*(15+Math.floor(Math.random()*30)))*60000);
+    const ds = `${String(dt.getUTCHours()).padStart(2,'0')}:${String(dt.getUTCMinutes()).padStart(2,'0')}z`;
+    const pax = Math.floor(Math.random()*12)+1;
+    conns.push({fn,dest,gate,ds,pax});
+  }
+  if (!conns.length) return '';
+  let msg = `=== CONEXIONES PAX ${arrIcao} ===\n${conns.reduce((s,c)=>s+c.pax,0)} PAX EN CONEXIÓN:\n`;
+  for (const c of conns) msg += `${c.fn} → ${c.dest} GATE ${c.gate} ETD ${c.ds} (${c.pax}pax)\n`;
+  return msg;
+}
+
+function genCrewInfo(flt) {
+  const arr = flt.arr||'????', now = new Date(), h = now.getUTCHours(), m = now.getUTCMinutes();
+  const localOff = getLocalOffset(arr);
+  const localH = (h + localOff + 24) % 24, localM = m;
+  const isBase = GALICIAN_BASES.includes(arr);
+  let cc, reason, goodnight = false;
+  // Late night: local >= 00:30 → last flight, buenas noches
+  if (localH >= 0 && localH < 5 && (localH > 0 || localM >= 30)) {
+    cc = true; goodnight = true; reason = 'ÚLTIMO VUELO DEL DÍA';
+  } else if (h >= 21 || localH >= 23) { cc = true; reason = 'ÚLTIMO VUELO DEL DÍA'; }
+  else if (h >= 19 || localH >= 21) { cc = Math.random() < (isBase?.5:.7); reason = cc?'VUELO NOCTURNO - RELEVO PROGRAMADO':null; }
+  else { cc = Math.random() < (isBase?.1:.2); reason = cc?'RELEVO DE TRIPULACIÓN PROGRAMADO':null; }
+  let msg = '';
+  if (cc) {
+    if (goodnight) {
+      msg += `--- TRIPULACIÓN ---\nNO HAY MÁS VUELOS PROGRAMADOS HOY\nTripulación libre de servicio.\nBuenas noches y buen descanso.\n`;
+    } else {
+      msg += `--- TRIPULACIÓN ---\nCAMBIO: ${reason}\nTripulación entrante reportar a briefing.\n`;
+    }
+  } else {
+    msg += `--- TRIPULACIÓN ---\nSIN CAMBIO - MISMA TRIPULACIÓN CONTINÚA\n`;
+    const nf = genNextFlight(flt, arr);
+    if (nf) {
+      msg += `PRÓXIMO: ${nf.fn} ${nf.dep}→${nf.dest} ETD ${nf.etd}\n`;
+      msg += `GATE: ${nf.gate} TURN: ${nf.turn}min${nf.isRet?' (RETORNO BASE)':''}\n`;
+    }
+  }
+  return msg;
+}
+
+function getLocalOffset(icao) {
+  if (!icao || icao.length < 2) return 1;
+  if (icao.startsWith('GC')) return 0;
+  const pfx = icao.substring(0,2);
+  const o = {'LE':1,'LP':0,'LF':1,'EG':0,'ED':1,'LI':1,'EH':1,'EB':1,'EI':0,'ES':1,'EN':1,'EK':1,'LO':1,'LS':1,'LK':1,'EP':1,'LG':2,'LT':3,'LC':2,'LH':1,'LR':2,'LZ':2};
+  return o[pfx] ?? 1;
+}
+
+function genNextFlight(flt, apt) {
+  const roll = Math.random(); let dest, isRet = false;
+  if (roll < 0.50) { const b = GALICIAN_BASES.filter(x=>x!==apt); dest = b.length?b[Math.floor(Math.random()*b.length)]:GALICIAN_BASES[0]; isRet = true; }
+  else if (roll < 0.80) { const d = SPAIN_DOMESTIC.filter(x=>x!==apt); dest = d[Math.floor(Math.random()*d.length)]||'LEMD'; }
+  else { const e = EUROPE_DEST.filter(x=>x!==apt); dest = e[Math.floor(Math.random()*e.length)]||'LFPG'; }
+  const turn = 35+Math.floor(Math.random()*40);
+  const dt = new Date(Date.now()+turn*60000);
+  const etd = `${String(dt.getUTCHours()).padStart(2,'0')}:${String(dt.getUTCMinutes()).padStart(2,'0')}z`;
+  const fn = `NBV${String(Math.floor(Math.random()*9000)+1000)}`;
+  const gate = genParkingStand(apt) || `STAND ${Math.floor(Math.random()*30)+1}`;
+  return {fn,dep:apt,dest,etd,gate,turn,isRet};
+}
+
+function genParkingStand(icao) {
+  if (!icao || icao === '????') return '';
+  // AirNubeiro official stands from Manual de Procedimientos Operacionales
+  const NBV_STANDS = {
+    'LEST':['2','3','4','5','6','7','21','22'],'LEVX':['4','5','7'],'LEAS':['2','3'],
+    'LECO':['1','3','12'],'LEXJ':['2','6'],'LEBB':['4','6','16'],
+    'LEBL':['236','238','240','242','248'],'LEVC':['4','6','42'],
+    'LEAL':['29','31'],'LEPA':['84','86','88','48','66'],'LEMG':['24','26','28'],
+    'LEMD':['T27','T28','T29','T32','T18'],'LEIB':['18','25','27','28'],
+    'LEZL':['6','7'],'GCFV':['21','22','23'],'GCLA':['7','9'],
+    'GCXO':['T1','T4'],'GCRR':['T1','T3'],'GCLP':['T05','T06'],'GCTS':['14','16'],
+  };
+  // Real gates for major European airports (A320-A350 size)
+  const REAL_GATES = {
+    'EGLL':['A5','A7','A10','A14','A18','A22','B32','B34','B36','B38','B42','B44','B46','C54','C56','C60','C62','301','305','307','340','501','503','505','510','520','525','544','546','555','562'],
+    'LFPG':['E40','E42','E44','E46','E48','E50','K21','K24','K30','K36','L40','L42','L44','M30','M32','M34','M36','A22','A24','A26','A30','D51','D53','D55','F32','F34','F36','F38'],
+    'EDDF':['A15','A17','A21','A24','A26','A50','A52','A60','A62','B20','B22','B24','B28','B30','B40','B42','B44','C14','C15','D2','D4','D6','D8','E4','E6','E8','E12','E15','E21'],
+    'EHAM':['B18','B20','B22','B24','B28','C8','C10','C12','D18','D20','D22','D51','D53','D57','D59','E18','E20','E22','E24','F3','F5','F7','F9','G3','G5','G9','H1','H3','H5','H7'],
+    'LIRF':['B1','B3','B5','B7','B11','B13','B15','B17','B19','B21','D1','D3','D5','D7','E1','E3','E5','E7','E11','E13','E15','E17','E19','E21','E23','E25','G1','G3','G5','G7','G9'],
+    'EBBR':['A26','A28','A30','A32','A34','A40','A42','A44','A46','B50','B52','B54','B56','B58','B60','B62','B64'],
+    'EIDW':['101','102','103','104','105','201','202','203','204','301','302','303','304','305','306','307','308','310','311','312','314','315'],
+    'LPPT':['14','16','18','20','22','24','26','28','30','32','34','36','38','40','42','44','46','48','50','52','54','56','58'],
+    'LPPR':['3','5','7','9','11','13','15','17','19','21','23','25'],
+    'LOWW':['B14','B16','B18','B20','B22','B24','C28','C30','C32','C34','D42','D44','D46','D48','D50','D52','F68','F70','F72','F74','F76','G81','G83','G85'],
+    'LSZH':['A10','A12','A14','A16','A20','A22','A24','A26','A28','A30','A32','A34','B51','B53','B55','B57','B59','B61','B63','B65','D31','D33','D35','D37','D39','D41','E54','E56','E58','E60','E62','E64'],
+    'EKCH':['A1','A2','A3','A4','A5','A7','B5','B6','B7','B8','B9','B10','C22','C24','C26','C28','C30','C32','C34','D4','D6','D8','D10','E52','E54','E56','E58','E60','E62','E64','E66'],
+    'ESSA':['1','2','3','4','5','6','7','8','10','12','14','16','18','20','22','24','26','28','30','32','34','36','38','40','42','44'],
+    'ENGM':['A11','A12','A13','A14','A15','A16','A17','A18','A19','B22','B24','B26','B28','B30','B32','B34','C36','C38','C40','C42','C44','C46','C48','D50','D52','D54','D56','D58','D60','D62'],
+    'LKPR':['A2','A4','A6','A8','A10','B15','B17','B19','B21','B23','B25','C30','C32','C34','C36','C38','C40','D42','D44','D46','D48'],
+    'EPWA':['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29'],
+    'LGAV':['A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','B15','B16','B17','B18','B19','B20','B21','B22','B23','B24','B25','B26'],
+    'LTFM':['D201','D203','D205','D207','D209','D211','D213','D215','F101','F103','F105','F107','F109','F111','F113','F115','G301','G303','G305','G307','G309','G311'],
+    'LIMC':['A1','A3','A5','A7','A9','A11','B15','B17','B19','B21','B23','B25','B27','C1','C3','C5','C7','C9'],
+    'LFBO':['A1','A3','A5','A7','A9','A11','B1','B3','B5','B7','B9','B11','B13','C1','C3','C5','D1','D3','D5','D7'],
+    'LFML':['A2','A4','A6','A8','A10','A12','A14','B1','B3','B5','B7','B9','B11','B13'],
+    'LFMN':['A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12','T2-1','T2-3','T2-5','T2-7'],
+    'EGKK':['1','2','3','4','5','6','10','11','12','13','14','15','21','22','23','24','25','26','31','32','33','34','35','36','40','41','42','43','44','45','46','47','48','51','52','53','54','55','56','101','102','103'],
+  };
+  // Check NBV official first, then real gates, then generate plausible
+  if (NBV_STANDS[icao]) {
+    const sl = NBV_STANDS[icao];
+    return `STAND ${sl[Math.floor(Math.random() * sl.length)]}`;
+  }
+  if (REAL_GATES[icao]) {
+    const gl = REAL_GATES[icao];
+    return `GATE ${gl[Math.floor(Math.random() * gl.length)]}`;
+  }
+  // Fallback: generate plausible stand based on ICAO prefix
+  const prefix = icao.substring(0, 2);
+  const ranges = {
+    'LE':[1,50],'LP':[1,40],'LF':[1,60],'EG':[1,60],'ED':[1,50],'LI':[1,40],
+    'EH':[1,70],'EB':[1,60],'EI':[1,40],'ES':[1,50],'EN':[1,60],'EK':[1,40],
+    'LO':[1,50],'LS':[1,50],'LK':[1,40],'EP':[1,30],'LG':[1,30],'LT':[1,50],
+  };
+  const r = ranges[prefix] || [1,30];
+  return `STAND ${Math.floor(Math.random()*(r[1]-r[0]+1))+r[0]}`;
+}
+
+async function opsAutoWelcome(flt) {
+  const flightMin = flt.enrouteStart ? Math.round((Date.now() - flt.enrouteStart) / 60000) : 0;
+  const monitorMin = flt.firstSeen ? Math.round((Date.now() - flt.firstSeen) / 60000) : 0;
+  const stand = flt.assignedParking || genParkingStand(flt.arr);
+  const welcome = [
+    `=== BIENVENIDO ${flt.arr} ===`,
+    `${flt.callsign} — ${flt.dep}/${flt.arr} (${flt.aircraft})`,
+    flightMin > 0 ? `TIEMPO DE VUELO: ${Math.floor(flightMin/60)}h${String(flightMin%60).padStart(2,'0')}m` : '',
+    monitorMin > flightMin + 5 ? `TIEMPO TOTAL: ${Math.floor(monitorMin/60)}h${String(monitorMin%60).padStart(2,'0')}m` : '',
+    stand ? `PARKING: ${stand}` : '',
+    `Gracias por volar con AirNubeiro.`,
+    `Buen servicio, cielos limpios.`,
+  ].filter(Boolean).join('\n');
+  try {
+    await sendOpsTx(flt.callsign, welcome);
+    opsLog(`✓ WELCOME → ${flt.callsign}`, 'ok');
+  } catch(e) { opsLog(`✗ WELCOME ${flt.callsign}: ${e.message}`, 'err'); }
+
+  // Delay report if departure was late
+  try {
+    const delayMsg = genDelayReport(flt);
+    if (delayMsg) {
+      await sleep(600);
+      await sendOpsTx(flt.callsign, delayMsg);
+      opsLog(`⚠ DELAY RPT → ${flt.callsign}`, 'wrn');
+    }
+  } catch(e) { opsLog(`✗ DELAY ${flt.callsign}: ${e.message}`, 'err'); }
+
+  // Crew rotation + next flight
+  try {
+    const crewMsg = genCrewInfo(flt);
+    if (crewMsg) {
+      await sleep(600);
+      await sendOpsTx(flt.callsign, `=== CREW ${flt.callsign} ===\n${flt.arr}\n${crewMsg}`);
+      opsLog(`✓ CREW → ${flt.callsign}`, 'ok');
+    }
+  } catch(e) { opsLog(`✗ CREW ${flt.callsign}: ${e.message}`, 'err'); }
+}
+
+async function opsAutoRouteInfo(flt, ivaoData) {
+  const RADIUS = 400;
+  let body = `=== ROUTE INFO ${flt.callsign} ===\n${flt.dep}→${flt.arr} FL${Math.round(flt.alt/100)} GS${flt.gs}\n`;
+  try {
+    // ATCs
+    const atcs = ivaoData.clients?.atcs || [];
+    const relAtc = [];
+    for (const a of atcs) {
+      if (!a.callsign || !a.lastTrack) continue;
+      const aLat = a.lastTrack.latitude, aLon = a.lastTrack.longitude;
+      if (!aLat && !aLon) continue;
+      const type = atcTypeOf(a.callsign.toUpperCase());
+      if (type === 'GND' || type === 'DEL') continue;
+      const dist = haversineNm(flt.lat, flt.lng, aLat, aLon);
+      if (dist > RADIUS) continue;
+      const ahead = isAhead(flt.lat, flt.lng, flt.heading, aLat, aLon);
+      if (!ahead && type !== 'CTR' && type !== 'FSS' && dist > 100) continue;
+      const freq = a.atcSession?.frequency || a.frequency || null;
+      relAtc.push({ cs: a.callsign, type, freq: fmtFreq(freq), dist: Math.round(dist) });
+    }
+    relAtc.sort((a, b) => a.dist - b.dist);
+    if (relAtc.length) {
+      body += `--- ATC ---\n`;
+      for (const a of relAtc.slice(0,10)) body += `${a.cs} ${a.freq} ${a.type} ${a.dist}nm\n`;
+    } else body += `NO ATC (${RADIUS}nm)\n`;
+
+    // SIGMETs
+    try {
+      const sR = await fetch(proxy(`${SIGMET_API}?format=json`), { signal: AbortSignal.timeout(8000) });
+      const sD = await sR.json();
+      if (Array.isArray(sD)) {
+        const rel = sD.filter(s => {
+          const sLat = s.lat||s.coords?.[0]?.lat, sLon = s.lon||s.coords?.[0]?.lon;
+          return sLat && sLon && haversineNm(flt.lat,flt.lng,sLat,sLon) < RADIUS;
+        });
+        if (rel.length) { body += `--- SIGMET ---\n`; for (const s of rel.slice(0,4)) body += `${(s.rawAirSigmet||s.rawSigmet||s.hazard||'?').substring(0,120)}\n`; }
+      }
+    } catch(e) {}
+
+    // PIREPs
+    try {
+      const pR = await fetch(proxy(`${PIREP_API}?format=json&age=4`), { signal: AbortSignal.timeout(8000) });
+      const pD = await pR.json();
+      if (Array.isArray(pD)) {
+        const rel = pD.filter(p => {
+          const pLat = p.lat||p.latitude, pLon = p.lon||p.longitude;
+          if (!pLat||!pLon) return false;
+          if (haversineNm(flt.lat,flt.lng,pLat,pLon) > RADIUS) return false;
+          return !!(p.turbulenceCondition||p.tbInt||p.turbulence||p.icingCondition||p.icInt||p.icing);
+        });
+        if (rel.length) { body += `--- PIREP ---\n`; for (const p of rel.slice(0,4)) body += `${(p.rawOb||`TURB:${p.turbulence||'?'} ICE:${p.icing||'?'}`).substring(0,120)}\n`; }
+      }
+    } catch(e) {}
+
+    // Assign parking stand (generate once, reuse)
+    if (!flt.assignedParking) flt.assignedParking = genParkingStand(flt.arr);
+    if (flt.assignedParking) body += `--- PARKING ASIGNADO ---\n${flt.arr}: ${flt.assignedParking}\n`;
+
+    await sendOpsTx(flt.callsign, body);
+    opsLog(`✓ ROUTE INFO → ${flt.callsign} (${relAtc.length} ATCs)`, 'ok');
+  } catch(e) { opsLog(`✗ ROUTE INFO ${flt.callsign}: ${e.message}`, 'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  DELAY DETECTION & REPORT
+// ══════════════════════════════════════════════════════════════════
+function genDelayReport(flt) {
+  if (!flt.plannedDepTime || !flt.enrouteStart) return null;
+  let plannedMin = 0;
+  const pdt = flt.plannedDepTime;
+  if (typeof pdt === 'number') {
+    if (pdt > 100000) { const d = new Date(pdt*1000); plannedMin = d.getUTCHours()*60+d.getUTCMinutes(); }
+    else { plannedMin = Math.floor(pdt/100)*60+(pdt%100); }
+  } else if (typeof pdt === 'string') {
+    const m = pdt.match(/(\d{1,2}):?(\d{2})/);
+    if (m) plannedMin = parseInt(m[1])*60+parseInt(m[2]); else return null;
+  } else return null;
+  const ad = new Date(flt.enrouteStart);
+  const actualMin = ad.getUTCHours()*60+ad.getUTCMinutes();
+  let delayMin = actualMin - plannedMin;
+  if (delayMin < -720) delayMin += 1440;
+  if (delayMin > 720) delayMin -= 1440;
+  if (delayMin <= 15) return null;
+  const pH = String(Math.floor(plannedMin/60)).padStart(2,'0');
+  const pM = String(plannedMin%60).padStart(2,'0');
+  const aH = String(ad.getUTCHours()).padStart(2,'0');
+  const aM = String(ad.getUTCMinutes()).padStart(2,'0');
+  const tpls = [
+    `=== DELAY REPORT ${flt.callsign} ===\n${flt.dep}→${flt.arr}\nETD PLAN: ${pH}${pM}z / REAL: ${aH}${aM}z\nDELAY: +${delayMin} MIN\n---\nACCIÓN REQUERIDA:\nReportar motivo del retraso a OPS.\nCódigo delay IATA requerido.\nContactar jefe de operaciones antes\nde iniciar siguiente rotación.`,
+    `=== DELAY REPORT ${flt.callsign} ===\n${flt.dep}→${flt.arr}\nRETRASO: +${delayMin} MIN (${pH}${pM}z→${aH}${aM}z)\n---\nDOCUMENTACIÓN PENDIENTE:\nCompletar formulario de incidencia\noperacional post-vuelo.\nIncluir código IATA y descripción.\nEntregar en briefing room o vía email\na ops@airnubeiro.va`,
+    `=== DELAY REPORT ${flt.callsign} ===\n${flt.dep}→${flt.arr} — DELAY +${delayMin}MIN\nPLAN: ${pH}${pM}z / REAL: ${aH}${aM}z\n---\nPAPERWORK REQUERIDO:\nRellenar delay report antes de\nabandonar la aeronave.\nMotivo + código IATA + firma PIC.\nCopia a dispatch y crew planning.`,
+  ];
+  return tpls[Math.floor(Math.random()*tpls.length)];
+}
+
+async function sendOpsTx(to, body) {
+  const chunks = splitMsg(body, 480);
+  for (let i = 0; i < chunks.length; i++) {
+    const pfx = chunks.length > 1 ? `[${i+1}/${chunks.length}] ` : '';
+    const raw = await hReq(to, 'telex', pfx + chunks[i]);
+    if (!raw.toLowerCase().startsWith('ok')) throw new Error(raw);
+    addMsg('tx', { cls:'out', type:'TELEX', badge:'b-tx', route:`${$('cS').value.toUpperCase()} → ${to}`, body:`[OPS] ${pfx}${chunks[i]}`, time:ts(), st:'✓ OK', ok:true });
+    if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500));
+  }
+  opsMsgCount++;
+}
+
+function opsRender() {
+  const c = $('opsFlights');
+  const active = Object.values(opsFlights).filter(f => !f._off);
+  if (!active.length) { c.innerHTML = '<div style="text-align:center;padding:12px;color:var(--tx3);font:.7rem var(--mono)">Sin vuelos detectados</div>'; return; }
+  const order = { PREFLIGHT:0, ENROUTE:1, DESCENT:2, LANDED:3 };
+  active.sort((a,b) => (order[a.phase]||9) - (order[b.phase]||9));
+  c.innerHTML = active.map(f => {
+    const ph = f.phase.toLowerCase();
+    const label = { PREFLIGHT:'PRE', ENROUTE:'ENR', DESCENT:'DSC', LANDED:'LND' }[f.phase]||f.phase;
+    return `<div class="ops-flt ph-${ph}">
+      <span class="ops-cs">${esc(f.callsign)}</span>
+      <span class="ops-rt">${esc(f.dep)}→${esc(f.arr)} ${f.aircraft} FL${Math.round(f.alt/100)} GS${f.gs}</span>
+      <span class="ops-ph ${ph}">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+function opsLog(msg, cls = '') {
+  const c = $('opsLog');
+  const e = document.createElement('div');
+  e.className = `ops-log-e ${cls}`;
+  e.innerHTML = `<span class="t">${tsShort()}</span>${esc(msg)}`;
+  c.insertBefore(e, c.firstChild);
+  while (c.children.length > 50) c.removeChild(c.lastChild);
+}
+
+function toggleOpsMonitor() {
+  if (opsInterval) {
+    clearInterval(opsInterval); opsInterval = null;
+    $('opsBtn').textContent = '▶ INICIAR MONITOR';
+    $('opsBtn').style.background = '';
+    ss('ok', 'OPS monitor detenido');
+    opsLog('Monitor detenido', 'wrn');
+  } else {
+    if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign'); return; }
+    const iv = Math.max(15, parseInt($('opsInterval').value) || 45) * 1000;
+    opsLog(`Monitor iniciado — ${$('opsPrefix').value.toUpperCase()} cada ${iv/1000}s`, 'ops');
+    opsScan();
+    opsInterval = setInterval(opsScan, iv);
+    $('opsBtn').textContent = '⏹ DETENER MONITOR';
+    $('opsBtn').style.background = 'var(--ok)';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  OCC BOARD — Fleet Overview (NBV flights from IVAO Whazzup)
+// ══════════════════════════════════════════════════════════════════
+let occTimer = null;
+let lastOccData = null; // cache to share with Stream Mode
+
+// Airport coordinates cache for distance/ETA calculation
+const APT_COORDS = {};
+
+// State label/class mapping from IVAO lastTrack.state
+function mapState(st) {
+  if (!st) return { label:'UNKNOWN', cls:'gnd' };
+  const s = String(st).toUpperCase();
+  // IVAO states: "En Route", "Boarding", "Departing", "Climbing", "Cruising", "Descending", "Approaching", "On Blocks", "Arrived", "Initial Climb"
+  if (s.includes('BOARD') || s.includes('BLOCK') || s.includes('PARKED')) return { label:'GROUND', cls:'gnd' };
+  if (s.includes('DEPART') || s.includes('TAXI')) return { label:'DEPARTING', cls:'dep' };
+  if (s.includes('INITIAL') || s.includes('CLIMB')) return { label:'CLIMBING', cls:'clb' };
+  if (s.includes('CRUIS')) return { label:'CRUISE', cls:'crz' };
+  if (s.includes('EN ROUTE') || s === 'EN ROUTE') return { label:'EN ROUTE', cls:'enr' };
+  if (s.includes('DESCEND')) return { label:'DESCEND', cls:'dsc' };
+  if (s.includes('APPROACH') || s.includes('LANDING')) return { label:'APPROACH', cls:'app' };
+  if (s.includes('ARRIV') || s.includes('LANDED')) return { label:'LANDED', cls:'lnd' };
+  return { label: s.substring(0,12), cls:'gnd' };
+}
+
+async function refreshOcc() {
+  try {
+    const resp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(12000) });
+    const data = await resp.json();
+    const pilots = data.clients?.pilots || [];
+
+    // Filter NBV callsigns
+    const nbvFlights = pilots.filter(p => p.callsign && p.callsign.toUpperCase().startsWith('NBV'));
+
+    // Cache for Stream Mode
+    lastOccData = { flights: nbvFlights, time: Date.now(), allPilots: pilots, atcs: data.clients?.atcs || [] };
+
+    renderOcc(nbvFlights);
+
+    // Auto-refresh: set timer if OCC tab is active
+    if (occTimer) clearTimeout(occTimer);
+    const activeTab = document.querySelector('.tab.on')?.dataset.t;
+    if (activeTab === 'occ') {
+      const iv = Math.max(15, parseInt($('cI')?.value) || 20) * 1000;
+      occTimer = setTimeout(refreshOcc, iv);
+    }
+  } catch(e) {
+    $('occBody').innerHTML = `<div class="occ-empty">Error IVAO: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderOcc(flights) {
+  const now = new Date();
+  $('occRefresh').textContent = `⟳ ${now.toUTCString().substring(17,25)}z`;
+
+  if (!flights.length) {
+    $('occCount').innerHTML = `<strong>0</strong> vuelos NBV en red`;
+    $('occBody').innerHTML = `<div class="occ-empty">✈ Sin vuelos NBV activos en IVAO</div>`;
+    return;
+  }
+
+  $('occCount').innerHTML = `<strong>${flights.length}</strong> vuelo${flights.length>1?'s':''} NBV activo${flights.length>1?'s':''}`;
+
+  // Build table
+  let html = `<table class="occ-tbl"><thead><tr>
+    <th>Callsign</th><th>ACFT</th><th>VID</th><th>DEP</th><th>ARR</th>
+    <th>Estado</th><th>ALT</th><th>GS</th><th>DIST</th><th>ETA</th>
+  </tr></thead><tbody>`;
+
+  for (const p of flights) {
+    const fp = p.flightPlan || {};
+    const lt = p.lastTrack || {};
+    const cs = p.callsign || '???';
+    const acft = fp.aircraftId || '???';
+    const vid = p.id || p.pilotId || p.userId || '—';
+    const dep = fp.departureId || '????';
+    const arr = fp.arrivalId || '????';
+    const alt = lt.altitude ? Math.round(lt.altitude) : 0;
+    const gs = lt.groundSpeed || 0;
+    const rawState = lt.state || '';
+    const state = mapState(rawState);
+
+    // Distance to destination
+    let distNm = '—';
+    let eta = '—';
+    if (arr && arr !== '????' && lt.latitude && lt.longitude) {
+      // Try to get airport coords from IVAO data or estimate
+      const aDist = calcDistToAirport(lt.latitude, lt.longitude, arr);
+      if (aDist !== null) {
+        distNm = Math.round(aDist);
+        // ETA: distance / groundspeed
+        if (gs > 50) {
+          const etaMin = Math.round((aDist / gs) * 60);
+          const etaTime = new Date(now.getTime() + etaMin * 60000);
+          eta = `${String(etaTime.getUTCHours()).padStart(2,'0')}:${String(etaTime.getUTCMinutes()).padStart(2,'0')}z`;
+        }
+      }
+    }
+
+    const altStr = alt > 0 ? (alt >= 18000 ? `FL${Math.round(alt/100)}` : `${alt}ft`) : '—';
+
+    html += `<tr>
+      <td class="occ-cs">${esc(cs)}</td>
+      <td>${esc(acft)}</td>
+      <td>${esc(String(vid))}</td>
+      <td>${esc(dep)}</td>
+      <td>${esc(arr)}</td>
+      <td><span class="occ-state st-${state.cls}">${state.label}</span></td>
+      <td>${altStr}</td>
+      <td>${gs > 0 ? gs+'kt' : '—'}</td>
+      <td>${distNm !== '—' ? distNm+'nm' : '—'}</td>
+      <td>${eta}</td>
+    </tr>`;
+  }
+
+  html += `</tbody></table>`;
+  $('occBody').innerHTML = html;
+}
+
+// Calculate distance to airport using known coordinates or ICAO estimation
+function calcDistToAirport(lat, lon, icao) {
+  // Check cache
+  if (APT_COORDS[icao]) {
+    return haversineNm(lat, lon, APT_COORDS[icao][0], APT_COORDS[icao][1]);
+  }
+  // Built-in major airport coordinates
+  const known = {
+    'LEMD':[40.472,-3.561],'LEBL':[41.297,2.078],'LEPA':[39.551,2.739],'LEAL':[38.282,-0.558],
+    'LEMG':[36.675,-4.499],'LEZL':[37.418,-5.893],'LEBB':[43.301,-2.911],'LEST':[42.896,-8.415],
+    'LECO':[43.302,-8.377],'LEVX':[42.232,-8.627],'LEVC':[39.489,-0.473],'LEXJ':[43.427,-3.820],
+    'GCXO':[28.483,-16.341],'GCLP':[27.932,-15.387],'GCFV':[28.453,-13.864],'GCTS':[28.045,-16.572],
+    'LPPT':[38.774,-9.134],'LPPR':[41.236,-8.681],'LPFR':[37.014,-7.966],'LPMA':[32.694,-16.774],
+    'LFPG':[49.010,2.548],'LFPO':[48.723,2.359],'LFBO':[43.629,1.364],'LFML':[43.437,5.214],
+    'LFMN':[43.658,7.216],'LFLL':[45.726,5.091],
+    'EGLL':[51.470,-0.461],'EGKK':[51.148,-0.190],'EGSS':[51.885,0.235],'EGGW':[51.875,-0.368],
+    'EGCC':[53.354,-2.275],'EGGP':[53.334,-2.850],'EGPH':[55.950,-3.373],'EGBB':[52.454,-1.748],
+    'EDDF':[50.033,8.570],'EDDM':[48.354,11.786],'EDDB':[52.362,13.509],'EDDL':[51.289,6.767],
+    'EDDK':[50.866,7.143],'EDDS':[48.690,9.222],'EDDH':[53.630,9.988],
+    'LIRF':[41.800,12.239],'LIMC':[45.630,8.723],'LIPZ':[45.505,12.352],'LIPE':[44.535,11.289],
+    'LIMF':[45.200,7.650],'LIRN':[40.886,14.291],
+    'EHAM':[52.308,4.764],'EBBR':[50.901,4.484],'EIDW':[53.421,-6.270],'EICK':[51.841,-8.491],
+    'ESSA':[59.652,17.919],'ENGM':[60.194,11.100],'EKCH':[55.618,12.656],
+    'LOWW':[48.110,16.570],'LSZH':[47.458,8.548],'LSGG':[46.238,6.109],
+    'LKPR':[50.101,14.260],'EPWA':[52.166,20.967],'EPKK':[50.078,19.785],
+    'LGAV':[37.936,23.944],'LGTS':[40.520,22.971],
+    'LTFM':[41.275,28.752],'LTAI':[36.899,30.800],
+  };
+  if (known[icao]) {
+    APT_COORDS[icao] = known[icao];
+    return haversineNm(lat, lon, known[icao][0], known[icao][1]);
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  STREAM MODE — Full-screen display for streaming/recording
+// ══════════════════════════════════════════════════════════════════
+let streamActive = false;
+let streamTimer = null;
+
+function openStream() {
+  streamActive = true;
+  $('streamOverlay').classList.add('on');
+  document.body.style.overflow = 'hidden';
+
+  // Get active airport from config (callsign station field)
+  const stationCs = ($('cS')?.value || '').trim().toUpperCase();
+  const icao = stationCs.replace(/_.*/, ''); // LEMD_TWR → LEMD
+  $('strIcao').textContent = icao.length === 4 ? icao : '----';
+
+  refreshStream();
+}
+
+function closeStream() {
+  streamActive = false;
+  $('streamOverlay').classList.remove('on');
+  document.body.style.overflow = '';
+  if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
+}
+
+async function refreshStream() {
+  if (!streamActive) return;
+
+  const stationCs = ($('cS')?.value || '').trim().toUpperCase();
+  const icao = stationCs.replace(/_.*/, '');
+  if (icao.length === 4) $('strIcao').textContent = icao;
+
+  // Fetch METAR for active airport
+  try {
+    const mResp = await fetch(proxy(`${METAR_API}?ids=${icao}&format=raw&hours=2`), { signal: AbortSignal.timeout(6000) });
+    const mTxt = (await mResp.text()).trim();
+    if (mTxt) {
+      const wx = parseMetarSummary(mTxt);
+      let wxHtml = '';
+      if (wx.wind) wxHtml += `<div class="str-wx-item"><div class="str-wx-val" style="color:var(--inf)">${esc(wx.wind)}</div><div class="str-wx-lbl">Viento</div></div>`;
+      if (wx.vis) wxHtml += `<div class="str-wx-item"><div class="str-wx-val" style="color:${wx.visWarn?'var(--wrn)':'var(--ok)'}">${esc(wx.vis)}</div><div class="str-wx-lbl">Visibilidad</div></div>`;
+      if (wx.qnh) wxHtml += `<div class="str-wx-item"><div class="str-wx-val" style="color:var(--tx1)">${esc(wx.qnh)}</div><div class="str-wx-lbl">QNH</div></div>`;
+      if (wx.temp) wxHtml += `<div class="str-wx-item"><div class="str-wx-val" style="color:var(--cpdlc)">${esc(wx.temp)}</div><div class="str-wx-lbl">Temp</div></div>`;
+      $('strWx').innerHTML = wxHtml;
+    }
+  } catch(e) {
+    $('strWx').innerHTML = '';
+  }
+
+  // Fetch ATIS
+  try {
+    if (icao.length === 4) {
+      const raw = await hReq('SERVER', 'inforeq', `IVAOATIS ${icao}`);
+      if (raw.toLowerCase().startsWith('ok') && raw.length > 5) {
+        $('strAtisBox').style.display = 'block';
+        $('strAtis').textContent = raw.substring(2).trim();
+      } else {
+        $('strAtisBox').style.display = 'none';
+      }
+    }
+  } catch(e) { $('strAtisBox').style.display = 'none'; }
+
+  // Fetch NBV flights
+  try {
+    let flights;
+    if (lastOccData && (Date.now() - lastOccData.time) < 30000) {
+      flights = lastOccData.flights;
+    } else {
+      const resp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(12000) });
+      const data = await resp.json();
+      const pilots = data.clients?.pilots || [];
+      flights = pilots.filter(p => p.callsign && p.callsign.toUpperCase().startsWith('NBV'));
+      lastOccData = { flights, time: Date.now(), allPilots: pilots, atcs: data.clients?.atcs || [] };
+    }
+    renderStreamFlights(flights);
+  } catch(e) {
+    $('strFlights').innerHTML = `<div class="str-empty">Error IVAO: ${esc(e.message)}</div>`;
+  }
+
+  // Auto-refresh every 20s while stream is active
+  if (streamActive) {
+    streamTimer = setTimeout(refreshStream, 20000);
+  }
+}
+
+function renderStreamFlights(flights) {
+  if (!flights.length) {
+    $('strFlights').innerHTML = `<div class="str-empty">✈ Sin vuelos NBV activos en IVAO</div>`;
+    return;
+  }
+
+  const now = new Date();
+  let html = `<table class="str-tbl"><thead><tr>
+    <th>Callsign</th><th>ACFT</th><th>Ruta</th><th>Estado</th><th>ALT</th><th>GS</th><th>ETA</th>
+  </tr></thead><tbody>`;
+
+  for (const p of flights) {
+    const fp = p.flightPlan || {};
+    const lt = p.lastTrack || {};
+    const cs = p.callsign || '???';
+    const acft = fp.aircraftId || '???';
+    const dep = fp.departureId || '????';
+    const arr = fp.arrivalId || '????';
+    const alt = lt.altitude ? Math.round(lt.altitude) : 0;
+    const gs = lt.groundSpeed || 0;
+    const state = mapState(lt.state || '');
+    const altStr = alt > 0 ? (alt >= 18000 ? `FL${Math.round(alt/100)}` : `${alt}ft`) : '—';
+
+    let eta = '—';
+    if (arr !== '????' && lt.latitude && lt.longitude && gs > 50) {
+      const d = calcDistToAirport(lt.latitude, lt.longitude, arr);
+      if (d !== null) {
+        const etaMin = Math.round((d / gs) * 60);
+        const etaT = new Date(now.getTime() + etaMin * 60000);
+        eta = `${String(etaT.getUTCHours()).padStart(2,'0')}:${String(etaT.getUTCMinutes()).padStart(2,'0')}z`;
+      }
+    }
+
+    html += `<tr>
+      <td class="str-cs">${esc(cs)}</td>
+      <td>${esc(acft)}</td>
+      <td>${esc(dep)} → ${esc(arr)}</td>
+      <td><span class="str-state st-${state.cls}">${state.label}</span></td>
+      <td>${altStr}</td>
+      <td>${gs > 0 ? gs+'kt' : '—'}</td>
+      <td>${eta}</td>
+    </tr>`;
+  }
+
+  html += `</tbody></table>`;
+  $('strFlights').innerHTML = html;
+}
+
+// Parse METAR into summary components for Stream Mode display
+function parseMetarSummary(raw) {
+  const result = { wind: null, vis: null, visWarn: false, qnh: null, temp: null };
+  try {
+    // Wind: e.g. 24015KT, 24015G25KT, VRB03KT
+    const wm = raw.match(/\b(\d{3}|VRB)(\d{2,3})(G\d{2,3})?(KT|MPS)\b/);
+    if (wm) {
+      const dir = wm[1] === 'VRB' ? 'VRB' : wm[1] + '°';
+      const spd = wm[2];
+      const gust = wm[3] ? wm[3] : '';
+      const unit = wm[4];
+      result.wind = `${dir}/${spd}${gust}${unit}`;
+    }
+    // Visibility: e.g. 9999, 3000, CAVOK
+    if (raw.includes('CAVOK')) {
+      result.vis = 'CAVOK';
+    } else {
+      const vm = raw.match(/\s(\d{4})\s/);
+      if (vm) {
+        const v = parseInt(vm[1]);
+        result.vis = v >= 9999 ? '10km+' : (v >= 1000 ? (v/1000).toFixed(1)+'km' : v+'m');
+        result.visWarn = v < 5000;
+      }
+    }
+    // QNH: Q1013 or A2992
+    const qm = raw.match(/\b(Q\d{4}|A\d{4})\b/);
+    if (qm) result.qnh = qm[1];
+    // Temperature: e.g. 18/12 or M02/M05
+    const tm = raw.match(/\b(M?\d{2})\/(M?\d{2})\b/);
+    if (tm) {
+      const t = tm[1].replace('M', '-');
+      const d = tm[2].replace('M', '-');
+      result.temp = `${t}°/${d}°`;
+    }
+  } catch(e) {}
+  return result;
+}
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', e => {
+  // F11 or Ctrl+Shift+S → Stream Mode toggle
+  if (e.key === 'F11') {
+    e.preventDefault();
+    if (streamActive) closeStream(); else openStream();
+    return;
+  }
+  // ESC → close Stream Mode
+  if (e.key === 'Escape' && streamActive) {
+    closeStream();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    const a = document.querySelector('.tab.on')?.dataset.t;
+    if (a === 'telex') sendTx(); else if (a === 'info') sendInfo(); else if (a === 'cpdlc') sendCp();
+  }
+});
+
+// ── Init ──
+loadCfg(); loadList('rx'); loadList('tx'); updBtn();
+$('btnSnd').textContent = soundOn ? '🔔' : '🔕';
+if (!$('cL').value.trim()) { $('cfgP').classList.add('v'); $('btnCfg').classList.add('on'); }
+else ss('ok', `Estación ${$('cS').value||'???'} lista`);
+
+// ── PWA Service Worker ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(reg => console.log('SW registrado:', reg.scope))
+    .catch(err => console.log('SW error:', err));
+}
+</script>
+</body>
+</html>

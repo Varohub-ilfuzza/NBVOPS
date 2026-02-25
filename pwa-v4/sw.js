@@ -1,9 +1,8 @@
 // Service Worker — ACARS Dispatch AirNubeiro PWA
-const CACHE_NAME = 'an-acars-v4.0.1';
+const CACHE_NAME = 'an-acars-v4.0';
 const APP_SHELL = [
   './',
   './index.html',
-  './ops-center.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

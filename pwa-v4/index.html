@@ -6,7 +6,7 @@
 <title>ACARS Dispatch — AirNubeiro</title>
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0062B8">
+<meta name="theme-color" content="#e0a348">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ACARS DSP">
@@ -18,10 +18,10 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg0: #050a14; --bg1: #0a1222; --bg2: #0f1830; --bg3: #071018;
-    --brd: #162240; --brd-f: #2e8cf0;
-    --acc: #2e8cf0; --acc-d: #1a6bc4; --acc-g: rgba(46,140,240,0.10);
-    --tx1: #e2eaf4; --tx2: #7d8faa; --tx3: #3e5170;
+    --bg0: #060910; --bg1: #0b0f18; --bg2: #111722; --bg3: #0a0e17;
+    --brd: #1c2333; --brd-f: #d4953a;
+    --acc: #e0a348; --acc-d: #b07e2e; --acc-g: rgba(224,163,72,0.12);
+    --tx1: #e6eaef; --tx2: #7d8aa0; --tx3: #4a5568;
     --ok: #34d399; --err: #f87171; --wrn: #fbbf24; --inf: #60a5fa; --cpdlc: #a78bfa;
     --mono: 'JetBrains Mono','Courier New',monospace;
     --sans: 'IBM Plex Sans',-apple-system,sans-serif;
@@ -92,8 +92,8 @@
   .ct.inf { color: var(--inf); } .ct.inf::before { background: var(--inf); }
 
   /* ── Buttons ── */
-  .bp { width: 100%; margin-top: 10px; padding: 12px; background: linear-gradient(135deg, #0062B8 0%, #2e8cf0 100%); color: #fff; border: 0; border-radius: 8px; font: 700 0.84rem var(--mono); letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: .15s; }
-  .bp:hover:not(:disabled) { background: linear-gradient(135deg, #1a6bc4 0%, #4aa0f5 100%); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(46,140,240,.25); }
+  .bp { width: 100%; margin-top: 10px; padding: 12px; background: var(--acc); color: var(--bg0); border: 0; border-radius: 8px; font: 700 0.84rem var(--mono); letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: .15s; }
+  .bp:hover:not(:disabled) { background: #edb45c; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(224,163,72,.25); }
   .bp:active:not(:disabled) { transform: translateY(0); }
   .bp:disabled { opacity: .4; cursor: not-allowed; }
   .bp.snd { background: var(--acc-d); pointer-events: none; }
@@ -271,7 +271,7 @@
   .str-tbl { width: 100%; border-collapse: collapse; font: 400 0.85rem/1.3 var(--mono); }
   .str-tbl th { text-align: left; padding: 10px 8px; font-weight: 700; color: #4a5568; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid #1c2333; font-size: 0.7rem; }
   .str-tbl td { padding: 10px 8px; border-bottom: 1px solid rgba(28,35,51,.4); color: #c0c8d4; }
-  .str-tbl tr:hover td { background: rgba(46,140,240,.04); }
+  .str-tbl tr:hover td { background: rgba(224,163,72,.04); }
   .str-cs { color: var(--acc); font-weight: 700; font-size: 0.95rem; }
   .str-state { padding: 3px 10px; border-radius: 4px; font-weight: 700; font-size: 0.7rem; letter-spacing: .5px; }
   .str-empty { text-align: center; padding: 60px; color: #4a5568; font: 400 1.2rem var(--mono); }
@@ -377,9 +377,8 @@
         <div class="f"><label>ICAO</label><input type="text" id="inI" class="uc" placeholder="LEMD" maxlength="4" autocomplete="off" spellcheck="false"></div>
         <div class="f"><label>TIPO</label>
           <select id="inT">
-            <option value="metar">METAR actual</option>
-            <option value="metar-hist">METAR historico (3h)</option>
-            <option value="taf">TAF (pronostico)</option>
+            <option value="metar">METAR (real)</option>
+            <option value="taf">TAF (pronóstico)</option>
             <option value="vatatis">ATIS — VATSIM</option>
             <option value="ivaoatis">ATIS — IVAO</option>
           </select>
@@ -457,11 +456,11 @@
         <div class="f"><label>CALLSIGN DESTINO</label><input type="text" id="qdTo" class="uc" placeholder="IBE3456" maxlength="12" autocomplete="off" spellcheck="false"></div>
       </div>
       <div class="tpls">
-        <button class="tp cp" onclick="qdFetch('traffic')" style="background:rgba(46,140,240,.06);border-color:rgba(46,140,240,.2);color:#2e8cf0">📡 TRAFICO</button>
-        <button class="tp cp" onclick="qdFetch('metar')" style="background:rgba(46,140,240,.06);border-color:rgba(46,140,240,.2);color:#2e8cf0">🌤️ METAR</button>
-        <button class="tp cp" onclick="qdFetch('taf')" style="background:rgba(46,140,240,.06);border-color:rgba(46,140,240,.2);color:#2e8cf0">📋 TAF</button>
-        <button class="tp cp" onclick="qdFetch('atis-ivao')" style="background:rgba(46,140,240,.06);border-color:rgba(46,140,240,.2);color:#2e8cf0">📻 ATIS IVAO</button>
-        <button class="tp cp" onclick="qdFetch('atis-vatsim')" style="background:rgba(46,140,240,.06);border-color:rgba(46,140,240,.2);color:#2e8cf0">📻 ATIS VATSIM</button>
+        <button class="tp cp" onclick="qdFetch('traffic')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">📡 TRÁFICO</button>
+        <button class="tp cp" onclick="qdFetch('metar')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">🌤️ METAR</button>
+        <button class="tp cp" onclick="qdFetch('taf')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">📋 TAF</button>
+        <button class="tp cp" onclick="qdFetch('atis-ivao')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">📻 ATIS IVAO</button>
+        <button class="tp cp" onclick="qdFetch('atis-vatsim')" style="background:rgba(244,114,182,.06);border-color:rgba(244,114,182,.2);color:#f472b6">📻 ATIS VATSIM</button>
       </div>
     </div>
 
@@ -794,67 +793,18 @@ async function sendInfo() {
   busy = true; $('inB').disabled = true; $('inB').textContent = 'SOLICITANDO...';
   ss('snd', `${type.toUpperCase()} ${icao}...`);
   try {
-    let txt = '';
-    let ok = true;
-
-    if (type === 'metar' || type === 'metar-hist') {
-      // Use aviationweather.gov for reliable METAR data
-      const hours = type === 'metar-hist' ? 3 : 1;
-      const proxy = $('cP').value.trim();
-      try {
-        const mUrl = `${METAR_API}?ids=${icao}&format=raw&hours=${hours}`;
-        const mFetch = proxy ? `${proxy}${encodeURIComponent(mUrl)}` : mUrl;
-        const mResp = await fetch(mFetch, { signal: AbortSignal.timeout(8000) });
-        const mTxt = await mResp.text();
-        if (mTxt.trim()) {
-          if (type === 'metar') {
-            // Only current (first line)
-            txt = mTxt.trim().split('\n')[0];
-          } else {
-            // Historical: all lines with separator
-            const lines = mTxt.trim().split('\n').filter(l => l.trim());
-            txt = `METAR HISTORICO ${icao} (${lines.length} obs):\n${lines.join('\n')}`;
-          }
-        } else {
-          txt = `No METAR available for ${icao}`;
-          ok = false;
-        }
-      } catch(e) {
-        // Fallback to Hoppie
-        const raw = await hReq('SERVER', 'inforeq', `METAR ${icao}`);
-        ok = raw.toLowerCase().startsWith('ok');
-        txt = ok ? cleanHoppie(raw.substring(2).trim()) : raw;
-        if (type === 'metar' && ok && txt.includes('\n')) {
-          txt = txt.split('\n').filter(l => l.trim())[0] || txt;
-        }
-      }
-    } else if (type === 'taf') {
-      const proxy = $('cP').value.trim();
-      try {
-        const tUrl = `https://aviationweather.gov/api/data/taf?ids=${icao}&format=raw&hours=6`;
-        const tFetch = proxy ? `${proxy}${encodeURIComponent(tUrl)}` : tUrl;
-        const tResp = await fetch(tFetch, { signal: AbortSignal.timeout(6000) });
-        txt = await tResp.text();
-        txt = txt.trim() || 'No TAF available';
-        ok = txt !== 'No TAF available';
-      } catch(e) {
-        const raw = await hReq('SERVER', 'inforeq', `TAF ${icao}`);
-        ok = raw.toLowerCase().startsWith('ok');
-        txt = ok ? cleanHoppie(raw.substring(2).trim()) : raw;
-      }
-    } else {
-      // ATIS (IVAO or VATSIM) via Hoppie
-      const hType = type === 'ivaoatis' ? 'IVAOATIS' : 'VATATIS';
-      const raw = await hReq('SERVER', 'inforeq', `${hType} ${icao}`);
-      ok = raw.toLowerCase().startsWith('ok');
-      txt = ok ? cleanHoppie(raw.substring(2).trim()) : raw;
+    const raw = await hReq('SERVER', 'inforeq', `${type.toUpperCase()} ${icao}`);
+    const ok = raw.toLowerCase().startsWith('ok');
+    let txt = ok ? cleanHoppie(raw.substring(2).trim()) : raw;
+    // For METAR: only show the most recent observation (first line)
+    if (type === 'metar' && ok && txt.includes('\n')) {
+      const lines = txt.split('\n').filter(l => l.trim());
+      txt = lines[0] || txt; // first METAR is the most current
     }
-
     $('inR').style.display = 'block'; $('inRT').textContent = txt || '(vacio)';
     lastInfoResult = `${type.toUpperCase()} ${icao}: ${txt}`;
-    const label = type === 'metar-hist' ? 'METAR HIST' : type.toUpperCase();
-    addMsg('rx', { cls: 'in', type: 'INFO', badge: 'b-in', route: `SERVER → ${$('cS').value.toUpperCase()}`, body: `${label} ${icao}:\n${txt}`, time: ts(), st: ok?'✓ OK':'✗ Error', ok });
-    ss(ok?'ok':'err', ok ? `✓ ${label} ${icao}` : `✗ Error`);
+    addMsg('rx', { cls: 'in', type: 'INFO', badge: 'b-in', route: `SERVER → ${$('cS').value.toUpperCase()}`, body: `${type.toUpperCase()} ${icao}:\n${txt}`, time: ts(), st: ok?'✓ OK':'✗ Error', ok });
+    ss(ok?'ok':'err', ok ? `✓ ${type.toUpperCase()} ${icao}` : `✗ ${raw}`);
     if (ok) notifySound();
   } catch(e) { $('inR').style.display = 'block'; $('inRT').textContent = `Error: ${e.message}`; ss('err', '✗ Error de red'); errorSound(); }
   busy = false; $('inB').textContent = 'SOLICITAR'; updBtn();
@@ -1098,11 +1048,9 @@ function matchAtc(atcs, icao) {
   return atcs.filter(a => {
     if (!a.callsign) return false;
     const cs = a.callsign.toUpperCase();
-    // Skip GND and DEL
-    if (cs.includes('_GND') || cs.includes('_DEL')) return false;
-    // Local positions: exact ICAO match (APP/TWR/ATIS)
+    // Local positions: exact ICAO match
     if (cs.startsWith(prefix4)) return true;
-    // Regional: only CTR/FSS (no towers from nearby airports)
+    // Regional FSS/CTR: match country prefix (2 chars)
     if ((cs.includes('_FSS') || cs.includes('_CTR')) && cs.startsWith(prefix2)) return true;
     return false;
   });
@@ -1392,69 +1340,58 @@ async function fetchDispatch() {
     ss('snd', 'WX en-ruta...');
     let enrouteWx = `=== WX EN-ROUTE ${orig}-${dest_icao} ===\n`;
     try {
-      // Only destination METAR (no intermediate airport METARs)
-      try {
-        const mUrl = `${METAR_API}?ids=${dest_icao}&format=raw&hours=1`;
-        const mFetch = proxy ? `${proxy}${encodeURIComponent(mUrl)}` : mUrl;
-        const mResp = await fetch(mFetch, { signal: AbortSignal.timeout(8000) });
-        const mTxt = await mResp.text();
-        if (mTxt.trim()) {
-          enrouteWx += `DEST ${dest_icao} METAR:\n${mTxt.trim().split('\n')[0]}\n`;
-        } else {
-          enrouteWx += `DEST ${dest_icao}: No METAR available\n`;
-        }
-      } catch(e) {
-        try {
-          const raw = await hReq('SERVER', 'inforeq', `METAR ${dest_icao}`);
-          if (raw.toLowerCase().startsWith('ok')) {
-            enrouteWx += `DEST ${dest_icao} METAR:\n${raw.substring(2).trim()}\n`;
-          }
-        } catch(e2) {
-          enrouteWx += `DEST ${dest_icao}: Unable to fetch METAR\n`;
+      // Extract unique ICAO airports from navlog (4 chars, look like airports)
+      const fixes = o.navlog?.fix || [];
+      const enrAirports = new Set();
+      // Pick waypoints roughly at 25%, 50%, 75% of route
+      const cruiseFixes = fixes.filter(f => f.stage === 'CRZ' || f.stage === 'DSC');
+      const pickIdxs = [
+        Math.floor(cruiseFixes.length * 0.25),
+        Math.floor(cruiseFixes.length * 0.5),
+        Math.floor(cruiseFixes.length * 0.75)
+      ];
+      for (const idx of pickIdxs) {
+        if (cruiseFixes[idx]) {
+          const id = cruiseFixes[idx].ident;
+          // Check if it looks like ICAO airport (4 chars, starts with letter)
+          if (id && id.length === 4 && /^[A-Z]/.test(id)) enrAirports.add(id);
         }
       }
-
-      // CTR/FSS on route + destination ATC (APP/TWR)
-      try {
-        const ivUrl = IVAO_WHAZZUP;
-        const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
-        const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
-        const ivData = await ivResp.json();
-        const atcs = ivData.clients?.atcs || [];
-        const destPrefix = dest_icao.substring(0, 4);
-        const origPrefix = orig.substring(0, 2);
-        const destPfx2 = dest_icao.substring(0, 2);
-
-        // En route: only CTR/FSS matching dep or arr country prefix
-        const ctrFss = atcs.filter(a => {
-          if (!a.callsign) return false;
-          const cs = a.callsign.toUpperCase();
-          if (!cs.includes('_CTR') && !cs.includes('_FSS')) return false;
-          const p2 = cs.substring(0, 2);
-          return p2 === origPrefix || p2 === destPfx2;
-        });
-
-        // Destination: APP/TWR/ATIS (not GND/DEL)
-        const destAtc = atcs.filter(a => {
-          if (!a.callsign) return false;
-          const cs = a.callsign.toUpperCase();
-          if (!cs.startsWith(destPrefix)) return false;
-          return !cs.includes('_GND') && !cs.includes('_DEL');
-        });
-
-        if (ctrFss.length) {
-          enrouteWx += `--- CTR/FSS EN RUTA ---\n`;
-          for (const a of ctrFss.slice(0, 10)) enrouteWx += `${a.callsign}\n`;
+      // Also pick from FIR entries if any
+      for (const f of fixes) {
+        if (f.type === 'apt' && f.ident && f.ident !== orig && f.ident !== dest_icao) {
+          enrAirports.add(f.ident);
         }
-        if (destAtc.length) {
-          enrouteWx += `--- ATC DESTINO ${dest_icao} ---\n`;
-          for (const a of destAtc) enrouteWx += `${a.callsign}\n`;
+      }
+      // Fetch METARs for up to 5 en-route points via aviationweather.gov
+      const enrIcaos = [...enrAirports].slice(0, 5);
+      if (enrIcaos.length > 0) {
+        try {
+          const mUrl = `${METAR_API}?ids=${enrIcaos.join(',')}&format=raw&hours=2`;
+          const mFetch = proxy ? `${proxy}${encodeURIComponent(mUrl)}` : mUrl;
+          const mResp = await fetch(mFetch, { signal: AbortSignal.timeout(8000) });
+          const mTxt = await mResp.text();
+          if (mTxt.trim()) {
+            enrouteWx += mTxt.trim();
+          } else {
+            enrouteWx += 'No METAR data available for en-route points';
+          }
+        } catch(e) {
+          // Fallback: try via Hoppie INFOREQ for first 3
+          for (const ic of enrIcaos.slice(0,3)) {
+            try {
+              const raw = await hReq('SERVER', 'inforeq', `METAR ${ic}`);
+              if (raw.toLowerCase().startsWith('ok')) {
+                enrouteWx += raw.substring(2).trim() + '\n';
+              }
+            } catch(e2) {}
+          }
+          if (enrouteWx.split('\n').length <= 2) enrouteWx += 'Unable to fetch en-route weather';
         }
-        if (!ctrFss.length && !destAtc.length) {
-          enrouteWx += `NO ATC EN RUTA NI DESTINO\n`;
-        }
-      } catch(e) {}
-
+      } else {
+        // No identifiable airports in navlog, try route midpoint approach
+        enrouteWx += 'No en-route airport waypoints identified in navlog.\nUse INFO tab for manual METAR checks.';
+      }
     } catch(e) {
       enrouteWx += `Error: ${e.message}`;
     }

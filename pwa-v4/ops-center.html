@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>OPS Center — AirNubeiro</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0062B8">
+<meta name="theme-color" content="#e0a348">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -13,12 +13,12 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg0: #050a14; --bg1: #0a1222; --bg2: #0f1830; --bg3: #071018;
-    --brd: #162240; --brd-f: #2e8cf0;
-    --acc: #2e8cf0; --acc-d: #1a6bc4; --acc-g: rgba(46,140,240,0.10);
-    --tx1: #e2eaf4; --tx2: #7d8faa; --tx3: #3e5170;
+    --bg0: #060910; --bg1: #0b0f18; --bg2: #111722; --bg3: #0a0e17;
+    --brd: #1c2333; --brd-f: #d4953a;
+    --acc: #e0a348; --acc-d: #b07e2e; --acc-g: rgba(224,163,72,0.12);
+    --tx1: #e6eaef; --tx2: #7d8aa0; --tx3: #4a5568;
     --ok: #34d399; --err: #f87171; --wrn: #fbbf24; --inf: #60a5fa; --cpdlc: #a78bfa;
-    --ops: #38bdf8;
+    --ops: #f472b6;
     --mono: 'JetBrains Mono','Courier New',monospace;
     --sans: 'IBM Plex Sans',-apple-system,sans-serif;
   }
@@ -31,7 +31,7 @@
   /* ── Header ── */
   .hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 8px; border-bottom: 1px solid var(--brd); }
   .hdr-l { display: flex; align-items: center; gap: 10px; }
-  .hdr-ico { width: 38px; height: 38px; background: linear-gradient(135deg, #0062B8 0%, #2e8cf0 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font: 700 14px/1 var(--mono); color: #fff; letter-spacing: -0.5px; }
+  .hdr-ico { width: 38px; height: 38px; background: var(--ops); border-radius: 8px; display: flex; align-items: center; justify-content: center; font: 700 14px/1 var(--mono); color: var(--bg0); letter-spacing: -0.5px; }
   .hdr-t h1 { font: 600 1.05rem/1.2 var(--mono); color: var(--tx1); letter-spacing: -0.3px; }
   .hdr-t .sub { font: 400 0.62rem var(--mono); color: var(--tx3); letter-spacing: 0.5px; }
   .hdr-r { display: flex; gap: 5px; align-items: center; }
@@ -159,31 +159,31 @@
   #rosterChips .rc-mapped { border-color: rgba(52,199,89,.3); color: #34c759; }
   #rosterChips .rc-unmapped { border-color: var(--brd); color: var(--tx3); }
   /* ── AOC Fullscreen ── */
-  .aoc-overlay { position: fixed; inset: 0; z-index: 9999; background: #040810; display: flex; flex-direction: column; overflow: hidden; }
-  .aoc-header { display: flex; align-items: center; gap: 20px; padding: 12px 24px; background: linear-gradient(180deg, #0a1428 0%, #060e1c 100%); border-bottom: 2px solid #0062B8; flex-shrink: 0; }
-  .aoc-brand { display: flex; align-items: center; gap: 12px; }
+  .aoc-overlay { position: fixed; inset: 0; z-index: 9999; background: #080c14; display: flex; flex-direction: column; overflow: hidden; }
+  .aoc-header { display: flex; align-items: center; gap: 20px; padding: 10px 20px; background: linear-gradient(180deg, #0d1220 0%, #0a0e1a 100%); border-bottom: 1px solid #1a2236; flex-shrink: 0; }
+  .aoc-brand { display: flex; align-items: center; gap: 10px; }
   .aoc-logo { font-size: 1.6rem; }
-  .aoc-title { font: 700 1.1rem var(--mono); color: #ffffff; letter-spacing: 3px; text-transform: uppercase; }
-  .aoc-sub { font: 400 .58rem var(--mono); color: #4a7bb5; letter-spacing: 1.5px; }
-  .aoc-clock { font: 700 1.6rem var(--mono); color: #2e8cf0; letter-spacing: 3px; margin-left: auto; text-shadow: 0 0 20px rgba(46,140,240,.3); }
-  .aoc-stats { display: flex; gap: 16px; margin-left: 24px; }
-  .aoc-st { font: 600 .6rem var(--mono); color: #6b8ab5; text-align: center; padding: 4px 8px; background: rgba(46,140,240,.05); border: 1px solid rgba(46,140,240,.15); border-radius: 6px; }
-  .aoc-st span { display: block; font-size: 1.2rem; font-weight: 700; color: #e2eaf4; }
-  .aoc-close { font: 600 .65rem var(--mono); background: rgba(239,68,68,.08); color: #f87171; border: 1px solid rgba(239,68,68,.25); border-radius: 6px; padding: 6px 14px; cursor: pointer; margin-left: 16px; transition: .2s; }
-  .aoc-close:hover { background: rgba(239,68,68,.15); }
-  .aoc-board { flex: 1; overflow-y: auto; padding: 12px 20px; }
-  .aoc-tbl { width: 100%; border-collapse: collapse; font: .68rem var(--mono); }
-  .aoc-tbl th { background: #0c1628; color: #4a7bb5; padding: 10px 12px; text-align: left; border-bottom: 2px solid #162240; position: sticky; top: 0; z-index: 1; letter-spacing: 1.5px; font-weight: 600; font-size: .6rem; text-transform: uppercase; }
-  .aoc-tbl td { padding: 8px 12px; border-bottom: 1px solid #0f1a30; color: #c0d0e4; vertical-align: middle; }
-  .aoc-tbl tr:hover td { background: rgba(46,140,240,.04); }
-  .aoc-tbl .aoc-cs { font-weight: 700; color: #ffffff; font-size: .75rem; letter-spacing: .5px; }
-  .aoc-tbl .aoc-ph { display: inline-block; padding: 3px 10px; border-radius: 4px; font-weight: 700; font-size: .58rem; letter-spacing: .5px; }
-  .aoc-ph.pre { background: rgba(250,204,21,.08); color: #facc15; border: 1px solid rgba(250,204,21,.2); }
-  .aoc-ph.enr { background: rgba(46,140,240,.08); color: #2e8cf0; border: 1px solid rgba(46,140,240,.2); }
-  .aoc-ph.dsc { background: rgba(167,139,250,.08); color: #a78bfa; border: 1px solid rgba(167,139,250,.2); }
-  .aoc-ph.lnd { background: rgba(52,199,89,.08); color: #34c759; border: 1px solid rgba(52,199,89,.2); }
-  .aoc-empty { text-align: center; padding: 80px 20px; font: .8rem var(--mono); color: #2a4060; }
-  .aoc-footer { text-align: center; padding: 10px; font: .56rem var(--mono); color: #1a3050; border-top: 1px solid #0f1a30; flex-shrink: 0; letter-spacing: 1px; }
+  .aoc-title { font: 700 1rem var(--mono); color: #e2e8f0; letter-spacing: 2px; }
+  .aoc-sub { font: 400 .58rem var(--mono); color: #64748b; letter-spacing: 1px; }
+  .aoc-clock { font: 700 1.4rem var(--mono); color: #38bdf8; letter-spacing: 2px; margin-left: auto; }
+  .aoc-stats { display: flex; gap: 12px; margin-left: 20px; }
+  .aoc-st { font: 600 .6rem var(--mono); color: #94a3b8; text-align: center; }
+  .aoc-st span { display: block; font-size: 1.1rem; font-weight: 700; color: #e2e8f0; }
+  .aoc-close { font: 600 .65rem var(--mono); background: rgba(239,68,68,.1); color: #f87171; border: 1px solid rgba(239,68,68,.3); border-radius: 6px; padding: 6px 14px; cursor: pointer; margin-left: 16px; }
+  .aoc-close:hover { background: rgba(239,68,68,.2); }
+  .aoc-board { flex: 1; overflow-y: auto; padding: 8px 16px; }
+  .aoc-tbl { width: 100%; border-collapse: collapse; font: .65rem var(--mono); }
+  .aoc-tbl th { background: #111827; color: #64748b; padding: 8px 10px; text-align: left; border-bottom: 2px solid #1e293b; position: sticky; top: 0; z-index: 1; letter-spacing: 1px; font-weight: 600; font-size: .58rem; }
+  .aoc-tbl td { padding: 7px 10px; border-bottom: 1px solid #1e293b; color: #cbd5e1; vertical-align: middle; }
+  .aoc-tbl tr:hover td { background: rgba(56,189,248,.03); }
+  .aoc-tbl .aoc-cs { font-weight: 700; color: #f1f5f9; font-size: .72rem; }
+  .aoc-tbl .aoc-ph { display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: .56rem; letter-spacing: .5px; }
+  .aoc-ph.pre { background: rgba(250,204,21,.1); color: #facc15; }
+  .aoc-ph.enr { background: rgba(56,189,248,.1); color: #38bdf8; }
+  .aoc-ph.dsc { background: rgba(167,139,250,.1); color: #a78bfa; }
+  .aoc-ph.lnd { background: rgba(52,199,89,.1); color: #34c759; }
+  .aoc-empty { text-align: center; padding: 60px 20px; font: .75rem var(--mono); color: #475569; }
+  .aoc-footer { text-align: center; padding: 8px; font: .55rem var(--mono); color: #334155; border-top: 1px solid #1e293b; flex-shrink: 0; }
   .aoc-msg { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: .5rem; font-weight: 600; margin: 1px; }
   .aoc-msg.sent { background: rgba(52,199,89,.15); color: #34c759; }
   .aoc-msg.sending { background: rgba(56,189,248,.15); color: #38bdf8; }
@@ -315,8 +315,8 @@
   <div id="aocOverlay" class="aoc-overlay" style="display:none">
     <div class="aoc-header">
       <div class="aoc-brand">
-        <span class="aoc-logo" style="font-size:1.8rem;filter:drop-shadow(0 0 8px rgba(46,140,240,.4))">✈</span>
-        <div><div class="aoc-title">AirNubeiro AOC</div><div class="aoc-sub">Operations Control Center — Dispatch Automatizado</div></div>
+        <span class="aoc-logo">✈</span>
+        <div><div class="aoc-title">AirNubeiro AOC</div><div class="aoc-sub">Operations Control Center</div></div>
       </div>
       <div class="aoc-clock" id="aocClock">00:00:00Z</div>
       <div class="aoc-stats">
@@ -517,23 +517,21 @@ function saveSentRegistry() {
   } catch(e) {}
 }
 
-// Build dedup key: callsign + dep + arr + phase
-// Use only callsign+phase as primary key when dep/arr unknown
+// Build dedup key: callsign + phase only (dep/arr can change between scans)
 function dedupKey(cs, dep, arr, phase) {
-  const d = dep && dep !== '????' ? dep : '';
-  const a = arr && arr !== '????' ? arr : '';
-  return `${cs}_${d}_${a}_${phase}`.replace(/\s/g, '');
+  return `${cs}_${phase}`;
 }
 
 // Check if this message was already sent recently
 function wasSentRecently(cs, dep, arr, phase, maxAgeMs) {
   const key = dedupKey(cs, dep, arr, phase);
   const t = sentRegistry[key];
-  if (t && (Date.now() - t) < maxAgeMs) return true;
-  // Also check callsign-only key (phase might have been recorded without route info)
-  const fallbackKey = `${cs}___${phase}`;
-  const t2 = sentRegistry[fallbackKey];
-  if (t2 && (Date.now() - t2) < maxAgeMs) return true;
+  if (!t) return false;
+  const age = Date.now() - t;
+  if (age < maxAgeMs) {
+    log(`DEDUP: ${key} enviado hace ${Math.round(age/60000)}min, omitiendo`, '');
+    return true;
+  }
   return false;
 }
 
@@ -542,14 +540,9 @@ function recordSent(cs, dep, arr, phase, msgLabel, status) {
   const key = dedupKey(cs, dep, arr, phase);
   if (status === 'sent') {
     sentRegistry[key] = Date.now();
-    // Store fallback key (cs+phase only) for restart dedup when dep/arr unknown
-    sentRegistry[`${cs}___${phase}`] = Date.now();
     // Also store generic phase key for dedup (e.g. routeinfo_2 -> routeinfo)
     const generic = phase.replace(/_\d+$/, '');
-    if (generic !== phase) {
-      sentRegistry[dedupKey(cs, dep, arr, generic)] = Date.now();
-      sentRegistry[`${cs}___${generic}`] = Date.now();
-    }
+    if (generic !== phase) sentRegistry[dedupKey(cs, dep, arr, generic)] = Date.now();
     log(`DEDUP: registrado ${key}`, '');
   }
   msgHistory.push({ ts: Date.now(), cs, phase, label: msgLabel, status });
@@ -1514,11 +1507,11 @@ async function scan() {
   if (!prefix) return;
 
   try {
-    // Robust cache-busting: unique param per scan to defeat any proxy caching
-    const ivaoUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
+    // Cache-busting: append timestamp to prevent CORS proxy caching stale data
+    const ivaoUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}`;
     const resp = await fetch(proxy(ivaoUrl), {
-      signal: AbortSignal.timeout(30000),
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+      signal: AbortSignal.timeout(25000),
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
     });
     if (!resp.ok) throw new Error(`IVAO HTTP ${resp.status}`);
     const text = await resp.text();
@@ -1530,19 +1523,15 @@ async function scan() {
     lastIvaoData = data; // cache for route info
     const allPilots = data.clients?.pilots || [];
     const allAtcs = data.clients?.atcs || [];
-    log(`IVAO: ${allPilots.length} pilotos totales, ${allAtcs.length} ATCs`, '');
+    log(`IVAO: ${allPilots.length} pilotos, ${allAtcs.length} ATCs`, '');
     const nbvPilots = allPilots.filter(p => p.callsign && p.callsign.toUpperCase().startsWith(prefix));
     if (nbvPilots.length > 0) {
-      log(`${prefix}: ${nbvPilots.length} detectado(s) [${nbvPilots.map(p => {
+      log(`${prefix}: ${nbvPilots.length} detectados [${nbvPilots.map(p => {
         const ph = p.lastTrack?.onGround ? 'GND' : `FL${Math.round((p.lastTrack?.altitude||0)/100)}`;
-        const dep = p.flightPlan?.departureId || '?';
-        const arr = p.flightPlan?.arrivalId || '?';
-        return `${p.callsign}(${ph} ${dep}-${arr})`;
+        return `${p.callsign}(${ph})`;
       }).join(', ')}]`, 'ops');
     } else {
-      // Debug: log nearby callsigns to help diagnose
-      const nearMatch = allPilots.filter(p => p.callsign && p.callsign.toUpperCase().includes('NBV')).map(p => p.callsign);
-      log(`${prefix}: ningun piloto detectado${nearMatch.length ? ` (parcial: ${nearMatch.join(', ')})` : ''}`, '');
+      log(`${prefix}: ningun piloto detectado`, '');
     }
 
     // Track which callsigns are still online
@@ -1739,10 +1728,6 @@ async function scan() {
     updateStats();
     updateAoc();
     renderRosterChips();
-
-    // ★ CRITICAL: Refresh dashboard + stats EVERY scan, not just on phase change
-    updateDashboard();
-    updateStats();
 
     const n = Object.keys(flights).filter(cs => !flights[cs].offlineSince).length;
     ss('live', `Monitor activo — ${n} vuelo(s) NBV — ${tsShort()}`);
@@ -2002,7 +1987,7 @@ function updateAoc() {
     const enr = f.enrouteStart ? `${Math.round((Date.now() - f.enrouteStart) / 60000)}m` : '-';
     const park = f.assignedParking || '-';
     const sbUser = roster[f.callsign];
-    const sbTag = sbUser ? `<span style="color:#2e8cf0;font-size:.52rem;background:rgba(46,140,240,.12);padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:700;border:1px solid rgba(46,140,240,.3)" title="SimBrief: ${esc(sbUser)}">SB</span>` : '';
+    const sbTag = sbUser ? `<span style="color:#34c759;font-size:.5rem" title="SB: ${esc(sbUser)}">SB</span>` : '';
     let msgBadges = '';
     for (const [key, status] of Object.entries(f.msgStatus)) {
       const label = key.replace(/_/g, ' ').substring(0, 10);
@@ -2034,12 +2019,12 @@ function renderRosterChips() {
   const entries = Object.entries(roster);
   if (!entries.length) { el.style.display = 'none'; return; }
   el.style.display = 'flex';
-  el.innerHTML = '<span style="color:var(--acc);margin-right:4px;font-weight:600">ROSTER:</span>' +
+  el.innerHTML = '<span style="color:var(--tx3);margin-right:2px">ROSTER:</span>' +
     entries.map(([cs, sb]) => {
       const isActive = !!flights[cs.toUpperCase()];
-      const dot = isActive ? '<span style="color:var(--ok)">●</span> ' : '<span style="color:var(--tx3)">○</span> ';
-      const sbBadge = sb ? ' <span style="color:var(--acc);background:var(--acc-g);padding:0 3px;border-radius:2px;font-size:.48rem">SB</span>' : '';
-      return `<span style="background:var(--bg2);border:1px solid var(--brd);padding:2px 6px;border-radius:4px;${isActive?'border-color:var(--ok);':''}font-weight:500">${dot}${esc(cs)}${sbBadge}</span>`;
+      const cls = sb ? (isActive ? 'rc-mapped' : 'rc-mapped') : 'rc-unmapped';
+      const dot = isActive ? '<span style="color:var(--ok)">●</span> ' : '';
+      return `<span class="${cls}">${dot}${esc(cs)}${sb ? ' (SB:'+esc(sb)+')' : ''}</span>`;
     }).join('');
 }
 

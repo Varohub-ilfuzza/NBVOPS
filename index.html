@@ -238,7 +238,7 @@
   .occ-tbl { width: 100%; border-collapse: collapse; font: 400 0.62rem/1.3 var(--mono); }
   .occ-tbl th { text-align: left; padding: 6px 5px; font-weight: 700; color: var(--tx3); letter-spacing: .8px; text-transform: uppercase; border-bottom: 1px solid var(--brd); white-space: nowrap; font-size: 0.56rem; }
   .occ-tbl td { padding: 5px 5px; border-bottom: 1px solid rgba(28,35,51,.3); color: var(--tx2); white-space: nowrap; }
-  .occ-tbl tr:hover td { background: rgba(224,163,72,.03); }
+  .occ-tbl tr:hover td { background: rgba(46,140,240,.04); }
   .occ-cs { color: var(--acc) !important; font-weight: 700; }
   .occ-state { padding: 1px 6px; border-radius: 3px; font-weight: 700; font-size: 0.55rem; letter-spacing: .5px; }
   .st-gnd { background: rgba(74,85,104,.2); color: var(--tx3); }
@@ -1126,7 +1126,7 @@ async function qdFetch(type) {
     if (type === 'traffic') {
       title = `📡 TRÁFICO ${icao}`;
       ss('snd', `Trafico IVAO ${icao}...`);
-      const ivUrl = IVAO_WHAZZUP;
+      const ivUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
       const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
       const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
       const ivData = await ivResp.json();
@@ -1416,7 +1416,7 @@ async function fetchDispatch() {
 
       // CTR/FSS on route + destination ATC (APP/TWR)
       try {
-        const ivUrl = IVAO_WHAZZUP;
+        const ivUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
         const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
         const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
         const ivData = await ivResp.json();
@@ -1464,7 +1464,7 @@ async function fetchDispatch() {
     ss('snd', 'Trafico IVAO...');
     let trafficMsg = `=== TRAFFIC ${dest_icao} ===\n`;
     try {
-      const ivUrl = IVAO_WHAZZUP;
+      const ivUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
       const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
       const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
       const ivData = await ivResp.json();
@@ -1726,8 +1726,7 @@ async function fetchRouteInfo() {
 
   try {
     const prx = $('cP').value.trim();
-    const pUrl = proxy(IVAO_WHAZZUP);
-    const resp = await fetch(pUrl, { signal: AbortSignal.timeout(15000) });
+    const resp = await ivaoFetch();
     const data = await resp.json();
     const pilots = data.clients?.pilots || [];
     const pilot = pilots.find(p => p.callsign && p.callsign.toUpperCase() === pilotCs);
@@ -1887,9 +1886,11 @@ let opsFlights = {};
 let opsMsgCount = 0;
 
 function detectPhase(pilot, prev) {
-  const onGround = pilot.lastTrack?.onGround ?? true;
-  const gs = pilot.lastTrack?.groundSpeed || 0;
-  const alt = pilot.lastTrack?.altitude || 0;
+  const lt = pilot.lastTrack || {};
+  const safeNum = v => typeof v === 'number' ? v : (typeof v === 'object' ? 0 : parseFloat(v) || 0);
+  const onGround = lt.onGround === true || lt.onGround === 1 || (lt.onGround == null && gs < 50);
+  const gs = safeNum(lt.groundSpeed);
+  const alt = safeNum(lt.altitude);
   const prevAlt = prev ? prev.alt : alt;
   const prevPhase = prev ? prev.phase : 'PREFLIGHT';
   if (onGround && (prevPhase === 'ENROUTE' || prevPhase === 'DESCENT')) return 'LANDED';
@@ -1908,11 +1909,23 @@ async function opsScan() {
   const prefix = $('opsPrefix').value.trim().toUpperCase();
   if (!prefix) return;
   try {
-    const resp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(15000) });
+    const resp = await ivaoFetch();
     const data = await resp.json();
     const pilots = data.clients?.pilots || [];
     const nbv = pilots.filter(p => p.callsign && p.callsign.toUpperCase().startsWith(prefix));
     const onlineCs = new Set(nbv.map(p => p.callsign.toUpperCase()));
+
+    // Diagnostic logging
+    console.log(`[OPS] Scan: ${pilots.length} pilotos IVAO, ${nbv.length} coinciden con prefix "${prefix}"`);
+    if (nbv.length) nbv.forEach(p => {
+      const t = p.lastTrack || {};
+      console.log(`  ${p.callsign}: dep=${p.flightPlan?.departureId} arr=${p.flightPlan?.arrivalId} alt=${t.altitude} gs=${t.groundSpeed}`);
+    });
+    // Also check for partial matches if no exact matches
+    if (!nbv.length) {
+      const partial = pilots.filter(p => p.callsign && p.callsign.toUpperCase().includes(prefix.substring(0,2)));
+      if (partial.length) console.log(`  Parciales (${prefix.substring(0,2)}*):`, partial.map(p => p.callsign));
+    }
 
     // Cleanup offline
     for (const cs of Object.keys(opsFlights)) {
@@ -1926,20 +1939,26 @@ async function opsScan() {
       const cs = pilot.callsign.toUpperCase();
       const fp = pilot.flightPlan;
       const prev = opsFlights[cs] || null;
+      const track = pilot.lastTrack || {};
+
+      // Safe extraction — IVAO v2 can return nested objects
+      const safeNum = v => typeof v === 'number' ? v : (typeof v === 'object' ? 0 : parseFloat(v) || 0);
+      const safeStr = v => typeof v === 'string' ? v : (typeof v === 'object' ? (v?.id || v?.code || '') : String(v || ''));
+
       const newPhase = detectPhase(pilot, prev);
       const phaseChanged = prev && prev.phase !== newPhase;
 
       opsFlights[cs] = {
         callsign: cs, phase: newPhase,
-        dep: fp?.departureId || prev?.dep || '????',
-        arr: fp?.arrivalId || prev?.arr || '????',
-        alt: pilot.lastTrack?.altitude || 0,
-        gs: pilot.lastTrack?.groundSpeed || 0,
-        heading: pilot.lastTrack?.heading || pilot.lastTrack?.transponderHeading || prev?.heading || 0,
-        lat: pilot.lastTrack?.latitude || 0,
-        lng: pilot.lastTrack?.longitude || 0,
-        onGround: pilot.lastTrack?.onGround ?? true,
-        aircraft: fp?.aircraftId || prev?.aircraft || '????',
+        dep: safeStr(fp?.departureId) || prev?.dep || '????',
+        arr: safeStr(fp?.arrivalId) || prev?.arr || '????',
+        alt: safeNum(track.altitude),
+        gs: safeNum(track.groundSpeed),
+        heading: safeNum(track.heading || track.transponderHeading) || prev?.heading || 0,
+        lat: safeNum(track.latitude),
+        lng: safeNum(track.longitude),
+        onGround: track.onGround === true || track.onGround === 1 || (track.onGround == null && safeNum(track.groundSpeed) < 50),
+        aircraft: safeStr(fp?.aircraftId) || prev?.aircraft || '????',
         plannedDepTime: prev?.plannedDepTime || fp?.departureTime || null,
         firstSeen: prev?.firstSeen || Date.now(),
         enrouteStart: prev?.enrouteStart || 0,
@@ -1993,6 +2012,15 @@ async function opsScan() {
 
 function proxy(url) { const p = $('cP').value.trim(); return p ? `${p}${encodeURIComponent(url)}` : url; }
 
+// Cache-busting wrapper for IVAO API to defeat stale CORS proxy responses
+function ivaoFetch() {
+  const url = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
+  return fetch(proxy(url), {
+    signal: AbortSignal.timeout(25000),
+    headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+  });
+}
+
 async function opsAutoWx(flt, type) {
   const icao = type === 'DEP' ? flt.dep : flt.arr;
   if (icao === '????') return;
@@ -2021,7 +2049,7 @@ async function opsAutoWx(flt, type) {
 
       // ATC congestion check
       try {
-        const ivResp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(10000) });
+        const ivResp = await ivaoFetch();
         const ivData = await ivResp.json();
         const pilots = ivData.clients?.pilots || [];
         const atcs = ivData.clients?.atcs || [];
@@ -2052,7 +2080,7 @@ async function opsAutoWx(flt, type) {
 async function opsAutoTraffic(flt) {
   if (flt.arr === '????') return;
   try {
-    const resp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(10000) });
+    const resp = await ivaoFetch();
     const data = await resp.json();
     const pilots = data.clients?.pilots || [];
     const arr = pilots.filter(p => p.flightPlan?.arrivalId === flt.arr);
@@ -2466,7 +2494,7 @@ function mapState(st) {
 
 async function refreshOcc() {
   try {
-    const resp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(12000) });
+    const resp = await ivaoFetch();
     const data = await resp.json();
     const pilots = data.clients?.pilots || [];
 
@@ -2476,17 +2504,24 @@ async function refreshOcc() {
     // Cache for Stream Mode
     lastOccData = { flights: nbvFlights, time: Date.now(), allPilots: pilots, atcs: data.clients?.atcs || [] };
 
-    renderOcc(nbvFlights);
+    // Debug: log total pilots parsed vs NBV found
+    console.log(`[OCC] IVAO: ${pilots.length} pilotos totales, ${nbvFlights.length} NBV encontrados`);
+    nbvFlights.forEach(f => {
+      const lt = f.lastTrack || {};
+      console.log(`  ${f.callsign}: alt=${lt.altitude} gs=${lt.groundSpeed} onGround=${lt.onGround} state=${lt.state}`);
+    });
 
-    // Auto-refresh: set timer if OCC tab is active
-    if (occTimer) clearTimeout(occTimer);
-    const activeTab = document.querySelector('.tab.on')?.dataset.t;
-    if (activeTab === 'occ') {
-      const iv = Math.max(15, parseInt($('cI')?.value) || 20) * 1000;
-      occTimer = setTimeout(refreshOcc, iv);
-    }
+    renderOcc(nbvFlights);
   } catch(e) {
-    $('occBody').innerHTML = `<div class="occ-empty">Error IVAO: ${esc(e.message)}</div>`;
+    console.error('[OCC] Error:', e);
+    $('occBody').innerHTML = `<div class="occ-empty">Error IVAO: ${esc(e.message)}<br><small>Reintentando...</small></div>`;
+  }
+  // Always schedule next refresh while OCC tab is active (even after errors)
+  if (occTimer) clearTimeout(occTimer);
+  const activeTab = document.querySelector('.tab.on')?.dataset.t;
+  if (activeTab === 'occ') {
+    const iv = Math.max(15, parseInt($('cI')?.value) || 20) * 1000;
+    occTimer = setTimeout(refreshOcc, iv);
   }
 }
 
@@ -2511,14 +2546,17 @@ function renderOcc(flights) {
   for (const p of flights) {
     const fp = p.flightPlan || {};
     const lt = p.lastTrack || {};
-    const cs = p.callsign || '???';
-    const acft = fp.aircraftId || '???';
+    // Safe extraction — IVAO v2 can return nested objects for these fields
+    const safeNum = v => typeof v === 'number' ? v : (typeof v === 'object' ? 0 : parseFloat(v) || 0);
+    const safeStr = v => typeof v === 'string' ? v : (typeof v === 'object' ? (v?.id || v?.code || '') : String(v || ''));
+    const cs = safeStr(p.callsign) || '???';
+    const acft = safeStr(fp.aircraftId) || '???';
     const vid = p.id || p.pilotId || p.userId || '—';
-    const dep = fp.departureId || '????';
-    const arr = fp.arrivalId || '????';
-    const alt = lt.altitude ? Math.round(lt.altitude) : 0;
-    const gs = lt.groundSpeed || 0;
-    const rawState = lt.state || '';
+    const dep = safeStr(fp.departureId) || '????';
+    const arr = safeStr(fp.arrivalId) || '????';
+    const alt = safeNum(lt.altitude);
+    const gs = safeNum(lt.groundSpeed);
+    const rawState = safeStr(lt.state);
     const state = mapState(rawState);
 
     // Distance to destination
@@ -2662,7 +2700,7 @@ async function refreshStream() {
     if (lastOccData && (Date.now() - lastOccData.time) < 30000) {
       flights = lastOccData.flights;
     } else {
-      const resp = await fetch(proxy(IVAO_WHAZZUP), { signal: AbortSignal.timeout(12000) });
+      const resp = await ivaoFetch();
       const data = await resp.json();
       const pilots = data.clients?.pilots || [];
       flights = pilots.filter(p => p.callsign && p.callsign.toUpperCase().startsWith('NBV'));

@@ -205,6 +205,13 @@
   .mh-st.sent { background: rgba(52,199,89,.15); color: #34c759; }
   .mh-st.error { background: rgba(255,69,58,.15); color: #ff453a; }
   .mh-st.skip { background: rgba(142,142,147,.15); color: #8e8e93; }
+  .mh-clickable { cursor: pointer; }
+  .mh-clickable:hover td { background: rgba(46,140,240,.06) !important; }
+  .mh-expand { color: var(--acc); margin-right: 4px; font-size: .65rem; transition: transform .2s; display: inline-block; }
+  .mh-body-row { display: none; }
+  .mh-body-row.open { display: table-row; }
+  .mh-body-row td { padding: 0 6px 6px 6px !important; border-top: none !important; }
+  .mh-body-pre { white-space: pre-wrap; word-break: break-all; font: .56rem/1.5 var(--mono); color: var(--tx1); background: var(--bg0); border: 1px solid var(--brd); border-radius: 4px; padding: 6px 8px; margin: 2px 0 4px 0; max-height: 200px; overflow-y: auto; }
 </style>
 </head>
 <body>
@@ -538,7 +545,7 @@ function wasSentRecently(cs, dep, arr, phase, maxAgeMs) {
 }
 
 // Record a sent message
-function recordSent(cs, dep, arr, phase, msgLabel, status) {
+function recordSent(cs, dep, arr, phase, msgLabel, status, msgBody) {
   const key = dedupKey(cs, dep, arr, phase);
   if (status === 'sent') {
     sentRegistry[key] = Date.now();
@@ -552,7 +559,7 @@ function recordSent(cs, dep, arr, phase, msgLabel, status) {
     }
     log(`DEDUP: registrado ${key}`, '');
   }
-  msgHistory.push({ ts: Date.now(), cs, phase, label: msgLabel, status });
+  msgHistory.push({ ts: Date.now(), cs, phase, label: msgLabel, status, body: msgBody || '' });
   if (msgHistory.length > 200) msgHistory = msgHistory.slice(-200);
   saveSentRegistry();
   renderMsgHistory();
@@ -568,6 +575,14 @@ function clearMsgHistory() {
   saveSentRegistry();
   renderMsgHistory();
 }
+function toggleMsgBody(idx) {
+  const el = document.getElementById('mh-body-' + idx);
+  if (!el) return;
+  el.classList.toggle('open');
+  // Rotate expand arrow in the parent row
+  const arrow = el.previousElementSibling?.querySelector('.mh-expand');
+  if (arrow) arrow.textContent = el.classList.contains('open') ? '▾' : '▸';
+}
 function renderMsgHistory() {
   const rows = $('mhRows');
   const empty = $('mhEmpty');
@@ -580,11 +595,14 @@ function renderMsgHistory() {
   empty.style.display = 'none';
   // Show newest first
   const sorted = [...msgHistory].reverse();
-  rows.innerHTML = sorted.map(m => {
+  rows.innerHTML = sorted.map((m, i) => {
     const t = new Date(m.ts).toISOString().substring(11,19);
     const stCls = m.status === 'sent' ? 'sent' : (m.status === 'skip' ? 'skip' : 'error');
     const stLabel = m.status === 'sent' ? '✓ ENVIADO' : (m.status === 'skip' ? '⊘ OMITIDO' : '✗ ERROR');
-    return `<tr><td>${esc(t)}</td><td>${esc(m.cs)}</td><td>${esc(m.phase)}</td><td>${esc(m.label)}</td><td><span class="mh-st ${stCls}">${stLabel}</span></td></tr>`;
+    const hasBody = m.body && m.body.trim().length > 0;
+    const expandIcon = hasBody ? '<span class="mh-expand" title="Ver contenido">▸</span>' : '';
+    const bodyRow = hasBody ? `<tr id="mh-body-${i}" class="mh-body-row"><td colspan="5"><pre class="mh-body-pre">${esc(m.body)}</pre></td></tr>` : '';
+    return `<tr class="${hasBody ? 'mh-clickable' : ''}" ${hasBody ? `onclick="toggleMsgBody(${i})"` : ''}><td>${expandIcon}${esc(t)}</td><td>${esc(m.cs)}</td><td>${esc(m.phase)}</td><td>${esc(m.label)}</td><td><span class="mh-st ${stCls}">${stLabel}</span></td></tr>${bodyRow}`;
   }).join('');
 }
 function splitMsg(txt, max) {
@@ -1767,12 +1785,12 @@ async function processMessages(flt, phase, generatorFn, autoSend) {
           await sendTelex(flt.callsign, m.body);
           flt.msgStatus[key] = 'sent';
           log(`✓ ${m.label} → ${flt.callsign}`, 'ok');
-          recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'sent');
+          recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'sent', m.body);
           await sleep(800); // rate limit between messages
         } catch(e) {
           flt.msgStatus[key] = 'error';
           log(`✗ ${m.label} → ${flt.callsign}: ${e.message}`, 'err');
-          recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'error');
+          recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'error', m.body);
         }
       } else {
         log(`${m.label} generado para ${flt.callsign} (envío manual)`, '');
@@ -1799,7 +1817,7 @@ async function processMessagesConditional(flt, phase, generatorFn, autoSend, req
 
       if (!hasSignificant) {
         log(`${m.label} ${flt.callsign}: sin info significativa, omitido`, '');
-        recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'skip');
+        recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'skip', m.body);
         continue;
       }
 
@@ -1813,12 +1831,12 @@ async function processMessagesConditional(flt, phase, generatorFn, autoSend, req
           await sendTelex(flt.callsign, m.body);
           flt.msgStatus[key] = 'sent';
           log(`✓ ${m.label} → ${flt.callsign} (significativo)`, 'ok');
-          recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'sent');
+          recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'sent', m.body);
           await sleep(800);
         } catch(e) {
           flt.msgStatus[key] = 'error';
           log(`✗ ${m.label} → ${flt.callsign}: ${e.message}`, 'err');
-          recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'error');
+          recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'error', m.body);
         }
       } else {
         log(`${m.label} generado para ${flt.callsign} (envío manual)`, '');

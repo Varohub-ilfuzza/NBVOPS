@@ -224,6 +224,18 @@
   .discord-test-btn { margin-top: 6px; padding: 4px 10px; background: rgba(114,137,218,.15); border: 1px solid rgba(114,137,218,.35); color: #7289da; border-radius: 4px; font: 600 0.62rem var(--mono); cursor: pointer; transition: .15s; letter-spacing: .4px; }
   .discord-test-btn:hover { background: rgba(114,137,218,.25); }
 
+  /* ── API Key Encryption ── */
+  .apikey-wrap { position: relative; }
+  .apikey-wrap input { padding-right: 74px; }
+  .apikey-actions { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); display: flex; gap: 3px; }
+  .apikey-btn { padding: 2px 7px; border-radius: 3px; font: 600 0.58rem var(--mono); cursor: pointer; border: 1px solid; transition: .12s; white-space: nowrap; }
+  .apikey-btn.validate { background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.4); color: #a78bfa; }
+  .apikey-btn.validate:hover { background: rgba(167,139,250,.22); }
+  .apikey-btn.clear { background: rgba(248,113,113,.08); border-color: rgba(248,113,113,.3); color: #f87171; }
+  .apikey-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font: 500 0.62rem var(--mono); cursor: pointer; }
+  .apikey-badge.ok  { background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.3); color: #34d399; }
+  .apikey-badge.err { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3); color: #f87171; }
+
   /* ── phpVMS Integration ── */
   .cfg-phpvms { margin-top: 8px; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--brd); border-radius: 6px; }
   .cfg-phpvms-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -336,7 +348,7 @@
       <div class="hdr-ico">AN</div>
       <div class="hdr-t">
         <h1>ACARS Dispatch</h1>
-        <div class="sub">AirNubeiro v4.0</div>
+        <div class="sub">AirNubeiro v4.2</div>
       </div>
     </div>
     <div class="hdr-r">
@@ -404,9 +416,17 @@
       </div>
       <div class="cfg-g" id="phpvmsCfgFields" style="opacity:.45;pointer-events:none;margin-top:4px">
         <div class="f"><label>URL phpVMS</label><input type="text" id="phpvmsUrl" value="https://operaciones.airnubeiro.es" spellcheck="false" autocomplete="off"></div>
-        <div class="f"><label>API KEY
-          <span class="hi" tabindex="0">?<span class="tt">API Key de cualquier usuario admin. Se usa para enriquecer datos de vuelo (dep, arr, aeronave). La posición se obtiene del endpoint público GeoJSON.</span></span>
-        </label><input type="text" id="phpvmsKey" placeholder="c2a31edcf70e7003d4b2" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>API KEY phpVMS
+          <span class="hi" tabindex="0">?<span class="tt">Pega tu API Key y pulsa VALIDAR. Se verifica contra /api/user y se guarda cifrada con AES-256. Nunca se almacena en claro.</span></span>
+        </label>
+          <div id="apikeyDisplay"></div>
+          <div class="apikey-wrap" id="apikeyInputWrap" style="display:none">
+            <input type="password" id="phpvmsKeyRaw" placeholder="Pega tu API Key aquí" autocomplete="off" spellcheck="false" oninput="apikeyOnInput()">
+            <div class="apikey-actions">
+              <button class="apikey-btn validate" id="apikeyValidateBtn" onclick="apikeyValidateAndSave()" style="display:none">✓ VALIDAR</button>
+            </div>
+          </div>
+        </div>
         <div class="f"><label>POLL (seg)</label><input type="number" id="phpvmsPoll" value="30" min="15" max="120" step="5"></div>
       </div>
       <div style="font:.6rem var(--mono);color:var(--tx3);margin-top:5px" id="phpvmsStatus">Desactivado — activa para monitorizar pilotos via phpVMS</div>
@@ -728,7 +748,7 @@
 
 <script>
 // ══════════════════════════════════════════════════════════════════
-//  ACARS DISPATCH v4.0 — AirNubeiro
+//  ACARS DISPATCH v4.2 — AirNubeiro
 //  Creado por Varo para AirNubeiro · Todos los derechos reservados
 // ══════════════════════════════════════════════════════════════════
 
@@ -767,7 +787,6 @@ function saveCfg() {
     fsuipcPoll: $('fsuipcPoll')?.value || '500',
     phpvmsEn:   $('phpvmsEn')?.checked  || false,
     phpvmsUrl:  $('phpvmsUrl')?.value   || 'https://operaciones.airnubeiro.es',
-    phpvmsKey:  $('phpvmsKey')?.value   || '',
     phpvmsPoll: $('phpvmsPoll')?.value  || '30',
     discordEn:      $('discordEn')?.checked     || false,
     discordUrl:     $('discordUrl')?.value       || '',
@@ -798,8 +817,8 @@ function loadCfg() {
       }
       // Restaurar config phpVMS
       if(c.phpvmsUrl  && $('phpvmsUrl'))  $('phpvmsUrl').value  = c.phpvmsUrl;
-      if(c.phpvmsKey  && $('phpvmsKey'))  $('phpvmsKey').value  = c.phpvmsKey;
       if(c.phpvmsPoll && $('phpvmsPoll')) $('phpvmsPoll').value = c.phpvmsPoll;
+      apikeyRenderState();
       if(c.phpvmsEn && $('phpvmsEn')) {
         $('phpvmsEn').checked = true;
         const fields = $('phpvmsCfgFields');
@@ -1223,6 +1242,14 @@ function addMsg(list, { cls, type, badge, route, body, time, st, ok, actions }) 
   else container.appendChild(el);
 
   saveList(list);
+
+  // Discord: notificar mensajes RX siempre; TX solo manuales (los auto-OPS se notifican en sendOpsTx)
+  if (typeof discordNotifyMsg === 'function') {
+    const isAutoOps = body && typeof body === 'string' && body.startsWith('[OPS]');
+    if (list === 'rx' || !isAutoOps) {
+      discordNotifyMsg({ direction: list, cls, type, route, body, st, ok });
+    }
+  }
 }
 
 function clr(list) {
@@ -2687,17 +2714,20 @@ async function refreshOcc() {
     // Filter NBV callsigns
     const nbvFlights = pilots.filter(p => p.callsign && p.callsign.toUpperCase().startsWith('NBV'));
 
-    // Cache for Stream Mode
-    lastOccData = { flights: nbvFlights, time: Date.now(), allPilots: pilots, atcs: data.clients?.atcs || [] };
+    // Merge phpVMS y FSUIPC (fuentes alternativas)
+    const mergedFlights = occMergeAlternativeSources(nbvFlights);
 
-    // Debug: log total pilots parsed vs NBV found
-    console.log(`[OCC] IVAO: ${pilots.length} pilotos totales, ${nbvFlights.length} NBV encontrados`);
+    // Cache for Stream Mode
+    lastOccData = { flights: mergedFlights, time: Date.now(), allPilots: pilots, atcs: data.clients?.atcs || [] };
+
+    // Debug
+    console.log(`[OCC] IVAO: ${pilots.length} pilotos, ${nbvFlights.length} NBV + ${mergedFlights.length - nbvFlights.length} alt.`);
     nbvFlights.forEach(f => {
       const lt = f.lastTrack || {};
       console.log(`  ${f.callsign}: alt=${lt.altitude} gs=${lt.groundSpeed} onGround=${lt.onGround} state=${lt.state}`);
     });
 
-    renderOcc(nbvFlights);
+    renderOcc(mergedFlights);
   } catch(e) {
     console.error('[OCC] Error:', e);
     $('occBody').innerHTML = `<div class="occ-empty">Error IVAO: ${esc(e.message)}<br><small>Reintentando...</small></div>`;
@@ -2706,9 +2736,54 @@ async function refreshOcc() {
   if (occTimer) clearTimeout(occTimer);
   const activeTab = document.querySelector('.tab.on')?.dataset.t;
   if (activeTab === 'occ') {
-    const iv = Math.max(15, parseInt($('cI')?.value) || 20) * 1000;
+    const iv = 45000; // OCC refresca cada 45s independientemente del scan OPS
     occTimer = setTimeout(refreshOcc, iv);
   }
+}
+
+// Merge phpVMS y FSUIPC en la lista de vuelos del OCC
+function occMergeAlternativeSources(ivaoFlights) {
+  // Construir mapa de callsigns ya en IVAO
+  const seen = new Set(ivaoFlights.map(f => (f.callsign||'').toUpperCase()));
+
+  // Añadir vuelos phpVMS no detectados en IVAO
+  for (const [cs, pv] of Object.entries(typeof phpvmsActive !== 'undefined' ? phpvmsActive : {})) {
+    if (seen.has(cs)) {
+      // IVAO tiene el vuelo — enriquecer con pilotName si falta
+      const existing = ivaoFlights.find(f => f.callsign?.toUpperCase() === cs);
+      if (existing && !existing._pilotName) existing._pilotName = pv.pilotName;
+      continue;
+    }
+    seen.add(cs);
+    // Crear entrada sintética compatible con renderOcc
+    ivaoFlights.push({
+      callsign: cs, _src: 'phpvms',
+      flightPlan: { aircraftId: pv.aircraft, departureId: pv.dep, arrivalId: pv.arr },
+      lastTrack: { altitude: pv.alt, groundSpeed: pv.gs || 0, onGround: pv.onGround,
+        state: pv.onGround ? 'On Blocks' : pv.alt > 5000 ? 'En Route' : 'Departing',
+        latitude: pv.lat, longitude: pv.lon, heading: pv.heading },
+      id: '—', _pilotName: pv.pilotName,
+    });
+  }
+
+  // Añadir datos FSUIPC para el callsign local (si no está ya en IVAO)
+  const csLocal = ($('fsuipcCs')?.value.trim().toUpperCase()) || '';
+  if (csLocal && !seen.has(csLocal) && typeof fsuipcGetData === 'function') {
+    const sim = fsuipcGetData();
+    if (sim) {
+      const opsF = typeof opsFlights !== 'undefined' ? opsFlights[csLocal] : null;
+      ivaoFlights.push({
+        callsign: csLocal, _src: 'fsuipc',
+        flightPlan: { aircraftId: opsF?.aircraft || '????', departureId: opsF?.dep || '????', arrivalId: opsF?.arr || '????' },
+        lastTrack: { altitude: sim.altitude, groundSpeed: sim.groundSpeed, onGround: sim.onGround,
+          state: sim.onGround ? 'On Blocks' : sim.altitude > 5000 ? 'En Route' : 'Departing',
+          latitude: sim.lat, longitude: sim.lon, heading: sim.heading },
+        id: 'LOCAL',
+      });
+    }
+  }
+
+  return ivaoFlights;
 }
 
 function renderOcc(flights) {
@@ -2726,7 +2801,7 @@ function renderOcc(flights) {
   // Build table
   let html = `<table class="occ-tbl"><thead><tr>
     <th>Callsign</th><th>ACFT</th><th>VID</th><th>DEP</th><th>ARR</th>
-    <th>Estado</th><th>ALT</th><th>GS</th><th>DIST</th><th>ETA</th>
+    <th>Estado</th><th>ALT</th><th>GS</th><th>DIST</th><th>ETA</th><th>SRC</th>
   </tr></thead><tbody>`;
 
   for (const p of flights) {
@@ -2763,6 +2838,11 @@ function renderOcc(flights) {
     }
 
     const altStr = alt > 0 ? (alt >= 18000 ? `FL${Math.round(alt/100)}` : `${alt}ft`) : '—';
+    const srcBadge = p._src === 'phpvms'
+      ? `<span class="ops-src-phpvms">phpVMS</span>`
+      : p._src === 'fsuipc'
+        ? `<span class="ops-src-sim">SIM</span>`
+        : `<span class="ops-src-ivao">IVAO</span>`;
 
     html += `<tr>
       <td class="occ-cs">${esc(cs)}</td>
@@ -2775,6 +2855,7 @@ function renderOcc(flights) {
       <td>${gs > 0 ? gs+'kt' : '—'}</td>
       <td>${distNm !== '—' ? distNm+'nm' : '—'}</td>
       <td>${eta}</td>
+      <td>${srcBadge}</td>
     </tr>`;
   }
 
@@ -3513,16 +3594,150 @@ async function discordTest() {
     title: '✅ AirNubeiro ACARS — Test de conexión',
     description: 'El webhook de Discord está correctamente configurado.',
     fields: [
-      { name: 'App',     value: 'ACARS Dispatch v4.1',  inline: true },
+      { name: 'App',     value: 'ACARS Dispatch v4.2',  inline: true },
       { name: 'Estación', value: $('cS')?.value || '—', inline: true },
       { name: 'Hora',    value: `${new Date().toISOString().substring(11,19)}Z`, inline: true },
     ],
   }));
 }
 
+// ── Colores ACARS exactos por tipo de mensaje ──
+// Replican las variables CSS: --acc #2e8cf0 · --inf #60a5fa · --cpdlc #a78bfa · --ok #34d399 · --err #f87171
+const DISCORD_MSG_COLORS = {
+  out:   0x2E8CF0,  // TELEX enviado — azul corporativo (--acc)
+  in:    0x60A5FA,  // TELEX recibido — azul claro (--inf)
+  cpm:   0xA78BFA,  // CPDLC — violeta (--cpdlc)
+  logon: 0x34D399,  // LOGON — verde (--ok)
+  erm:   0xF87171,  // Error — rojo (--err)
+};
+
+// Notificación Discord para cualquier mensaje ACARS (RX o TX)
+// Llamado desde addMsg() cuando el evento es relevante para Discord
+function discordNotifyMsg({ direction, cls, type, route, body, st, ok }) {
+  if (!discordEvTelex()) return;
+  // Filtrar mensajes OPS automáticos (ya notificados por discordNotifyTelex)
+  if (body && typeof body === 'string' && body.startsWith('[OPS]')) return;
+  const color  = DISCORD_MSG_COLORS[ok === false ? 'erm' : cls] || DISCORD_MSG_COLORS.out;
+  const icon   = direction === 'rx' ? '📥' : '📤';
+  const dir    = direction === 'rx' ? 'RECIBIDO' : 'ENVIADO';
+  discordEnqueue(discordEmbed({
+    color,
+    title: `${icon} ${type} ${dir}`,
+    fields: [
+      { name: 'Ruta',    value: route || '—',    inline: true },
+      { name: 'Tipo',    value: type,            inline: true },
+      { name: 'Estado',  value: st || '—',       inline: true },
+      { name: 'Mensaje', value: dTrunc(body, 512), inline: false },
+    ],
+    footer: `AirNubeiro ACARS v4.2 • ${new Date().toISOString().substring(11,19)}Z`,
+  }));
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  FIN MÓDULO DISCORD
 // ══════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════
+//  API KEY ENCRYPTION — AES-256-GCM + PBKDF2 (Web Crypto API)
+//  La API key NUNCA se almacena en claro. Flujo:
+//  1. Usuario pega la key → botón VALIDAR
+//  2. Validación contra /api/user de phpVMS
+//  3. Si OK: cifrado AES-256-GCM con clave derivada del dispositivo
+//  4. Blob cifrado en localStorage — display enmascarado
+// ══════════════════════════════════════════════════════════════════
+
+async function cryptoGetKey() {
+  const fp = `${navigator.userAgent}|${screen.width}x${screen.height}|${navigator.language}|AN_ACARS`;
+  let salt = localStorage.getItem('an_ks');
+  if (!salt) {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    salt = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+    localStorage.setItem('an_ks', salt);
+  }
+  const saltBytes = new Uint8Array(salt.match(/.{2}/g).map(h => parseInt(h, 16)));
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(fp), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt:saltBytes, iterations:120000, hash:'SHA-256' },
+    km, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+  );
+}
+async function cryptoEncrypt(plaintext) {
+  const key = await cryptoGetKey();
+  const iv  = crypto.getRandomValues(new Uint8Array(12));
+  const enc = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, new TextEncoder().encode(plaintext));
+  const buf = new Uint8Array(12 + enc.byteLength);
+  buf.set(iv); buf.set(new Uint8Array(enc), 12);
+  return btoa(String.fromCharCode(...buf));
+}
+async function cryptoDecrypt(cipherB64) {
+  try {
+    const key  = await cryptoGetKey();
+    const data = new Uint8Array(atob(cipherB64).split('').map(c => c.charCodeAt(0)));
+    const dec  = await crypto.subtle.decrypt({ name:'AES-GCM', iv:data.slice(0,12) }, key, data.slice(12));
+    return new TextDecoder().decode(dec);
+  } catch { return null; }
+}
+async function phpvmsGetKey() {
+  const blob = localStorage.getItem('an_ak');
+  if (!blob) return '';
+  return (await cryptoDecrypt(blob)) || '';
+}
+
+function apikeyOnInput() {
+  const val = $('phpvmsKeyRaw')?.value.trim();
+  const btn = $('apikeyValidateBtn');
+  if (btn) btn.style.display = val.length > 8 ? '' : 'none';
+}
+function apikeyRenderState() {
+  const display = $('apikeyDisplay');
+  const wrap    = $('apikeyInputWrap');
+  if (!display) return;
+  const hasKey = !!localStorage.getItem('an_ak');
+  if (hasKey) {
+    display.innerHTML = `<div class="apikey-badge ok">🔒 API Key cifrada (AES-256) <button class="apikey-btn clear" onclick="apikeyClear()" style="margin-left:6px;position:static;transform:none">✕ Borrar</button></div>`;
+    if (wrap) wrap.style.display = 'none';
+  } else {
+    display.innerHTML = `<div class="apikey-badge err" onclick="apikeyShowInput()">⚠ Sin API Key — click para configurar</div>`;
+    if (wrap) wrap.style.display = 'none';
+  }
+}
+function apikeyShowInput() {
+  const wrap = $('apikeyInputWrap');
+  if (wrap) { wrap.style.display = ''; $('phpvmsKeyRaw')?.focus(); }
+}
+async function apikeyValidateAndSave() {
+  const raw = $('phpvmsKeyRaw')?.value.trim();
+  if (!raw) return;
+  const btn = $('apikeyValidateBtn');
+  btn.textContent = '⏳'; btn.disabled = true;
+  phpvmsSetStatus('Validando API Key…', null);
+  try {
+    const base = ($('phpvmsUrl')?.value.trim() || '').replace(/\/$/,'');
+    const p    = $('cP')?.value.trim();
+    const url  = p ? `${p}${encodeURIComponent(base + '/api/user')}` : `${base}/api/user`;
+    const resp = await fetch(url, { headers:{'X-API-Key':raw,'Accept':'application/json'}, signal:AbortSignal.timeout(10000) });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} — Key inválida`);
+    const json = await resp.json();
+    const name = json?.data?.name || 'usuario';
+    const blob = await cryptoEncrypt(raw);
+    localStorage.setItem('an_ak', blob);
+    $('phpvmsKeyRaw').value = '';
+    apikeyRenderState();
+    phpvmsSetStatus(`✓ Key validada (${name}) y cifrada AES-256`, true);
+    if ($('phpvmsEn')?.checked) { phpvmsPirepCache = {}; phpvmsScan(); }
+  } catch(e) {
+    phpvmsSetStatus(`✗ ${e.message}`, false);
+    btn.textContent = '✓ VALIDAR'; btn.disabled = false;
+    return;
+  }
+  btn.textContent = '✓ VALIDAR'; btn.disabled = false;
+}
+function apikeyClear() {
+  if (!confirm('¿Borrar la API Key guardada?')) return;
+  localStorage.removeItem('an_ak');
+  apikeyRenderState();
+  phpvmsSetStatus('API Key eliminada', null);
+}
 
 // ══════════════════════════════════════════════════════════════════
 //  phpVMS INTEGRATION MODULE v1.0 — AirNubeiro ACARS
@@ -3585,7 +3800,7 @@ async function phpvmsFetchPirep(pirepId) {
     return cached;
   }
   const base = ($('phpvmsUrl')?.value.trim() || '').replace(/\/$/, '');
-  const key  = $('phpvmsKey')?.value.trim();
+  const key  = await phpvmsGetKey();
   if (!base) return null;
   const headers = { 'Accept': 'application/json', 'Cache-Control': 'no-cache' };
   if (key) headers['X-API-Key'] = key;
@@ -3786,9 +4001,8 @@ function phpvmsOnToggle() {
 
 // ── Init ──
 loadCfg(); loadList('rx'); loadList('tx'); updBtn();
-// Pre-fill phpVMS defaults si no había config guardada
-if ($('phpvmsUrl') && !$('phpvmsUrl').value) $('phpvmsUrl').value = 'https://operaciones.airnubeiro.es';
-if ($('phpvmsKey') && !$('phpvmsKey').value) $('phpvmsKey').value = 'c2a31edcf70e7003d4b2';
+// Renderizar estado de API Key cifrada tras cargar config
+apikeyRenderState();
 $('btnSnd').textContent = soundOn ? '🔔' : '🔕';
 if (!$('cL').value.trim()) { $('cfgP').classList.add('v'); $('btnCfg').classList.add('on'); }
 else ss('ok', `Estación ${$('cS').value||'???'} lista`);

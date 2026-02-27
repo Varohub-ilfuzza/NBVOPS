@@ -64,6 +64,50 @@
   .sb.err { background: rgba(248,113,113,.06); color: var(--err); } .sb.err .d { background: var(--err); }
   .sb.live { background: rgba(244,114,182,.06); color: var(--ops); } .sb.live .d { background: var(--ops); animation: pulse 1.5s infinite; }
 
+  /* ── Módulos externos (FSUIPC / phpVMS / Discord) ── */
+  .cfg-module { margin-top: 8px; padding: 8px 10px; background: var(--bg3,#071018); border: 1px solid var(--brd); border-radius: 6px; }
+  .cfg-mod-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+  .cfg-mod-ttl { font: 600 0.65rem var(--mono); letter-spacing: .5px; }
+  .cfg-mod-ttl.fsuipc  { color: #34d399; }
+  .cfg-mod-ttl.phpvms  { color: #a78bfa; }
+  .cfg-mod-ttl.discord { color: #7289da; }
+  .mod-toggle { display: flex; align-items: center; gap: 5px; cursor: pointer; font: 500 0.63rem var(--mono); color: var(--tx2); }
+  .mod-toggle input[type=checkbox] { width: 12px; height: 12px; }
+  .mod-toggle.fsuipc  input { accent-color: #34d399; }
+  .mod-toggle.phpvms  input { accent-color: #a78bfa; }
+  .mod-toggle.discord input { accent-color: #7289da; }
+  .cfg-mod-fields { opacity: .45; pointer-events: none; margin-top: 4px; }
+  .cfg-mod-fields.active { opacity: 1; pointer-events: auto; }
+  .cfg-mod-status { font: 500 0.6rem var(--mono); color: var(--tx3); margin-top: 4px; }
+  /* Badge de fuente en tarjetas de vuelo */
+  .src-sim    { font: 700 0.52rem var(--mono); color: #34d399; background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.3); border-radius: 3px; padding: 1px 4px; }
+  .src-phpvms { font: 700 0.52rem var(--mono); color: #a78bfa; background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.3); border-radius: 3px; padding: 1px 4px; }
+  .src-ivao   { font: 700 0.52rem var(--mono); color: var(--tx3); background: var(--bg3,#071018); border: 1px solid var(--brd); border-radius: 3px; padding: 1px 4px; }
+  /* FSUIPC header badge */
+  .fsuipc-badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 4px; font: 700 0.58rem var(--mono); letter-spacing: .5px; border: 1px solid; transition: all .3s; }
+  .fsuipc-badge.src-ivao   { color: var(--tx3); border-color: var(--brd); background: transparent; }
+  .fsuipc-badge.src-fsuipc { color: #34d399; border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.08); }
+  .fsuipc-badge.src-connecting { color: #fbbf24; border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.06); animation: fblink 1.2s ease-in-out infinite; }
+  @keyframes fblink { 0%,100%{opacity:1}50%{opacity:.4} }
+  .fsuipc-badge .fd { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  /* API Key encryption UI */
+  .apikey-wrap { position: relative; }
+  .apikey-wrap input { padding-right: 72px; }
+  .apikey-actions { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); display: flex; gap: 3px; }
+  .apikey-btn { padding: 2px 7px; border-radius: 3px; font: 600 0.58rem var(--mono); cursor: pointer; border: 1px solid; transition: .12s; white-space: nowrap; }
+  .apikey-btn.validate { background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.4); color: #a78bfa; }
+  .apikey-btn.validate:hover { background: rgba(167,139,250,.22); }
+  .apikey-btn.clear { background: rgba(248,113,113,.08); border-color: rgba(248,113,113,.3); color: #f87171; }
+  .apikey-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font: 500 0.62rem var(--mono); }
+  .apikey-badge.ok  { background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.3); color: #34d399; }
+  .apikey-badge.err { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3); color: #f87171; }
+  /* Discord events grid */
+  .dc-events { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; margin-top: 3px; }
+  .dc-events label { display: flex; align-items: center; gap: 4px; font: 500 0.62rem var(--mono); color: var(--tx2); cursor: pointer; }
+  .dc-events input { accent-color: #7289da; width: 11px; height: 11px; }
+  .dc-test-btn { margin-top: 5px; padding: 3px 9px; background: rgba(114,137,218,.12); border: 1px solid rgba(114,137,218,.3); color: #7289da; border-radius: 4px; font: 600 0.62rem var(--mono); cursor: pointer; }
+  .dc-test-btn:hover { background: rgba(114,137,218,.22); }
+
   /* ── Roster ── */
   .roster { background: var(--bg1); border: 1px solid var(--brd); border-radius: 8px; padding: 14px; }
   .roster h3 { font: 600 0.72rem var(--mono); color: var(--ops); letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
@@ -230,6 +274,7 @@
       <button class="ib" id="btnMonitor" onclick="toggleMonitor()">
         <span id="monIco">▶</span> <span id="monTxt">INICIAR</span>
       </button>
+      <span class="fsuipc-badge src-ivao" id="fsuipcBadge" title="Fuente: IVAO Whazzup"><span class="fd"></span>IVAO</span>
       <button class="ib" id="btnAoc" onclick="toggleAoc()" title="Pantalla AOC">🖥</button>
       <button class="ib" id="btnCfg" onclick="toggleCfg()">⚙</button>
     </div>
@@ -265,6 +310,67 @@
           <option value="0">Manual (solo generar, envío manual)</option>
         </select>
       </div>
+    </div>
+
+    <!-- ── phpVMS Integration ── -->
+    <div class="cfg-module">
+      <div class="cfg-mod-hdr">
+        <span class="cfg-mod-ttl phpvms">🗄 phpVMS — Pilotos AirNubeiro</span>
+        <label class="mod-toggle phpvms"><input type="checkbox" id="phpvmsEn" onchange="phpvmsOnToggle()"><span>Activar</span></label>
+      </div>
+      <div class="cfg-mod-fields" id="phpvmsCfgFields">
+        <div class="f"><label>URL phpVMS</label><input type="text" id="phpvmsUrl" value="https://operaciones.airnubeiro.es" spellcheck="false" autocomplete="off"></div>
+        <div class="f"><label>API KEY phpVMS
+          <span class="hi" tabindex="0">?<span class="tt">Pega tu API Key y pulsa VALIDAR. Se verificará contra /api/user y se guardará cifrada con AES-256. Nunca se almacena en claro.</span></span>
+        </label>
+          <div id="apikeyDisplay"></div>
+          <div class="apikey-wrap" id="apikeyInputWrap" style="display:none">
+            <input type="password" id="phpvmsKeyRaw" placeholder="Pega tu API Key aquí" autocomplete="off" spellcheck="false" oninput="apikeyOnInput()">
+            <div class="apikey-actions">
+              <button class="apikey-btn validate" id="apikeyValidateBtn" onclick="apikeyValidateAndSave()" style="display:none">✓ VALIDAR</button>
+            </div>
+          </div>
+        </div>
+        <div class="f"><label>POLL (seg)</label><input type="number" id="phpvmsPoll" value="30" min="15" max="120" step="5"></div>
+      </div>
+      <div class="cfg-mod-status" id="phpvmsStatus">Desactivado</div>
+    </div>
+
+    <!-- ── FSUIPC WebSocket ── -->
+    <div class="cfg-module">
+      <div class="cfg-mod-hdr">
+        <span class="cfg-mod-ttl fsuipc">✈ FSUIPC WebSocket — Sim Local</span>
+        <label class="mod-toggle fsuipc"><input type="checkbox" id="fsuipcEn" onchange="fsuipcOnToggle()"><span>Activar</span></label>
+      </div>
+      <div class="cfg-mod-fields" id="fsuipcCfgFields">
+        <div class="f"><label>WS URL</label><input type="text" id="fsuipcUrl" value="ws://127.0.0.1:2048" spellcheck="false" autocomplete="off"></div>
+        <div class="f"><label>MI CALLSIGN (piloto local)
+          <span class="hi" tabindex="0">?<span class="tt">OPS usará datos del simulador para este callsign en lugar de IVAO Whazzup.</span></span>
+        </label><input type="text" id="fsuipcCs" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>POLL (ms)</label><input type="number" id="fsuipcPoll" value="500" min="200" max="2000" step="100"></div>
+      </div>
+      <div class="cfg-mod-status" id="fsuipcStatus">Desactivado</div>
+    </div>
+
+    <!-- ── Discord Webhook ── -->
+    <div class="cfg-module">
+      <div class="cfg-mod-hdr">
+        <span class="cfg-mod-ttl discord">💬 Discord Webhook — Notificaciones</span>
+        <label class="mod-toggle discord"><input type="checkbox" id="discordEn" onchange="discordOnToggle()"><span>Activar</span></label>
+      </div>
+      <div class="cfg-mod-fields" id="discordCfgFields">
+        <div class="f"><label>WEBHOOK URL</label><input type="text" id="discordUrl" placeholder="https://discord.com/api/webhooks/..." spellcheck="false" autocomplete="off"></div>
+        <div class="f"><label>NOTIFICAR EN</label>
+          <div class="dc-events">
+            <label><input type="checkbox" id="dcEvFlight" checked> Vuelo detectado</label>
+            <label><input type="checkbox" id="dcEvPhase"  checked> Cambio de fase</label>
+            <label><input type="checkbox" id="dcEvTelex"  checked> TELEX enviado</label>
+            <label><input type="checkbox" id="dcEvAlert"  checked> Alertas OPS</label>
+          </div>
+        </div>
+        <button class="dc-test-btn" onclick="discordTest()">▶ Test webhook</button>
+      </div>
+      <div class="cfg-mod-status" id="discordStatus">Desactivado</div>
     </div>
   </div>
 
@@ -344,7 +450,7 @@
       </table>
       <div class="aoc-empty" id="aocEmpty">Ningun vuelo NBV detectado — inicia el monitor</div>
     </div>
-    <div class="aoc-footer">AirNubeiro OPS Center v4.0 — Dispatch Automatizado</div>
+    <div class="aoc-footer">AirNubeiro OPS Center v4.2 — Dispatch Automatizado</div>
   </div>
 
   <!-- ═══ FOOTER ═══ -->
@@ -393,7 +499,20 @@ function notifySound() { beep(800, 0.12); setTimeout(() => beep(1100, 0.15), 160
 function saveCfg() {
   try { localStorage.setItem('an_ops', JSON.stringify({
     l: $('cL').value, s: $('cS').value, a: $('cA').value,
-    p: $('cP').value, i: $('cI').value, ri: $('cRI').value, auto: $('cAuto').value, roster
+    p: $('cP').value, i: $('cI').value, ri: $('cRI').value, auto: $('cAuto').value, roster,
+    fsuipcEn:   $('fsuipcEn')?.checked  || false,
+    fsuipcUrl:  $('fsuipcUrl')?.value   || 'ws://127.0.0.1:2048',
+    fsuipcCs:   $('fsuipcCs')?.value    || '',
+    fsuipcPoll: $('fsuipcPoll')?.value  || '500',
+    phpvmsEn:   $('phpvmsEn')?.checked  || false,
+    phpvmsUrl:  $('phpvmsUrl')?.value   || 'https://operaciones.airnubeiro.es',
+    phpvmsPoll: $('phpvmsPoll')?.value  || '30',
+    discordEn:  $('discordEn')?.checked || false,
+    discordUrl: $('discordUrl')?.value  || '',
+    dcEvFlight: $('dcEvFlight')?.checked ?? true,
+    dcEvPhase:  $('dcEvPhase')?.checked  ?? true,
+    dcEvTelex:  $('dcEvTelex')?.checked  ?? true,
+    dcEvAlert:  $('dcEvAlert')?.checked  ?? true,
   })); } catch(e) {}
 }
 function loadCfg() {
@@ -403,6 +522,23 @@ function loadCfg() {
       $('cL').value = c.l||''; $('cS').value = c.s||''; $('cA').value = c.a||'NBV';
       if(c.p) $('cP').value = c.p; if(c.i) $('cI').value = c.i; if(c.ri) $('cRI').value = c.ri; if(c.auto) $('cAuto').value = c.auto;
       if(c.roster) roster = c.roster;
+      // FSUIPC
+      if(c.fsuipcUrl  && $('fsuipcUrl'))  $('fsuipcUrl').value  = c.fsuipcUrl;
+      if(c.fsuipcCs   && $('fsuipcCs'))   $('fsuipcCs').value   = c.fsuipcCs;
+      if(c.fsuipcPoll && $('fsuipcPoll')) $('fsuipcPoll').value = c.fsuipcPoll;
+      if(c.fsuipcEn) { $('fsuipcEn').checked = true; $('fsuipcCfgFields').classList.add('active'); fsuipcConnect(); }
+      // phpVMS
+      if(c.phpvmsUrl  && $('phpvmsUrl'))  $('phpvmsUrl').value  = c.phpvmsUrl;
+      if(c.phpvmsPoll && $('phpvmsPoll')) $('phpvmsPoll').value = c.phpvmsPoll;
+      if(c.phpvmsEn) { $('phpvmsEn').checked = true; $('phpvmsCfgFields').classList.add('active'); phpvmsStart(); }
+      apikeyRenderState(); // renderizar estado de API key cifrada
+      // Discord
+      if(c.discordUrl && $('discordUrl')) $('discordUrl').value = c.discordUrl;
+      if($('dcEvFlight') && c.dcEvFlight !== undefined) $('dcEvFlight').checked = c.dcEvFlight;
+      if($('dcEvPhase')  && c.dcEvPhase  !== undefined) $('dcEvPhase').checked  = c.dcEvPhase;
+      if($('dcEvTelex')  && c.dcEvTelex  !== undefined) $('dcEvTelex').checked  = c.dcEvTelex;
+      if($('dcEvAlert')  && c.dcEvAlert  !== undefined) $('dcEvAlert').checked  = c.dcEvAlert;
+      if(c.discordEn) { $('discordEn').checked = true; $('discordCfgFields').classList.add('active'); discordSetStatus('Webhook activo', true); }
     }
   } catch(e) {}
 }
@@ -485,6 +621,7 @@ async function sendTelex(to, body) {
     const prefix = chunks.length > 1 ? `[${i+1}/${chunks.length}] ` : '';
     const raw = await hReq(to, 'telex', prefix + chunks[i]);
     if (!raw.toLowerCase().startsWith('ok')) throw new Error(raw);
+    if (i === 0) discordNotifyOpsMsg({ to, body, auto: true, ok: true });
     if (i < chunks.length - 1) await sleep(500);
   }
   totalMsgsSent++;
@@ -842,6 +979,7 @@ async function genDescent(flt) {
         }
         warn += `ATC: ${destAtc.map(a => a.callsign).join(', ')}\n`;
         msgs.push({ id: 'atc_delay', label: 'ATC ADVSY', body: warn });
+        discordNotifyAlert(flt.callsign, 'ATC CONGESTION', `${flt.arr}: ${total} aeronaves (${arriving.length} ARR/${departing.length} DEP)`);
       }
     }
   } catch(e) {
@@ -1635,15 +1773,20 @@ async function scan() {
 
       const flt = flights[cs];
 
+      // FSUIPC: inyectar datos del sim para el vuelo local
+      fsuipcInjectIntoFlight(flt);
+
       // New flight detected
       if (!prev) {
         log(`✈ ${cs} detectado: ${flt.dep}→${flt.arr} (${flt.aircraft})`, 'ops');
         notifySound();
+        discordNotifyDetected(flt);
       }
 
-      // Phase transition → trigger messages
+      // Phase transition → trigger messages + Discord
       if (phaseChanged) {
         log(`${cs}: ${prev.phase} → ${newPhase}`, 'ops');
+        discordNotifyPhase(flt, prev.phase, newPhase);
       }
 
       // On entering ENROUTE: estimate flight time and record start
@@ -1865,6 +2008,8 @@ async function manualSend(cs, key) {
     flt.msgStatus[key] = 'error';
     log(`✗ ${key} → ${cs}: ${e.message}`, 'err');
   }
+  // phpVMS: merge vuelos adicionales no detectados por IVAO
+  if ($('phpvmsEn')?.checked) phpvmsMergeWithFlights();
   updateDashboard();
   updateStats();
 }
@@ -2059,6 +2204,448 @@ function renderRosterChips() {
       const sbBadge = sb ? ' <span style="color:var(--acc);background:var(--acc-g);padding:0 3px;border-radius:2px;font-size:.48rem">SB</span>' : '';
       return `<span style="background:var(--bg2);border:1px solid var(--brd);padding:2px 6px;border-radius:4px;${isActive?'border-color:var(--ok);':''}font-weight:500">${dot}${esc(cs)}${sbBadge}</span>`;
     }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  API KEY ENCRYPTION — AES-256-GCM + PBKDF2 (Web Crypto API)
+//  La API key NUNCA se almacena en claro. Flujo:
+//  1. Usuario pega la key → botón VALIDAR
+//  2. Validación contra /api/user de phpVMS
+//  3. Si OK: cifrado AES-256-GCM con clave derivada del dispositivo
+//  4. Blob cifrado en localStorage — display enmascarado
+// ══════════════════════════════════════════════════════════════════
+
+// Derivar clave AES-256 desde huella del dispositivo + sal aleatoria
+async function cryptoGetKey() {
+  const fp = `${navigator.userAgent}|${screen.width}x${screen.height}|${navigator.language}|AN_OPS`;
+  let salt = localStorage.getItem('an_ks');
+  if (!salt) {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    salt = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+    localStorage.setItem('an_ks', salt);
+  }
+  const saltBytes = new Uint8Array(salt.match(/.{2}/g).map(h => parseInt(h, 16)));
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(fp), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: saltBytes, iterations: 120000, hash: 'SHA-256' },
+    km,
+    { name: 'AES-GCM', length: 256 },
+    false, ['encrypt', 'decrypt']
+  );
+}
+
+async function cryptoEncrypt(plaintext) {
+  const key = await cryptoGetKey();
+  const iv  = crypto.getRandomValues(new Uint8Array(12));
+  const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext));
+  const buf = new Uint8Array(12 + enc.byteLength);
+  buf.set(iv); buf.set(new Uint8Array(enc), 12);
+  return btoa(String.fromCharCode(...buf));
+}
+
+async function cryptoDecrypt(cipherB64) {
+  try {
+    const key  = await cryptoGetKey();
+    const data = new Uint8Array(atob(cipherB64).split('').map(c => c.charCodeAt(0)));
+    const dec  = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: data.slice(0,12) }, key, data.slice(12));
+    return new TextDecoder().decode(dec);
+  } catch { return null; }
+}
+
+// Recuperar API key descifrada (para uso interno en peticiones)
+async function phpvmsGetKey() {
+  const blob = localStorage.getItem('an_ak');
+  if (!blob) return '';
+  return (await cryptoDecrypt(blob)) || '';
+}
+
+// ── UI de la API Key ──
+function apikeyOnInput() {
+  const val = $('phpvmsKeyRaw')?.value.trim();
+  const btn = $('apikeyValidateBtn');
+  if (btn) btn.style.display = val.length > 8 ? '' : 'none';
+}
+
+function apikeyRenderState() {
+  const display = $('apikeyDisplay');
+  const wrap    = $('apikeyInputWrap');
+  if (!display) return;
+  const hasKey = !!localStorage.getItem('an_ak');
+  if (hasKey) {
+    display.innerHTML = `<div class="apikey-badge ok">🔒 API Key cifrada (AES-256) <button class="apikey-btn clear" onclick="apikeyClear()" style="margin-left:6px;position:static;transform:none">✕ Borrar</button></div>`;
+    wrap.style.display = 'none';
+  } else {
+    display.innerHTML = `<div class="apikey-badge err" style="cursor:pointer" onclick="apikeyShowInput()">⚠ Sin API Key — haz click para configurar</div>`;
+    wrap.style.display = 'none';
+  }
+}
+
+function apikeyShowInput() {
+  $('apikeyInputWrap').style.display = '';
+  $('phpvmsKeyRaw').focus();
+}
+
+async function apikeyValidateAndSave() {
+  const raw = $('phpvmsKeyRaw')?.value.trim();
+  if (!raw) return;
+  const btn = $('apikeyValidateBtn');
+  btn.textContent = '⏳'; btn.disabled = true;
+  phpvmsSetStatus('Validando API Key contra phpVMS…', null);
+  try {
+    const base = ($('phpvmsUrl')?.value.trim() || '').replace(/\/$/, '');
+    const p    = $('cP')?.value.trim();
+    const url  = p ? `${p}${encodeURIComponent(base + '/api/user')}` : `${base}/api/user`;
+    const resp = await fetch(url, {
+      headers: { 'X-API-Key': raw, 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} — Key inválida o sin permisos`);
+    const json = await resp.json();
+    const name = json?.data?.name || json?.name || 'usuario';
+    // Validación OK → cifrar y guardar
+    const blob = await cryptoEncrypt(raw);
+    localStorage.setItem('an_ak', blob);
+    $('phpvmsKeyRaw').value = '';
+    apikeyRenderState();
+    phpvmsSetStatus(`✓ API Key validada (${name}) y cifrada con AES-256`, true);
+    if ($('phpvmsEn')?.checked) phpvmsStart();
+  } catch(e) {
+    phpvmsSetStatus(`✗ Validación fallida: ${e.message}`, false);
+    btn.textContent = '✓ VALIDAR'; btn.disabled = false;
+    return;
+  }
+  btn.textContent = '✓ VALIDAR'; btn.disabled = false;
+}
+
+function apikeyClear() {
+  if (!confirm('¿Borrar la API Key guardada?')) return;
+  localStorage.removeItem('an_ak');
+  apikeyRenderState();
+  phpvmsSetStatus('API Key eliminada', null);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  FSUIPC WEBSOCKET MODULE — OPS Center
+// ══════════════════════════════════════════════════════════════════
+let fsuipcWs = null, fsuipcConnected = false, fsuipcReady = false;
+let fsuipcData = null, fsuipcRetryTimer = null, fsuipcRetryCount = 0, fsuipcPollTimer = null;
+const FSUIPC_MAX_RETRY = 8, FSUIPC_RETRY_DELAY = 15000, FSUIPC_GROUP = 'AN_OPS_DATA';
+const FSUIPC_OFFSETS = [
+  { name:'lat',       address:'0x0560', type:'DBL',    size:8 },
+  { name:'lon',       address:'0x0568', type:'DBL',    size:8 },
+  { name:'altMeters', address:'0x0574', type:'INT64',  size:8 },
+  { name:'gs',        address:'0x02B8', type:'UINT32', size:4 },
+  { name:'hdg',       address:'0x0580', type:'UINT32', size:4 },
+  { name:'vs',        address:'0x030C', type:'INT32',  size:4 },
+  { name:'onGround',  address:'0x0366', type:'INT16',  size:2 },
+  { name:'squawk',    address:'0x0354', type:'UINT16', size:2 },
+];
+
+function fsuipcSetStatus(msg, ok) {
+  const el = $('fsuipcStatus'); if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok === true ? '#34d399' : ok === false ? 'var(--wrn,#fbbf24)' : 'var(--tx3)';
+}
+function fsuipcUpdateBadge(state) {
+  const b = $('fsuipcBadge'); if (!b) return;
+  b.className = `fsuipc-badge src-${state}`;
+  b.innerHTML = `<span class="fd"></span>${state === 'fsuipc' ? 'SIM' : state === 'connecting' ? 'SIM…' : 'IVAO'}`;
+  b.title = state === 'fsuipc' ? 'Fuente: FSUIPC (simulador local)' : state === 'connecting' ? 'FSUIPC: conectando…' : 'Fuente: IVAO Whazzup';
+}
+function fsuipcNormalize(r) {
+  const gsKts = Math.round((r.gs||0)/65536*1.94384);
+  const hdgDeg = Math.round(((r.hdg||0)/65536)*360)%360;
+  const altFt  = Math.round((r.altMeters||0)*3.28084);
+  const vsFpm  = Math.round((r.vs||0)/256);
+  const sq = r.squawk ? `${(r.squawk>>12)&0xF}${(r.squawk>>8)&0xF}${(r.squawk>>4)&0xF}${r.squawk&0xF}` : '0000';
+  return { lat:r.lat||0, lon:r.lon||0, altitude:altFt, groundSpeed:gsKts, heading:hdgDeg, verticalSpeed:vsFpm, onGround:r.onGround===1||r.onGround===true, squawk:sq, ts:Date.now() };
+}
+function fsuipcRegisterGroup() {
+  if (!fsuipcWs || fsuipcWs.readyState !== WebSocket.OPEN) return;
+  const pollMs = Math.max(200, parseInt($('fsuipcPoll')?.value)||500);
+  fsuipcWs.send(JSON.stringify({ command:'groups.add', parameters:[{ name:FSUIPC_GROUP, pollInterval:pollMs, offsets:FSUIPC_OFFSETS }] }));
+}
+function fsuipcHandleMessage(evt) {
+  let msg; try { msg = JSON.parse(evt.data); } catch { return; }
+  if (msg.command === FSUIPC_GROUP && msg.data) {
+    fsuipcReady = true; fsuipcData = fsuipcNormalize(msg.data);
+    fsuipcUpdateBadge('fsuipc');
+    fsuipcSetStatus(`✓ Sim: Alt${fsuipcData.altitude}ft GS${fsuipcData.groundSpeed}kt`, true);
+  }
+  if (msg.success === true) { fsuipcReady = true; fsuipcSetStatus('✓ Grupo registrado', true); }
+  if (msg.error) fsuipcSetStatus(`⚠ ${msg.error}`, false);
+}
+function fsuipcScheduleRetry() {
+  if (fsuipcRetryCount >= FSUIPC_MAX_RETRY) { fsuipcSetStatus(`✗ Sin conexión tras ${FSUIPC_MAX_RETRY} intentos`, false); fsuipcUpdateBadge('ivao'); return; }
+  fsuipcRetryCount++;
+  clearTimeout(fsuipcRetryTimer);
+  fsuipcSetStatus(`Reintento ${fsuipcRetryCount}/${FSUIPC_MAX_RETRY} en ${FSUIPC_RETRY_DELAY/1000}s…`, null);
+  fsuipcRetryTimer = setTimeout(() => { if ($('fsuipcEn')?.checked) fsuipcConnect(); }, FSUIPC_RETRY_DELAY);
+}
+function fsuipcDisconnect(resetData=true) {
+  clearTimeout(fsuipcRetryTimer); clearInterval(fsuipcPollTimer); fsuipcRetryCount=0;
+  if (fsuipcWs) { fsuipcWs.onclose=null; fsuipcWs.onerror=null; if(fsuipcWs.readyState<2) fsuipcWs.close(1000,'User'); fsuipcWs=null; }
+  fsuipcConnected=false; fsuipcReady=false; if(resetData) fsuipcData=null;
+}
+function fsuipcConnect() {
+  if (fsuipcWs?.readyState===WebSocket.OPEN) return;
+  fsuipcDisconnect(false);
+  const url = $('fsuipcUrl')?.value.trim() || 'ws://127.0.0.1:2048';
+  fsuipcUpdateBadge('connecting'); fsuipcSetStatus(`Conectando a ${url}…`, null);
+  try { fsuipcWs = new WebSocket(url); } catch(e) { fsuipcSetStatus(`✗ URL inválida: ${e.message}`,false); fsuipcUpdateBadge('ivao'); return; }
+  const timeout = setTimeout(() => { if(fsuipcWs?.readyState!==WebSocket.OPEN){fsuipcWs.close();fsuipcSetStatus('✗ Timeout — ¿FSUIPC WS activo?',false);fsuipcUpdateBadge('ivao');fsuipcScheduleRetry();} }, 8000);
+  fsuipcWs.addEventListener('open', () => {
+    clearTimeout(timeout); fsuipcConnected=true; fsuipcRetryCount=0;
+    fsuipcSetStatus('✓ Conectado — registrando offsets…', true); fsuipcRegisterGroup();
+    const ms = Math.max(200, parseInt($('fsuipcPoll')?.value)||500);
+    fsuipcPollTimer = setInterval(() => { if(fsuipcWs?.readyState===WebSocket.OPEN) fsuipcWs.send(JSON.stringify({command:'groups.read',name:FSUIPC_GROUP})); }, ms);
+  });
+  fsuipcWs.addEventListener('message', fsuipcHandleMessage);
+  fsuipcWs.addEventListener('close', (e) => { clearTimeout(timeout); clearInterval(fsuipcPollTimer); fsuipcConnected=false; fsuipcReady=false; if($('fsuipcEn')?.checked){fsuipcUpdateBadge('connecting');fsuipcScheduleRetry();}else{fsuipcUpdateBadge('ivao');fsuipcData=null;fsuipcSetStatus('Desconectado',null);} });
+  fsuipcWs.addEventListener('error', () => { clearTimeout(timeout); });
+}
+function fsuipcOnToggle() {
+  const en = $('fsuipcEn').checked;
+  $('fsuipcCfgFields').classList.toggle('active', en);
+  if (en) { fsuipcRetryCount=0; fsuipcConnect(); } else { fsuipcDisconnect(true); fsuipcUpdateBadge('ivao'); fsuipcSetStatus('Desactivado',null); }
+  saveCfg();
+}
+function fsuipcGetData(maxAgeMs=5000) {
+  if (!fsuipcConnected||!fsuipcReady||!fsuipcData) return null;
+  if (Date.now()-fsuipcData.ts>maxAgeMs) return null;
+  return fsuipcData;
+}
+function fsuipcInjectIntoFlight(flt) {
+  const csLocal = $('fsuipcCs')?.value.trim().toUpperCase();
+  if (!csLocal || flt.callsign !== csLocal) return false;
+  const sim = fsuipcGetData(); if (!sim) return false;
+  flt.alt=sim.altitude; flt.gs=sim.groundSpeed; flt.heading=sim.heading;
+  flt.lat=sim.lat; flt.lng=sim.lon; flt.onGround=sim.onGround; flt.srcSim=true;
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  phpVMS INTEGRATION MODULE — OPS Center
+// ══════════════════════════════════════════════════════════════════
+let phpvmsInterval=null, phpvmsPirepCache={}, phpvmsActive={}, phpvmsScanCount=0;
+const PHPVMS_CACHE_TTL = 300000;
+
+function phpvmsSetStatus(msg, ok) {
+  const el = $('phpvmsStatus'); if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok===true ? '#a78bfa' : ok===false ? 'var(--wrn,#fbbf24)' : 'var(--tx3)';
+}
+function phpvmsProxy(url) { const p=$('cP')?.value.trim(); return p?`${p}${encodeURIComponent(url)}`:url; }
+function phpvmsCallsign(pirep) {
+  const prefix = pirep?.airline?.icao||pirep?.airline_icao||'';
+  const num = String(pirep?.flight_number||'').padStart(3,'0');
+  if (!prefix||!num||num==='000') return null;
+  return `${prefix}${num}`.toUpperCase();
+}
+async function phpvmsFetchGeojson() {
+  const base = ($('phpvmsUrl')?.value.trim()||'').replace(/\/$/,'');
+  const resp = await fetch(phpvmsProxy(`${base}/api/acars/geojson?_t=${Date.now()}`), { signal:AbortSignal.timeout(15000), headers:{'Cache-Control':'no-cache'} });
+  if (!resp.ok) throw new Error(`GeoJSON HTTP ${resp.status}`);
+  const json = await resp.json();
+  return json?.data?.features||json?.features||[];
+}
+async function phpvmsFetchPirep(pirepId) {
+  const cached = phpvmsPirepCache[pirepId];
+  if (cached && Date.now()-cached.cachedAt<PHPVMS_CACHE_TTL) return cached;
+  const base = ($('phpvmsUrl')?.value.trim()||'').replace(/\/$/,'');
+  const key  = await phpvmsGetKey();
+  const headers = { 'Accept':'application/json','Cache-Control':'no-cache' };
+  if (key) headers['X-API-Key'] = key;
+  try {
+    const resp = await fetch(phpvmsProxy(`${base}/api/pireps/${pirepId}`), { signal:AbortSignal.timeout(10000), headers });
+    if (!resp.ok) return null;
+    const data = (await resp.json())?.data;
+    if (!data?.id) return null;
+    phpvmsPirepCache[pirepId] = { ...data, cachedAt:Date.now() };
+    return phpvmsPirepCache[pirepId];
+  } catch(e) { return null; }
+}
+async function phpvmsScan() {
+  if (!$('phpvmsEn')?.checked) return;
+  phpvmsScanCount++;
+  try {
+    const features = await phpvmsFetchGeojson();
+    phpvmsSetStatus(`Scan #${phpvmsScanCount}: ${features.length} vuelo(s) en phpVMS`, true);
+    const activePids = new Set();
+    for (const feat of features) {
+      const props = feat.properties||{}, coords = feat.geometry?.coordinates||[];
+      const pirepId = props.pirep_id; if (!pirepId) continue;
+      activePids.add(pirepId);
+      const lon=parseFloat(coords[0])||0, lat=parseFloat(coords[1])||0;
+      const alt=parseFloat(coords[2]??props.alt)||0, hdg=parseFloat(props.heading)||0;
+      const pirep = await phpvmsFetchPirep(pirepId);
+      const cs = pirep ? phpvmsCallsign(pirep) : null; if (!cs) continue;
+      phpvmsActive[cs] = { pirepId, callsign:cs, lat, lon, alt, heading:hdg,
+        dep:pirep?.dpt_airport_id||'????', arr:pirep?.arr_airport_id||'????',
+        aircraft:pirep?.aircraft?.icao||'????', gs:0, onGround:alt<100,
+        pilotName:pirep?.user?.name||'', srcPhpvms:true, updatedAt:Date.now() };
+    }
+    // Purgar inactivos
+    for (const cs of Object.keys(phpvmsActive)) {
+      if (!activePids.has(phpvmsActive[cs]?.pirepId)) delete phpvmsActive[cs];
+    }
+    const now = Date.now();
+    for (const pid of Object.keys(phpvmsPirepCache)) {
+      if (now-phpvmsPirepCache[pid].cachedAt>PHPVMS_CACHE_TTL*2) delete phpvmsPirepCache[pid];
+    }
+    phpvmsMergeWithFlights();
+  } catch(e) { phpvmsSetStatus(`✗ ${e.message}`, false); }
+}
+function phpvmsMergeWithFlights() {
+  const prefix = ($('cA')?.value.trim().toUpperCase())||'NBV';
+  for (const [cs, pv] of Object.entries(phpvmsActive)) {
+    if (!cs.startsWith(prefix)) continue;
+    if (flights[cs] && !flights[cs].offlineSince) {
+      // Enriquecer datos existentes
+      if (!flights[cs].pilotName && pv.pilotName) flights[cs].pilotName = pv.pilotName;
+      if (flights[cs].dep==='????' && pv.dep!=='????') flights[cs].dep = pv.dep;
+      if (flights[cs].arr==='????' && pv.arr!=='????') flights[cs].arr = pv.arr;
+      continue;
+    }
+    // Piloto no detectado por IVAO — añadir desde phpVMS
+    const simPhase = detectPhase({ lastTrack:{ altitude:pv.alt, groundSpeed:pv.gs, onGround:pv.onGround, latitude:pv.lat, longitude:pv.lon } }, flights[cs]||null);
+    if (!flights[cs]) {
+      log(`✈ ${cs} [phpVMS]: ${pv.dep}→${pv.arr}`, 'ops');
+      discordNotifyDetected({ callsign:cs, dep:pv.dep, arr:pv.arr, aircraft:pv.aircraft, srcPhpvms:true, pilotName:pv.pilotName });
+    }
+    flights[cs] = { callsign:cs, phase:simPhase, dep:pv.dep, arr:pv.arr, aircraft:pv.aircraft,
+      alt:pv.alt, gs:pv.gs, heading:pv.heading, lat:pv.lat, lng:pv.lon, onGround:pv.onGround,
+      pilotName:pv.pilotName, pirepId:pv.pirepId, srcPhpvms:true, srcSim:false,
+      firstSeen:flights[cs]?.firstSeen||Date.now(), offlineSince:null,
+      sent:flights[cs]?.sent||{ preflight:false, enroute:false, descent:false, landed:false },
+      simbrief:flights[cs]?.simbrief||null };
+  }
+}
+function phpvmsOnToggle() {
+  const en = $('phpvmsEn').checked;
+  $('phpvmsCfgFields').classList.toggle('active', en);
+  if (en) phpvmsStart(); else { clearInterval(phpvmsInterval); phpvmsInterval=null; phpvmsSetStatus('Desactivado',null); }
+  saveCfg();
+}
+function phpvmsStart() {
+  clearInterval(phpvmsInterval);
+  phpvmsActive={}; phpvmsPirepCache={}; phpvmsScanCount=0;
+  phpvmsScan();
+  const ms = Math.max(15, parseInt($('phpvmsPoll')?.value)||30)*1000;
+  phpvmsInterval = setInterval(phpvmsScan, ms);
+  phpvmsSetStatus('Activado — escaneando…', null);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  DISCORD WEBHOOK MODULE — OPS Center
+// ══════════════════════════════════════════════════════════════════
+const discordQueue=[]; let discordSending=false, discordLastSent=0;
+const DC_MIN_GAP=420;
+const DC_COLORS={ PREFLIGHT:0xFBBF24, ENROUTE:0x60A5FA, DESCENT:0xA78BFA, LANDED:0x34D399, DETECTED:0x2E8CF0, TELEX:0x6EE7B7, ALERT:0xF87171, TEST:0x7289DA };
+
+function discordSetStatus(msg, ok) {
+  const el=$('discordStatus'); if(!el) return;
+  el.textContent=msg;
+  el.style.color=ok===true?'#7289da':ok===false?'var(--wrn,#fbbf24)':'var(--tx3)';
+}
+function discordEnabled()  { return $('discordEn')?.checked && !!$('discordUrl')?.value.trim(); }
+function discordEvFlight() { return discordEnabled() && ($('dcEvFlight')?.checked!==false); }
+function discordEvPhase()  { return discordEnabled() && ($('dcEvPhase')?.checked!==false); }
+function discordEvTelex()  { return discordEnabled() && ($('dcEvTelex')?.checked!==false); }
+function discordEvAlert()  { return discordEnabled() && ($('dcEvAlert')?.checked!==false); }
+function dTrunc(s,max=1024){s=String(s||'');return s.length>max?s.slice(0,max-3)+'…':s;}
+function discordOnToggle() {
+  const en=$('discordEn').checked;
+  $('discordCfgFields').classList.toggle('active',en);
+  discordSetStatus(en?'Webhook activo':'Desactivado', en?true:null);
+  saveCfg();
+}
+function discordEmbed({color,title,description,fields=[],footer=''}) {
+  return { embeds:[{ color, title, description:description||undefined,
+    fields:fields.map(f=>({name:f.name,value:String(f.value||'—'),inline:f.inline!==false})),
+    footer:{text:footer||`AirNubeiro OPS Center • ${new Date().toUTCString().slice(5,22)} UTC`},
+    timestamp:new Date().toISOString() }] };
+}
+function discordEnqueue(payload) { if(!discordEnabled()) return; discordQueue.push(payload); discordFlush(); }
+async function discordFlush() {
+  if (discordSending||!discordQueue.length) return; discordSending=true;
+  while (discordQueue.length) {
+    const payload=discordQueue.shift();
+    const gap=Date.now()-discordLastSent; if(gap<DC_MIN_GAP) await new Promise(r=>setTimeout(r,DC_MIN_GAP-gap));
+    try {
+      const url=$('discordUrl')?.value.trim(); if(!url) break;
+      const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(8000)});
+      discordLastSent=Date.now();
+      if(!resp.ok) {
+        if(resp.status===429){const ra=parseFloat(resp.headers.get('Retry-After')||'2')*1000;discordQueue.unshift(payload);await new Promise(r=>setTimeout(r,ra+200));}
+        else discordSetStatus(`⚠ HTTP ${resp.status}`,false);
+      } else discordSetStatus(`✓ Último envío: ${new Date().toISOString().slice(11,19)}Z`,true);
+    } catch(e){discordSetStatus(`✗ ${e.message}`,false);}
+  }
+  discordSending=false;
+}
+function discordNotifyDetected(flt) {
+  if (!discordEvFlight()) return;
+  discordEnqueue(discordEmbed({ color:DC_COLORS.DETECTED, title:`✈ Vuelo detectado — ${flt.callsign}`,
+    fields:[{name:'Callsign',value:flt.callsign,inline:true},{name:'Ruta',value:`${flt.dep}→${flt.arr}`,inline:true},
+      {name:'Aeronave',value:flt.aircraft||'—',inline:true},{name:'Fuente',value:flt.srcSim?'SIM':flt.srcPhpvms?'phpVMS':'IVAO',inline:true},
+      {name:'Piloto',value:flt.pilotName||'—',inline:true}] }));
+}
+function discordNotifyPhase(flt, oldPhase, newPhase) {
+  if (!discordEvPhase()) return;
+  const labels={PREFLIGHT:'🟡 PREFLIGHT',ENROUTE:'🔵 ENROUTE',DESCENT:'🟣 DESCENT',LANDED:'🟢 LANDED'};
+  discordEnqueue(discordEmbed({ color:DC_COLORS[newPhase]||DC_COLORS.DETECTED,
+    title:`${labels[newPhase]||newPhase} — ${flt.callsign}`,
+    fields:[{name:'Callsign',value:flt.callsign,inline:true},{name:'Ruta',value:`${flt.dep}→${flt.arr}`,inline:true},
+      {name:'Transición',value:`${oldPhase} → **${newPhase}**`,inline:true},
+      {name:'FL',value:`FL${Math.round((flt.alt||0)/100)}`,inline:true},{name:'GS',value:`${flt.gs||0}kt`,inline:true}] }));
+}
+function discordNotifyTelex(to, body, auto=false) {
+  if (!discordEvTelex()) return;
+  const from=$('cS')?.value.toUpperCase()||'OPS';
+  discordEnqueue(discordEmbed({ color:DC_COLORS.TELEX, title:`📨 TELEX ${auto?'[AUTO]':'[MANUAL]'} → ${to}`,
+    fields:[{name:'De',value:from,inline:true},{name:'Para',value:to,inline:true},
+      {name:'Tipo',value:auto?'Auto-OPS':'Manual',inline:true},{name:'Mensaje',value:dTrunc(body,512),inline:false}] }));
+}
+function discordNotifyAlert(callsign, alertType, detail) {
+  if (!discordEvAlert()) return;
+  discordEnqueue(discordEmbed({ color:DC_COLORS.ALERT, title:`🚨 Alerta OPS — ${alertType}`,
+    fields:[{name:'Vuelo',value:callsign||'—',inline:true},{name:'Tipo',value:alertType,inline:true},
+      {name:'Detalle',value:dTrunc(detail,512),inline:false}] }));
+}
+async function discordTest() {
+  if (!$('discordUrl')?.value.trim()) { discordSetStatus('✗ Introduce la URL del webhook',false); return; }
+  discordEnqueue(discordEmbed({ color:DC_COLORS.TEST, title:'✅ AirNubeiro OPS Center — Test de conexión',
+    description:'Webhook correctamente configurado.',
+    fields:[{name:'App',value:'OPS Center v4.2',inline:true},{name:'Estación',value:$('cS')?.value||'—',inline:true},
+      {name:'Hora',value:`${new Date().toISOString().slice(11,19)}Z`,inline:true}] }));
+}
+
+// ── Colores ACARS exactos por tipo de mensaje (réplica de variables CSS) ──
+const DC_MSG_COLORS = {
+  out:   0x2E8CF0,  // --acc  — TELEX enviado
+  in:    0x60A5FA,  // --inf  — TELEX recibido
+  cpm:   0xA78BFA,  // --cpdlc— CPDLC
+  logon: 0x34D399,  // --ok   — LOGON
+  erm:   0xF87171,  // --err  — Error
+};
+
+// Notificación Discord para mensajes TELEX enviados por OPS Center (auto o manual)
+function discordNotifyOpsMsg({ type = 'TELEX', to, body, auto = true, ok = true }) {
+  if (!discordEvTelex()) return;
+  const color = ok ? DC_MSG_COLORS.out : DC_MSG_COLORS.erm;
+  const from  = $('cS')?.value.toUpperCase() || 'OPS';
+  discordEnqueue(discordEmbed({
+    color,
+    title: `📤 ${type} ${auto ? '[AUTO]' : '[MANUAL]'} → ${to}`,
+    fields: [
+      { name: 'De',      value: from, inline: true },
+      { name: 'Para',    value: to,   inline: true },
+      { name: 'Tipo',    value: auto ? 'Auto-OPS' : 'Manual', inline: true },
+      { name: 'Mensaje', value: dTrunc(body, 512), inline: false },
+    ],
+    footer: `AirNubeiro OPS Center v4.2 • ${new Date().toISOString().slice(11,19)}Z`,
+  }));
 }
 
 // ── Init ──

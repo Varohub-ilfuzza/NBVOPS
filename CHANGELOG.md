@@ -146,3 +146,65 @@ Versiones anteriores con paleta ámbar. No documentadas en este changelog.
 - [SimBrief](https://www.simbrief.com/) — planes de vuelo
 - phpVMS (`operaciones.airnubeiro.es`) — base de datos de pilotos AirNubeiro
 - FSUIPC WebSocket Server (Paul Henty) — datos del simulador local
+
+---
+
+## [v4.3.0] — 2026-02-27
+
+### Datos phpVMS extendidos — integración completa
+
+#### Objeto de vuelo enriquecido (ACARS Dispatch + OPS Center)
+Todos los PIREPs de phpVMS ahora propagan los siguientes campos al objeto de vuelo activo:
+- `registration` — matrícula del avión (`EC-OUR`)
+- `acName` — nombre del avión en phpVMS (`Ourense`)
+- `pilotIdent` — identificador de piloto (`NBV011`)
+- `pilotName` — nombre real del piloto
+- `phpvmsRoute` — ruta ATS planificada completa
+- `planFL` — nivel de crucero planificado (ft)
+- `progressPct` — porcentaje de ruta completado (distancia volada / planificada)
+- `arrLat`, `arrLon` — coordenadas exactas del aeropuerto de destino
+- `pirepId` — ID interno del PIREP para trazabilidad
+- `_phpvmsPhase` — fase phpVMS (`DEP`/`ENR`/`ARR`/`CMP`) para detectPhase
+
+Si el vuelo ya está en IVAO Whazzup, los datos phpVMS enriquecen el objeto existente sin sobreescribir datos de posición (IVAO tiene prioridad de tracking).
+
+#### Visualización enriquecida
+- **ACARS Dispatch (OPS tab)**: línea adicional bajo cada vuelo con `matrícula · pilotIdent · nombre · X% ruta · Xnm dest · IVAO state`
+- **OPS Center (dashboard)**: cards con barra de progreso visual, matrícula, piloto, distancia a destino, estado IVAO nativo
+
+### detectPhase v2 — Lógica de fase mejorada
+
+#### Jerarquía de fuentes (prioridad descendente)
+1. **phpVMS phase** (`_phpvmsPhase`): fuente de servidor, 100% fiable para vuelos vmsACARS
+2. **IVAO state nativo** (`lastTrack.state`): 7 estados documentados de la API:
+   - `Boarding` / `On Blocks` / `Departing` → `PREFLIGHT`
+   - `Initial Climb` / `En Route` → `ENROUTE`  
+   - `Approach` → `DESCENT`
+   - `Landed` → `LANDED`
+3. **arrivalDistance < 150nm + altitudeDifference < -100ft** → fuerza `DESCENT`
+4. **Heurística legacy** (altitud anterior vs actual): fallback para pilotos sin estado IVAO
+
+#### Mejora de detección práctica
+- Descenso detectado ~150nm antes de destino en lugar de esperar alt diff entre scans de 45s
+- IVAO state directo elimina falsos positivos de ENROUTE para pilotos en tierra
+
+### Mensajes gallegos — Telex de llegada personalizado
+
+#### Aeropuertos cubiertos
+| ICAO | Aeropuerto | Temática |
+|---|---|---|
+| `LEVX` | Vigo-Peinador | Rías Baixas, Illas Cíes, marisco |
+| `LECO` | A Coruña-Alvedro | Torre de Hércules, Finisterre, Ría de Betanzos |
+| `LEST` | Santiago de Compostela (Rosalía de Castro) | Catedral, Camino, Rosalía de Castro |
+
+- 2-3 mensajes por aeropuerto, selección aleatoria en cada llegada
+- Escritos en gallego con referencias locales auténticas (UNESCO, gastronomía, geografía)
+- Se envían **antes** del mensaje de bienvenida estándar (stand + tiempo de vuelo)
+- Integrado tanto en **ACARS Dispatch** (`genGalicianWelcome`) como en **OPS Center** (`genLanded`)
+
+### Callsign = Remitente TELEX — Aclaración
+
+**Respuesta directa**: el campo `CALLSIGN ESTACIÓN` ya controla el remitente visible en el avión. El protocolo Hoppie ACARS usa el parámetro `from=` como remitente; ese parámetro es exactamente el campo `cS` de la config. Cambiar `CALLSIGN ESTACIÓN` a `NBVOPS` hace que el piloto vea `NBVOPS` como emisor de todos los mensajes.
+
+El label del campo en la UI se ha actualizado con tooltip explicativo.
+

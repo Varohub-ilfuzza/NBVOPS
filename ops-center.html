@@ -777,40 +777,54 @@ function clearLog() {
 // Phases: PREFLIGHT → ENROUTE → DESCENT → LANDED
 // Thresholds tuned for flight sim
 
+// detectPhase v2 — usa estado nativo IVAO + arrivalDistance + phpVMS phase
 function detectPhase(pilot, prev) {
-  // Extract tracking data safely — IVAO v2 may nest objects
-  const track = pilot.lastTrack || {};
+  const track    = pilot.lastTrack || {};
   const onGround = track.onGround === true || track.onGround === 1;
-  const gs = typeof track.groundSpeed === 'number' ? track.groundSpeed : (typeof track.groundSpeed === 'object' ? 0 : parseInt(track.groundSpeed) || 0);
-  const alt = typeof track.altitude === 'number' ? track.altitude : (typeof track.altitude === 'object' ? 0 : parseInt(track.altitude) || 0);
-  const prevAlt = prev ? prev.alt : alt;
-  const prevPhase = prev ? prev.phase : null;
+  const gs       = typeof track.groundSpeed === 'number' ? track.groundSpeed : parseInt(track.groundSpeed) || 0;
+  const alt      = typeof track.altitude    === 'number' ? track.altitude    : parseInt(track.altitude)    || 0;
+  const altDiff  = typeof track.altitudeDifference === 'number' ? track.altitudeDifference : 0;
+  const arrDist  = typeof track.arrivalDistance === 'number' ? track.arrivalDistance : null;
+  const ivaoSt   = typeof track.state === 'string' ? track.state.toLowerCase() : '';
+  const prevPhase = prev?.phase || null;
 
-  // LANDED: was airborne (ENROUTE or DESCENT) and now on ground
-  if (onGround && (prevPhase === 'ENROUTE' || prevPhase === 'DESCENT')) {
-    return 'LANDED';
+  // 1. phpVMS phase override (fuente más fiable del servidor)
+  if (pilot._phpvmsPhase) {
+    const pm = { 'DEP':'PREFLIGHT','ENR':'ENROUTE','ARR':'LANDED','CMP':'LANDED','INP':'ENROUTE' };
+    if (pm[pilot._phpvmsPhase]) return pm[pilot._phpvmsPhase];
   }
 
-  // PREFLIGHT: on ground and never was airborne (or first detection)
-  if (onGround && (!prevPhase || prevPhase === 'PREFLIGHT')) {
+  // 2. IVAO state nativo (disponible en todos los pilotos del whazzup)
+  if (ivaoSt) {
+    if (ivaoSt.includes('boarding') || ivaoSt.includes('block') || ivaoSt.includes('departing') || ivaoSt.includes('taxi')) {
+      return (prevPhase === 'ENROUTE' || prevPhase === 'DESCENT') ? 'LANDED' : 'PREFLIGHT';
+    }
+    if (ivaoSt.includes('initial climb') || ivaoSt.includes('climb')) return 'ENROUTE';
+    if (ivaoSt.includes('en route') || ivaoSt === 'en route') return 'ENROUTE';
+    if (ivaoSt.includes('approach') || ivaoSt.includes('landing')) return 'DESCENT';
+    if (ivaoSt.includes('descend') || ivaoSt.includes('descent')) return 'DESCENT';
+    if (ivaoSt.includes('landed') || ivaoSt.includes('on block') || ivaoSt.includes('arrived')) return 'LANDED';
+  }
+
+  // 3. arrivalDistance < 150nm + bajando → DESCENT
+  if (arrDist !== null && !onGround && prevPhase === 'ENROUTE' && arrDist < 150 && altDiff < -100) {
+    return 'DESCENT';
+  }
+
+  // 4. Heurística legacy
+  if (onGround) {
+    if (prevPhase === 'ENROUTE' || prevPhase === 'DESCENT') return 'LANDED';
+    if (prevPhase === 'LANDED') return 'LANDED';
     return 'PREFLIGHT';
   }
-
-  // If already landed, stay landed
   if (prevPhase === 'LANDED') return 'LANDED';
-
-  // DESCENT: was enroute/descent, altitude dropping > 300ft between scans
+  const prevAlt = prev?.alt || alt;
   if (!onGround && (prevPhase === 'ENROUTE' || prevPhase === 'DESCENT')) {
-    if (prevAlt - alt > 300) return 'DESCENT';
-    if (prevPhase === 'DESCENT' && prevAlt - alt >= -200) return 'DESCENT'; // still descending or small level-off
+    if (prevAlt - alt > 300 || altDiff < -300) return 'DESCENT';
+    if (prevPhase === 'DESCENT' && prevAlt - alt >= -200) return 'DESCENT';
   }
-
-  // ENROUTE: airborne and not previously LANDED
   if (!onGround && prevPhase !== 'LANDED') return 'ENROUTE';
-
-  // Fallback: on ground after unknown state
   if (onGround && gs < 5) return 'PREFLIGHT';
-
   return prevPhase || 'PREFLIGHT';
 }
 
@@ -1296,6 +1310,37 @@ function genParking(icao) {
   return `STAND ${Math.floor(Math.random()*(r[1]-r[0]+1))+r[0]}`;
 }
 
+// ══════════════════════════════════════════════════════════════════
+//  MENSAJES GALLEGOS — Telex personalizado en llegada
+// ══════════════════════════════════════════════════════════════════
+const GALICIAN_AIRPORTS = {
+  'LEVX': {
+    messages: [
+      cs => `=== BENVIDO A VIGO ===\n${cs} / A CIDADE OLIVEIRA\n\nAterrado en Vigo-Peinador, porta de entrada as Rias Baixas.\nA ria de Vigo agarda con posta de sol entre as illas Ces.\n\nRecomendacion AirNubeiro:\n- Marisco nas Ruas do Berbes\n- Ruta pola Ponte de Rande\n- Visita as Illas Ces (Parque Nacional)\n\nBo descanso. Graza por volar con AirNubeiro. OPS NBV.`,
+      cs => `=== VIGO CHEGADA ===\n${cs} / AEROPORTO VIGO-PEINADOR\n\nBenvido a capital da provincia de Pontevedra.\nEspecialidade local: zamburinas e mexillons da ria.\n\nCieus atlanticos, Cies no horizonte.\nVOO COMPLETADO. OPS NBV.`,
+    ]
+  },
+  'LECO': {
+    messages: [
+      cs => `=== BENVIDO A CORUNA ===\n${cs} / AEROPORTO ALVEDRO\n\nAterrado na Cidade de Cristal.\nA Torre de Hercules — faro romano, Patrimonio UNESCO —\nvixa estas chegadas dende hai 2.000 anos.\n\nRecomendacion AirNubeiro:\n- Paseo maritimo dende Riazor ata o Parrote\n- Pulpo a feira no Mercado de Abastos\n\nVento atlantico garantido. Paraguas recomendado.\nOPS NBV.`,
+      cs => `=== A CORUNA CHEGADA ===\n${cs}\n\nBenvido ao extremo noroeste de Europa.\nFinisterre espera ao suroeste.\n\nTripulacion: excelente voo. Descansen.\nAirNubeiro OPS.`,
+    ]
+  },
+  'LEST': {
+    messages: [
+      cs => `=== BENVIDO A SANTIAGO ===\n${cs} / AEROPORTO ROSALIA DE CASTRO\n\nAterrado na capital de Galicia.\nA Catedral do Apostolo aguarda no centro historico.\n\nULTREIA ET SUSEIA — Antiguo saludo peregrino\n"Adelante y hacia arriba"\n\n- Praza do Obradoiro — imprescindible\n- Tarta de Santiago de postre\n\nBon Camino. AirNubeiro OPS.`,
+      cs => `=== SANTIAGO CHEGADA ===\n${cs}\n\nBenvido ao fin do Camino de Santiago.\nO Casco Vello: Patrimonio da Humanidade UNESCO.\n\n"Aquel que ten saudade, nen come, nen durme, nen ri"\n— Rosalia de Castro\n\nOPS NBV — Benvidos peregrinos do aire.`,
+    ]
+  },
+};
+
+function genGalicianWelcome(flt) {
+  const apt = GALICIAN_AIRPORTS[flt.arr?.toUpperCase()];
+  if (!apt) return null;
+  const msgs = apt.messages;
+  return msgs[Math.floor(Math.random() * msgs.length)](flt.callsign);
+}
+
 async function genLanded(flt) {
   const dep = flt.dep || '????';
   const arr = flt.arr || '????';
@@ -1303,6 +1348,10 @@ async function genLanded(flt) {
   const monitorMin = flt.firstSeen ? Math.round((Date.now() - flt.firstSeen) / 60000) : 0;
   const stand = flt.assignedParking || genParking(arr);
   const msgs = [];
+
+  // Mensaje gallego personalizado (si aplica) — va primero
+  const galMsg = genGalicianWelcome(flt);
+  if (galMsg) msgs.push({ id: 'galician_welcome', label: 'GAL WELCOME', body: galMsg });
 
   // Welcome message with flight time
   const welcome = [
@@ -1737,6 +1786,10 @@ async function scan() {
       const curDep = safeStr(fp?.departureId);
       const curArr = safeStr(fp?.arrivalId);
 
+      // Adjuntar fase phpVMS al piloto para que detectPhase la use con prioridad
+      const pvData = phpvmsActive[cs];
+      if (pvData?.phpvmsPhase) pilot._phpvmsPhase = pvData.phpvmsPhase;
+
       const newPhase = detectPhase(pilot, prev);
       const phaseChanged = prev && prev.phase !== newPhase;
 
@@ -1745,8 +1798,8 @@ async function scan() {
         callsign: cs,
         phase: newPhase,
         prevPhase: prev?.phase || null,
-        dep: curDep || prev?.dep || '????',
-        arr: curArr || prev?.arr || '????',
+        dep: curDep || prev?.dep || pvData?.dep || '????',
+        arr: curArr || prev?.arr || pvData?.arr || '????',
         alt: curAlt,
         prevAlt: prev?.alt || curAlt,
         gs: curGs,
@@ -1754,7 +1807,21 @@ async function scan() {
         onGround: curOnGnd,
         lat: curLat,
         lng: curLng,
-        aircraft: curAcft || prev?.aircraft || '????',
+        aircraft:    curAcft || prev?.aircraft || pvData?.aircraft || '????',
+        ivaoState:   track.state || '',
+        arrivalDist: typeof track.arrivalDistance === 'number' ? track.arrivalDistance : null,
+        // Datos phpVMS — persisten del scan anterior o se toman de phpvmsActive
+        pilotName:   prev?.pilotName   || pvData?.pilotName   || '',
+        pilotIdent:  prev?.pilotIdent  || pvData?.pilotIdent  || '',
+        registration:prev?.registration|| pvData?.registration|| '',
+        acName:      prev?.acName      || pvData?.acName      || '',
+        phpvmsRoute: prev?.phpvmsRoute || pvData?.route       || '',
+        planFL:      prev?.planFL      || pvData?.planFL      || 0,
+        progressPct: pvData?.progressPct || prev?.progressPct || 0,
+        arrLat:      prev?.arrLat  ?? pvData?.arrLat  ?? null,
+        arrLon:      prev?.arrLon  ?? pvData?.arrLon  ?? null,
+        pirepId:     prev?.pirepId || pvData?.pirepId || null,
+        _phpvmsPhase:pvData?.phpvmsPhase || '',
         plannedDepTime: prev?.plannedDepTime || fp?.departureTime || null,
         firstSeen: prev?.firstSeen || Date.now(),
         lastSeen: Date.now(),
@@ -2052,17 +2119,32 @@ function updateDashboard() {
       <div>
         <div class="flt-cs">${esc(f.callsign)}</div>
         <div class="flt-route">${esc(f.dep)} → ${esc(f.arr)}</div>
-        <div class="flt-ac">${esc(f.aircraft)}</div>
+        <div class="flt-ac">${esc(f.aircraft)}${f.registration ? ` <span style="color:var(--tx3)">${esc(f.registration)}</span>` : ''}</div>
+        ${f.pilotIdent || f.pilotName ? `<div class="flt-pilot" style="font:.4rem var(--mono);color:var(--tx3);margin-top:2px">${esc(f.pilotIdent||'')}${f.pilotName ? ' · '+esc(f.pilotName) : ''}</div>` : ''}
+        ${f.progressPct > 0 ? `<div class="flt-progress" style="margin-top:4px">
+          <div style="background:var(--bg3);border-radius:3px;height:3px;overflow:hidden">
+            <div style="background:var(--acc);width:${f.progressPct}%;height:3px;border-radius:3px;transition:width .5s"></div>
+          </div>
+          <div style="font:.45rem var(--mono);color:var(--tx3);margin-top:1px">${f.progressPct}% ruta</div>
+        </div>` : ''}
       </div>
       <div class="flt-data">
-        <div class="flt-d">ALT <span>FL${Math.round(f.alt/100)}</span></div>
-        <div class="flt-d">GS <span>${f.gs}kt</span></div>
-        <div class="flt-d">GND <span>${f.onGround?'SI':'NO'}</span></div>
+        <div class="flt-d">ALT <span>${f.alt > 0 ? 'FL'+Math.round(f.alt/100) : f.onGround ? 'GND' : '—'}</span></div>
+        <div class="flt-d">GS <span>${f.gs > 0 ? f.gs+'kt' : '—'}</span></div>
+        ${f.arrivalDist != null ? `<div class="flt-d">DEST <span>${Math.round(f.arrivalDist)}nm</span></div>` : ''}
+        ${f.ivaoState ? `<div class="flt-d">ST <span style="font-size:.55rem">${esc(f.ivaoState)}</span></div>` : ''}
         ${f.estEnrouteMin > 0 ? `<div class="flt-d">EET <span>${Math.floor(f.estEnrouteMin/60)}h${String(Math.round(f.estEnrouteMin%60)).padStart(2,'0')}m</span></div>` : ''}
         ${f.enrouteStart ? `<div class="flt-d">ENR <span>${Math.round((Date.now()-f.enrouteStart)/60000)}min</span></div>` : ''}
         ${f.routeInfoCount > 0 ? `<div class="flt-d">RI <span>×${f.routeInfoCount}</span></div>` : ''}
       </div>
-      <div class="flt-phase ${f.phase.toLowerCase()}">${phaseLabel}</div>
+      <div>
+        <div class="flt-phase ${f.phase.toLowerCase()}">${phaseLabel}</div>
+        <div style="margin-top:4px;text-align:center">
+          <span class="${f.srcSim ? 'src-sim' : f.srcPhpvms ? 'src-phpvms' : 'src-ivao'}" style="font:.45rem var(--mono);padding:1px 4px;border-radius:2px">
+            ${f.srcSim ? 'SIM' : f.srcPhpvms ? 'phpVMS' : 'IVAO'}
+          </span>
+        </div>
+      </div>
       ${msgsHtml ? `<div class="flt-msgs">${msgsHtml}</div>` : ''}`;
 
     dash.appendChild(card);
@@ -2482,8 +2564,17 @@ async function phpvmsScan() {
       const cs = pirep ? phpvmsCallsign(pirep) : null; if (!cs) continue;
       phpvmsActive[cs] = { pirepId, callsign:cs, lat, lon, alt, heading:hdg,
         dep:pirep?.dpt_airport_id||'????', arr:pirep?.arr_airport_id||'????',
-        aircraft:pirep?.aircraft?.icao||'????', gs:0, onGround:alt<100,
-        pilotName:pirep?.user?.name||'', srcPhpvms:true, updatedAt:Date.now() };
+        aircraft:pirep?.aircraft?.icao||'????',
+        registration:pirep?.aircraft?.registration||'',
+        acName:pirep?.aircraft?.name||'',
+        route:pirep?.route||'', planFL:pirep?.level||0,
+        plannedDistNmi:pirep?.planned_distance?.nmi||0,
+        progressPct: (pirep?.planned_distance?.nmi||0) > 0
+          ? Math.min(100, Math.round((pirep?.distance?.nmi||0) / pirep.planned_distance.nmi * 100)) : 0,
+        phpvmsPhase:pirep?.phase||'',
+        arrLat:pirep?.arr_airport?.lat||null, arrLon:pirep?.arr_airport?.lon||null,
+        pilotName:pirep?.user?.name||'', pilotIdent:pirep?.user?.ident||'',
+        gs:0, onGround:alt<100, srcPhpvms:true, updatedAt:Date.now() };
     }
     // Purgar inactivos
     for (const cs of Object.keys(phpvmsActive)) {
@@ -2501,24 +2592,44 @@ function phpvmsMergeWithFlights() {
   for (const [cs, pv] of Object.entries(phpvmsActive)) {
     if (!cs.startsWith(prefix)) continue;
     if (flights[cs] && !flights[cs].offlineSince) {
-      // Enriquecer datos existentes
-      if (!flights[cs].pilotName && pv.pilotName) flights[cs].pilotName = pv.pilotName;
-      if (flights[cs].dep==='????' && pv.dep!=='????') flights[cs].dep = pv.dep;
-      if (flights[cs].arr==='????' && pv.arr!=='????') flights[cs].arr = pv.arr;
+      // Enriquecer datos IVAO con phpVMS (solo si faltan)
+      const f = flights[cs];
+      if (!f.pilotName   && pv.pilotName)   f.pilotName   = pv.pilotName;
+      if (!f.pilotIdent  && pv.pilotIdent)  f.pilotIdent  = pv.pilotIdent;
+      if (!f.registration&& pv.registration)f.registration= pv.registration;
+      if (!f.acName      && pv.acName)      f.acName      = pv.acName;
+      if (!f.phpvmsRoute && pv.route)       f.phpvmsRoute = pv.route;
+      if (!f.planFL      && pv.planFL)      f.planFL      = pv.planFL;
+      if (pv.progressPct)                   f.progressPct = pv.progressPct;
+      if (pv.arrLat!=null)                  f.arrLat      = pv.arrLat;
+      if (pv.arrLon!=null)                  f.arrLon      = pv.arrLon;
+      if (pv.phpvmsPhase)                   f._phpvmsPhase= pv.phpvmsPhase;
+      if (f.dep==='????' && pv.dep!=='????') f.dep = pv.dep;
+      if (f.arr==='????' && pv.arr!=='????') f.arr = pv.arr;
       continue;
     }
-    // Piloto no detectado por IVAO — añadir desde phpVMS
-    const simPhase = detectPhase({ lastTrack:{ altitude:pv.alt, groundSpeed:pv.gs, onGround:pv.onGround, latitude:pv.lat, longitude:pv.lon } }, flights[cs]||null);
-    if (!flights[cs]) {
-      log(`✈ ${cs} [phpVMS]: ${pv.dep}→${pv.arr}`, 'ops');
+    // Piloto no en IVAO — añadir desde phpVMS como fuente alternativa
+    const synPilot = { lastTrack:{ altitude:pv.alt, groundSpeed:pv.gs||0, onGround:pv.onGround,
+      latitude:pv.lat, longitude:pv.lon, state:'', arrivalDistance:null }, _phpvmsPhase:pv.phpvmsPhase };
+    const simPhase = detectPhase(synPilot, flights[cs]||null);
+    const prevFlt  = flights[cs];
+    if (!prevFlt) {
+      log(`✈ ${cs} [phpVMS]: ${pv.dep}→${pv.arr} | ${pv.pilotName}`, 'ops');
       discordNotifyDetected({ callsign:cs, dep:pv.dep, arr:pv.arr, aircraft:pv.aircraft, srcPhpvms:true, pilotName:pv.pilotName });
+    } else if (prevFlt.phase !== simPhase) {
+      log(`${cs}: ${prevFlt.phase} → ${simPhase}`, 'ops');
+      discordNotifyPhase({ callsign:cs, dep:pv.dep, arr:pv.arr, alt:pv.alt, gs:0 }, prevFlt.phase, simPhase);
     }
     flights[cs] = { callsign:cs, phase:simPhase, dep:pv.dep, arr:pv.arr, aircraft:pv.aircraft,
-      alt:pv.alt, gs:pv.gs, heading:pv.heading, lat:pv.lat, lng:pv.lon, onGround:pv.onGround,
-      pilotName:pv.pilotName, pirepId:pv.pirepId, srcPhpvms:true, srcSim:false,
-      firstSeen:flights[cs]?.firstSeen||Date.now(), offlineSince:null,
-      sent:flights[cs]?.sent||{ preflight:false, enroute:false, descent:false, landed:false },
-      simbrief:flights[cs]?.simbrief||null };
+      registration:pv.registration, acName:pv.acName, phpvmsRoute:pv.route,
+      planFL:pv.planFL, progressPct:pv.progressPct,
+      alt:pv.alt, gs:0, heading:pv.heading, lat:pv.lat, lng:pv.lon, onGround:pv.onGround,
+      pilotName:pv.pilotName, pilotIdent:pv.pilotIdent,
+      arrLat:pv.arrLat, arrLon:pv.arrLon, _phpvmsPhase:pv.phpvmsPhase,
+      pirepId:pv.pirepId, srcPhpvms:true, srcSim:false,
+      firstSeen:prevFlt?.firstSeen||Date.now(), offlineSince:null,
+      sent:prevFlt?.sent||{ preflight:false, enroute:false, descent:false, landed:false },
+      simbrief:prevFlt?.simbrief||null };
   }
 }
 function phpvmsOnToggle() {

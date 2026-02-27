@@ -212,6 +212,49 @@
   @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 
   /* ── OPS embedded ── */
+  /* ── Discord Webhook ── */
+  .cfg-discord { margin-top: 8px; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--brd); border-radius: 6px; }
+  .cfg-discord-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .cfg-discord-ttl { font: 600 0.65rem var(--mono); color: #7289da; letter-spacing: .5px; }
+  .discord-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .discord-toggle input[type=checkbox] { accent-color: #7289da; width: 13px; height: 13px; }
+  .discord-events { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; margin-top: 4px; }
+  .discord-events label { display: flex; align-items: center; gap: 5px; font: 500 0.62rem var(--mono); color: var(--tx2); cursor: pointer; }
+  .discord-events input[type=checkbox] { accent-color: #7289da; width: 11px; height: 11px; }
+  .discord-test-btn { margin-top: 6px; padding: 4px 10px; background: rgba(114,137,218,.15); border: 1px solid rgba(114,137,218,.35); color: #7289da; border-radius: 4px; font: 600 0.62rem var(--mono); cursor: pointer; transition: .15s; letter-spacing: .4px; }
+  .discord-test-btn:hover { background: rgba(114,137,218,.25); }
+
+  /* ── phpVMS Integration ── */
+  .cfg-phpvms { margin-top: 8px; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--brd); border-radius: 6px; }
+  .cfg-phpvms-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .cfg-phpvms-ttl { font: 600 0.65rem var(--mono); color: #a78bfa; letter-spacing: .5px; }
+  .phpvms-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .phpvms-toggle input[type=checkbox] { accent-color: #a78bfa; width: 13px; height: 13px; }
+  .ops-src-phpvms { font: 700 0.55rem var(--mono); color: #a78bfa; background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.3); border-radius: 3px; padding: 1px 5px; }
+
+  /* ── FSUIPC Data Source Badge ── */
+  .fsuipc-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 7px; border-radius: 4px; font: 700 0.58rem var(--mono);
+    letter-spacing: .6px; border: 1px solid; cursor: default;
+    transition: all .3s; user-select: none;
+  }
+  .fsuipc-badge.src-ivao  { color: var(--tx3); border-color: var(--brd); background: transparent; }
+  .fsuipc-badge.src-fsuipc { color: #34d399; border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.08); }
+  .fsuipc-badge.src-connecting { color: var(--wrn); border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.06); animation: fsuipc-blink 1.2s ease-in-out infinite; }
+  @keyframes fsuipc-blink { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+  .fsuipc-badge .fsuipc-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  /* OPS card — indicador SIM en vuelo local */
+  .ops-src-sim { font: 700 0.55rem var(--mono); color: #34d399; background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.3); border-radius: 3px; padding: 1px 5px; }
+  .ops-src-ivao { font: 700 0.55rem var(--mono); color: var(--tx3); background: var(--bg3); border: 1px solid var(--brd); border-radius: 3px; padding: 1px 5px; }
+  /* Config FSUIPC section */
+  .cfg-fsuipc { margin-top: 8px; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--brd); border-radius: 6px; }
+  .cfg-fsuipc-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .cfg-fsuipc-ttl { font: 600 0.65rem var(--mono); color: var(--acc); letter-spacing: .5px; }
+  .fsuipc-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .fsuipc-toggle input[type=checkbox] { accent-color: var(--acc); width: 13px; height: 13px; }
+  .fsuipc-toggle label { font: 500 0.65rem var(--mono); color: var(--tx2); cursor: pointer; }
+
   .ops-flt { background: var(--bg1); border: 1px solid var(--brd); border-radius: 6px; padding: 8px 10px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
   .ops-flt.ph-preflight { border-left: 3px solid var(--wrn); }
   .ops-flt.ph-enroute { border-left: 3px solid var(--inf); }
@@ -307,6 +350,10 @@
       </button>
       <!-- Sound -->
       <button class="ib" id="btnSnd" onclick="toggleSound()" title="Sonido ON/OFF">🔔</button>
+      <!-- FSUIPC data source indicator -->
+      <span class="fsuipc-badge src-ivao" id="fsuipcBadge" title="Fuente de datos: IVAO Whazzup">
+        <span class="fsuipc-dot"></span>IVAO
+      </span>
       <!-- Stream Mode -->
       <button class="ib" id="btnStream" onclick="openStream()" title="Stream Mode (F11)">📺</button>
       <!-- Config -->
@@ -327,6 +374,67 @@
         </label>
         <input type="text" id="cP" value="https://corsproxy.io/?" spellcheck="false">
       </div>
+    </div>
+    <!-- FSUIPC WebSocket Config -->
+    <div class="cfg-fsuipc">
+      <div class="cfg-fsuipc-hdr">
+        <span class="cfg-fsuipc-ttl">✈ FSUIPC WEBSOCKET — Datos Sim Local</span>
+        <label class="fsuipc-toggle">
+          <input type="checkbox" id="fsuipcEn" onchange="fsuipcOnToggle()">
+          <span>Activar</span>
+        </label>
+      </div>
+      <div class="cfg-g" id="fsuipcCfgFields" style="opacity:.45;pointer-events:none;margin-top:4px">
+        <div class="f"><label>WS URL</label><input type="text" id="fsuipcUrl" value="ws://127.0.0.1:2048" spellcheck="false" autocomplete="off"></div>
+        <div class="f"><label>MI CALLSIGN (piloto local)
+          <span class="hi" tabindex="0">?<span class="tt">Callsign de tu vuelo en IVAO. OPS usará datos del simulador para este callsign en lugar de IVAO Whazzup.</span></span>
+        </label><input type="text" id="fsuipcCs" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>POLL INTERVALO (ms)</label><input type="number" id="fsuipcPoll" value="500" min="200" max="2000" step="100"></div>
+      </div>
+      <div style="font:.6rem var(--mono);color:var(--tx3);margin-top:5px" id="fsuipcStatus">Desactivado — activa para conectar al simulador local</div>
+    </div>
+    <!-- phpVMS Integration Config -->
+    <div class="cfg-phpvms">
+      <div class="cfg-phpvms-hdr">
+        <span class="cfg-phpvms-ttl">🗄 phpVMS — Pilotos AirNubeiro</span>
+        <label class="phpvms-toggle">
+          <input type="checkbox" id="phpvmsEn" onchange="phpvmsOnToggle()">
+          <span>Activar</span>
+        </label>
+      </div>
+      <div class="cfg-g" id="phpvmsCfgFields" style="opacity:.45;pointer-events:none;margin-top:4px">
+        <div class="f"><label>URL phpVMS</label><input type="text" id="phpvmsUrl" value="https://operaciones.airnubeiro.es" spellcheck="false" autocomplete="off"></div>
+        <div class="f"><label>API KEY
+          <span class="hi" tabindex="0">?<span class="tt">API Key de cualquier usuario admin. Se usa para enriquecer datos de vuelo (dep, arr, aeronave). La posición se obtiene del endpoint público GeoJSON.</span></span>
+        </label><input type="text" id="phpvmsKey" placeholder="c2a31edcf70e7003d4b2" autocomplete="off" spellcheck="false"></div>
+        <div class="f"><label>POLL (seg)</label><input type="number" id="phpvmsPoll" value="30" min="15" max="120" step="5"></div>
+      </div>
+      <div style="font:.6rem var(--mono);color:var(--tx3);margin-top:5px" id="phpvmsStatus">Desactivado — activa para monitorizar pilotos via phpVMS</div>
+    </div>
+    <!-- Discord Webhook Config -->
+    <div class="cfg-discord">
+      <div class="cfg-discord-hdr">
+        <span class="cfg-discord-ttl">💬 DISCORD WEBHOOK — Notificaciones</span>
+        <label class="discord-toggle">
+          <input type="checkbox" id="discordEn" onchange="discordOnToggle()">
+          <span>Activar</span>
+        </label>
+      </div>
+      <div id="discordCfgFields" style="opacity:.45;pointer-events:none">
+        <div class="f"><label>WEBHOOK URL
+          <span class="hi" tabindex="0">?<span class="tt">URL del webhook de Discord. Formato: https://discord.com/api/webhooks/{id}/{token}. Configúralo en tu servidor Discord → Editar canal → Integraciones → Webhooks.</span></span>
+        </label><input type="text" id="discordUrl" placeholder="https://discord.com/api/webhooks/..." spellcheck="false" autocomplete="off"></div>
+        <div class="f" style="margin-top:5px"><label>NOTIFICAR EN</label>
+          <div class="discord-events">
+            <label><input type="checkbox" id="dcEvFlight" checked> Vuelo detectado</label>
+            <label><input type="checkbox" id="dcEvPhase"  checked> Cambio de fase</label>
+            <label><input type="checkbox" id="dcEvTelex"  checked> TELEX enviado</label>
+            <label><input type="checkbox" id="dcEvAlert"  checked> Alertas OPS</label>
+          </div>
+        </div>
+        <button class="discord-test-btn" onclick="discordTest()">▶ Enviar mensaje de prueba</button>
+      </div>
+      <div style="font:.6rem var(--mono);color:var(--tx3);margin-top:5px" id="discordStatus">Desactivado — configura webhook URL y activa</div>
     </div>
   </div>
 
@@ -650,12 +758,71 @@ function errorSound() { beep(300, 0.25, 0.2); }
 
 // ── Config persistence ──
 function saveCfg() {
-  try { localStorage.setItem('an3', JSON.stringify({ l: $('cL').value, s: $('cS').value, p: $('cP').value, i: $('cI').value, snd: soundOn, sb: $('dspSb').value })); } catch(e) {}
+  try { localStorage.setItem('an3', JSON.stringify({
+    l: $('cL').value, s: $('cS').value, p: $('cP').value,
+    i: $('cI').value, snd: soundOn, sb: $('dspSb').value,
+    fsuipcEn:   $('fsuipcEn')?.checked || false,
+    fsuipcUrl:  $('fsuipcUrl')?.value  || 'ws://127.0.0.1:2048',
+    fsuipcCs:   $('fsuipcCs')?.value   || '',
+    fsuipcPoll: $('fsuipcPoll')?.value || '500',
+    phpvmsEn:   $('phpvmsEn')?.checked  || false,
+    phpvmsUrl:  $('phpvmsUrl')?.value   || 'https://operaciones.airnubeiro.es',
+    phpvmsKey:  $('phpvmsKey')?.value   || '',
+    phpvmsPoll: $('phpvmsPoll')?.value  || '30',
+    discordEn:      $('discordEn')?.checked     || false,
+    discordUrl:     $('discordUrl')?.value       || '',
+    dcEvFlight:     $('dcEvFlight')?.checked     ?? true,
+    dcEvPhase:      $('dcEvPhase')?.checked      ?? true,
+    dcEvTelex:      $('dcEvTelex')?.checked      ?? true,
+    dcEvAlert:      $('dcEvAlert')?.checked      ?? true,
+  })); } catch(e) {}
 }
 function loadCfg() {
   try {
     const c = JSON.parse(localStorage.getItem('an3'));
-    if (c) { $('cL').value = c.l||''; $('cS').value = c.s||''; if(c.p) $('cP').value = c.p; if(c.i) $('cI').value = c.i; if(c.snd !== undefined) soundOn = c.snd; if(c.sb) $('dspSb').value = c.sb; }
+    if (c) {
+      $('cL').value = c.l||''; $('cS').value = c.s||'';
+      if(c.p) $('cP').value = c.p; if(c.i) $('cI').value = c.i;
+      if(c.snd !== undefined) soundOn = c.snd;
+      if(c.sb) $('dspSb').value = c.sb;
+      // Restaurar config FSUIPC
+      if(c.fsuipcUrl  && $('fsuipcUrl'))  $('fsuipcUrl').value  = c.fsuipcUrl;
+      if(c.fsuipcCs   && $('fsuipcCs'))   $('fsuipcCs').value   = c.fsuipcCs;
+      if(c.fsuipcPoll && $('fsuipcPoll')) $('fsuipcPoll').value = c.fsuipcPoll;
+      if(c.fsuipcEn && $('fsuipcEn')) {
+        $('fsuipcEn').checked = true;
+        const fields = $('fsuipcCfgFields');
+        if(fields) { fields.style.opacity = '1'; fields.style.pointerEvents = ''; }
+        // Auto-conectar si estaba activado al cerrar
+        fsuipcConnect();
+      }
+      // Restaurar config phpVMS
+      if(c.phpvmsUrl  && $('phpvmsUrl'))  $('phpvmsUrl').value  = c.phpvmsUrl;
+      if(c.phpvmsKey  && $('phpvmsKey'))  $('phpvmsKey').value  = c.phpvmsKey;
+      if(c.phpvmsPoll && $('phpvmsPoll')) $('phpvmsPoll').value = c.phpvmsPoll;
+      if(c.phpvmsEn && $('phpvmsEn')) {
+        $('phpvmsEn').checked = true;
+        const fields = $('phpvmsCfgFields');
+        if(fields) { fields.style.opacity = '1'; fields.style.pointerEvents = ''; }
+        // Auto-arrancar polling si estaba activado
+        phpvmsScan();
+        const pollMs = Math.max(15, parseInt(c.phpvmsPoll || 30)) * 1000;
+        phpvmsInterval = setInterval(phpvmsScan, pollMs);
+        phpvmsSetStatus('Restaurado desde config guardada — escaneando…', null);
+      }
+      // Restaurar config Discord
+      if(c.discordUrl && $('discordUrl')) $('discordUrl').value = c.discordUrl;
+      if($('dcEvFlight') && c.dcEvFlight !== undefined) $('dcEvFlight').checked = c.dcEvFlight;
+      if($('dcEvPhase')  && c.dcEvPhase  !== undefined) $('dcEvPhase').checked  = c.dcEvPhase;
+      if($('dcEvTelex')  && c.dcEvTelex  !== undefined) $('dcEvTelex').checked  = c.dcEvTelex;
+      if($('dcEvAlert')  && c.dcEvAlert  !== undefined) $('dcEvAlert').checked  = c.dcEvAlert;
+      if(c.discordEn && $('discordEn')) {
+        $('discordEn').checked = true;
+        const fields = $('discordCfgFields');
+        if(fields) { fields.style.opacity = '1'; fields.style.pointerEvents = ''; }
+        discordSetStatus('Restaurado — webhook activo', true);
+      }
+    }
   } catch(e) {}
 }
 [$('cL'),$('cS'),$('cP'),$('cI'),$('dspSb')].forEach(e => e.addEventListener('change', saveCfg));
@@ -773,7 +940,7 @@ async function sendTx() {
     const raw = await hReq(to, 'telex', msg);
     const ok = raw.toLowerCase().startsWith('ok');
     addMsg('tx', { cls: ok?'out':'erm', type: 'TELEX', badge: 'b-tx', route: `${$('cS').value.toUpperCase()} → ${to}`, body: msg, time: ts(), st: ok ? '✓ OK' : `✗ ${raw}`, ok });
-    if (ok) { ss('ok', `✓ TELEX → ${to}`); b.className = 'bp ok'; b.textContent = '✓ ENVIADO'; $('txM').value = ''; $('txM').dispatchEvent(new Event('input')); }
+    if (ok) { ss('ok', `✓ TELEX → ${to}`); b.className = 'bp ok'; b.textContent = '✓ ENVIADO'; $('txM').value = ''; $('txM').dispatchEvent(new Event('input')); discordNotifyTelex(to, msg, false); }
     else { ss('err', `✗ ${raw}`); b.className = 'bp er'; b.textContent = '✗ ERROR'; errorSound(); }
   } catch(e) {
     addMsg('tx', { cls: 'erm', type: 'TELEX', badge: 'b-tx', route: `→ ${to}`, body: msg, time: ts(), st: `✗ ${e.message}`, ok: false });
@@ -1969,11 +2136,24 @@ async function opsScan() {
       };
       const flt = opsFlights[cs];
 
-      // Record enroute start time
+      // ── FSUIPC: sustituir datos IVAO por datos del simulador para el vuelo local ──
+      const csLocal = $('fsuipcCs')?.value.trim().toUpperCase();
+      const injected = fsuipcInjectIntoFlight(flt, csLocal);
+      if (injected) {
+        // Recalcular fase con datos frescos del sim (más precisos que IVAO 45s)
+        const simPhase = detectPhase({ lastTrack: {
+          altitude: flt.alt, groundSpeed: flt.gs,
+          onGround: flt.onGround, latitude: flt.lat, longitude: flt.lng,
+        }}, prev);
+        if (simPhase !== flt.phase) {
+          opsLog(`${cs} [SIM]: ${flt.phase} → ${simPhase}`, 'ops');
+          flt.phase = simPhase;
+        }
+      }
       if (newPhase === 'ENROUTE' && !flt.enrouteStart) flt.enrouteStart = Date.now();
 
-      if (!prev) { opsLog(`✈ ${cs} detectado: ${flt.dep}→${flt.arr}`, 'ops'); notifySound(); }
-      if (phaseChanged) opsLog(`${cs}: ${prev.phase} → ${newPhase}`, 'ops');
+      if (!prev) { opsLog(`✈ ${cs} detectado: ${flt.dep}→${flt.arr}`, 'ops'); notifySound(); discordNotifyDetected(flt); }
+      if (phaseChanged) { opsLog(`${cs}: ${prev.phase} → ${newPhase}`, 'ops'); discordNotifyPhase(flt, prev.phase, newPhase); }
 
       // Auto-messages per phase
       if (newPhase === 'PREFLIGHT' && !flt.sent.preflight) {
@@ -2005,6 +2185,8 @@ async function opsScan() {
     }
     opsRender();
     ss('ok', `OPS: ${Object.keys(opsFlights).filter(c=>!opsFlights[c]._off).length} vuelo(s) — ${tsShort()}`);
+    // phpVMS: merge en cada scan OPS si está activado (sin esperar su propio intervalo)
+    if ($('phpvmsEn')?.checked) phpvmsMergeWithOps();
   } catch(e) {
     opsLog(`Error: ${e.message}`, 'err');
   }
@@ -2071,6 +2253,7 @@ async function opsAutoWx(flt, type) {
           warn += `ATC: ${destAtc.map(a=>a.callsign).join(', ')}\n`;
           await sendOpsTx(flt.callsign, warn);
           opsLog(`⚠ ATC ADVSY → ${flt.callsign} (${total} acft)`, 'wrn');
+          discordNotifyAlert(flt.callsign, 'ATC CONGESTION', `${icao}: ${total} aeronaves (${arrP.length} ARR / ${depP.length} DEP)`);
         }
       } catch(e) {}
     }
@@ -2418,6 +2601,8 @@ async function sendOpsTx(to, body) {
     const raw = await hReq(to, 'telex', pfx + chunks[i]);
     if (!raw.toLowerCase().startsWith('ok')) throw new Error(raw);
     addMsg('tx', { cls:'out', type:'TELEX', badge:'b-tx', route:`${$('cS').value.toUpperCase()} → ${to}`, body:`[OPS] ${pfx}${chunks[i]}`, time:ts(), st:'✓ OK', ok:true });
+    // Discord: notificar TELEX automático (solo primer chunk para no saturar)
+    if (i === 0) discordNotifyTelex(to, body, true);
     if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 500));
   }
   opsMsgCount++;
@@ -2435,6 +2620,7 @@ function opsRender() {
     return `<div class="ops-flt ph-${ph}">
       <span class="ops-cs">${esc(f.callsign)}</span>
       <span class="ops-rt">${esc(f.dep)}→${esc(f.arr)} ${f.aircraft} FL${Math.round(f.alt/100)} GS${f.gs}</span>
+      <span class="${f.srcSim ? 'ops-src-sim' : f.srcPhpvms ? 'ops-src-phpvms' : 'ops-src-ivao'}">${f.srcSim ? 'SIM' : f.srcPhpvms ? 'phpVMS' : 'NET'}</span>
       <span class="ops-ph ${ph}">${label}</span>
     </div>`;
   }).join('');
@@ -2823,8 +3009,786 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ══════════════════════════════════════════════════════════════════
+//  FSUIPC WEBSOCKET MODULE v1.0 — AirNubeiro ACARS
+//  Conecta a FSUIPC WebSocket Server (Paul Henty) en ws://127.0.0.1:2048
+//  Fuente primaria de datos del simulador local.
+//  Documentación protocolo: fsuipcwebsockets.paulhenty.com
+// ══════════════════════════════════════════════════════════════════
+
+// ── Estado global ──
+let fsuipcWs         = null;   // Instancia WebSocket activa
+let fsuipcConnected  = false;  // true = conexión WS establecida
+let fsuipcReady      = false;  // true = grupo registrado y recibiendo datos
+let fsuipcData       = null;   // Último snapshot normalizado del simulador
+let fsuipcRetryTimer = null;   // Handle del timer de reintento
+let fsuipcRetryCount = 0;      // Contador de reintentos consecutivos
+let fsuipcPollTimer  = null;   // Handle del poll periódico
+
+const FSUIPC_MAX_RETRY   = 8;     // Reintentos antes de darse por vencido
+const FSUIPC_RETRY_DELAY = 15000; // 15 s entre reintentos
+const FSUIPC_GROUP_NAME  = 'AN_FLIGHT_DATA';
+
+// ── Offsets FSUIPC (Paul Henty WebSocket Server) ──
+// Compatibles con FSUIPC4 (FS9/FSX), FSUIPC5 (P3D), FSUIPC7 (MSFS 2020/2024)
+const FSUIPC_OFFSETS = [
+  { name: 'lat',      address: '0x0560', type: 'DBL',    size: 8 }, // Latitud decimal (°)
+  { name: 'lon',      address: '0x0568', type: 'DBL',    size: 8 }, // Longitud decimal (°)
+  { name: 'altMeters',address: '0x0574', type: 'INT64',  size: 8 }, // Altitud metros MSL
+  { name: 'gs',       address: '0x02B8', type: 'UINT32', size: 4 }, // Ground speed (m/s × 65536)
+  { name: 'hdg',      address: '0x0580', type: 'UINT32', size: 4 }, // Heading (° × 65536 / 360 × 65536)
+  { name: 'vs',       address: '0x030C', type: 'INT32',  size: 4 }, // Vertical speed (ft/min × 256)
+  { name: 'onGround', address: '0x0366', type: 'INT16',  size: 2 }, // 1 = en tierra, 0 = en vuelo
+  { name: 'squawk',   address: '0x0354', type: 'UINT16', size: 2 }, // Transponder BCD
+  { name: 'flaps',    address: '0x0BE0', type: 'UINT32', size: 4 }, // Posición flaps handle
+  { name: 'fuel',     address: '0x126C', type: 'UINT32', size: 4 }, // Combustible total (kg × 65536)
+];
+
+// ── Normalización de datos brutos FSUIPC → formato interno ──
+function fsuipcNormalize(raw) {
+  // Ground speed: UINT32 en m/s × 65536 → knots
+  const gsMs  = (raw.gs || 0) / 65536;
+  const gsKts = Math.round(gsMs * 1.94384);
+  // Heading: UINT32, valor = degrees × (65536 / 360) × 65536 → reducir a grados
+  // Formato real FSUIPC: heading_degrees = raw_value / 65536 * 360 / 65536 * 360... simplificado:
+  // heading en degrees = (raw / 65536) * 360 si el valor viene como (deg/360)*65536
+  const hdgDeg = Math.round(((raw.hdg || 0) / 65536) * 360) % 360;
+  // Altitud: INT64 en metros → feet
+  const altFt  = Math.round((raw.altMeters || 0) * 3.28084);
+  // VS: INT32 en ft/min × 256
+  const vsFpm  = Math.round((raw.vs || 0) / 256);
+  // onGround: INT16, 1 = suelo
+  const onGround = (raw.onGround === 1 || raw.onGround === true);
+  // Transponder BCD → string 4 dígitos
+  let squawk = '0000';
+  if (raw.squawk) {
+    // BCD decode: cada 4 bits = un dígito octal
+    const d1 = (raw.squawk >> 12) & 0xF;
+    const d2 = (raw.squawk >> 8)  & 0xF;
+    const d3 = (raw.squawk >> 4)  & 0xF;
+    const d4 =  raw.squawk        & 0xF;
+    squawk = `${d1}${d2}${d3}${d4}`;
+  }
+  // Combustible: UINT32 en kg × 65536
+  const fuelKg = Math.round((raw.fuel || 0) / 65536);
+
+  return {
+    lat:       raw.lat       || 0,
+    lon:       raw.lon       || 0,
+    altitude:  altFt,            // ft MSL
+    groundSpeed: gsKts,          // knots
+    heading:   hdgDeg,           // grados true
+    verticalSpeed: vsFpm,        // ft/min
+    onGround:  onGround,
+    squawk:    squawk,
+    flaps:     raw.flaps || 0,
+    fuelKg:    fuelKg,
+    ts:        Date.now(),
+  };
+}
+
+// ── Actualizar UI del badge de fuente ──
+function fsuipcUpdateBadge(state) {
+  // state: 'ivao' | 'fsuipc' | 'connecting'
+  const b = $('fsuipcBadge');
+  if (!b) return;
+  b.className = `fsuipc-badge src-${state}`;
+  const labels = { ivao: 'IVAO', fsuipc: 'SIM', connecting: 'SIM…' };
+  const titles = {
+    ivao: 'Fuente: IVAO Whazzup (red)',
+    fsuipc: 'Fuente: FSUIPC WebSocket (simulador local)',
+    connecting: 'FSUIPC: conectando...',
+  };
+  b.innerHTML = `<span class="fsuipc-dot"></span>${labels[state] || 'IVAO'}`;
+  b.title = titles[state] || '';
+}
+
+// ── Actualizar estado visible en el panel cfg ──
+function fsuipcSetStatus(msg, ok) {
+  const el = $('fsuipcStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok === true ? '#34d399' : ok === false ? 'var(--wrn)' : 'var(--tx3)';
+}
+
+// ── Registrar grupo de offsets tras conexión ──
+function fsuipcRegisterGroup() {
+  if (!fsuipcWs || fsuipcWs.readyState !== WebSocket.OPEN) return;
+  const pollMs = Math.max(200, parseInt($('fsuipcPoll')?.value) || 500);
+  const msg = JSON.stringify({
+    command: 'groups.add',
+    parameters: [{
+      name:         FSUIPC_GROUP_NAME,
+      pollInterval: pollMs,
+      offsets:      FSUIPC_OFFSETS,
+    }]
+  });
+  fsuipcWs.send(msg);
+}
+
+// ── Parsear mensajes entrantes del WS ──
+function fsuipcHandleMessage(evt) {
+  let msg;
+  try { msg = JSON.parse(evt.data); } catch { return; }
+
+  // El servidor puede enviar datos con command = nombre del grupo
+  if (msg.command === FSUIPC_GROUP_NAME && msg.data) {
+    fsuipcReady = true;
+    fsuipcData  = fsuipcNormalize(msg.data);
+    fsuipcUpdateBadge('fsuipc');
+    fsuipcSetStatus(`✓ Sim conectado — Alt:${fsuipcData.altitude}ft GS:${fsuipcData.groundSpeed}kt`, true);
+    return;
+  }
+
+  // Respuesta de confirmación de registro del grupo
+  if (msg.command === 'groups.add' || msg.success === true) {
+    fsuipcReady = true;
+    fsuipcSetStatus('✓ Grupo registrado — esperando datos del sim', true);
+    return;
+  }
+
+  // Error reportado por el servidor
+  if (msg.error || msg.command === 'error') {
+    console.warn('[FSUIPC] Error servidor:', msg.error || msg.message || JSON.stringify(msg));
+    fsuipcSetStatus(`⚠ Error servidor: ${msg.error || msg.message || 'desconocido'}`, false);
+  }
+}
+
+// ── Conectar al servidor FSUIPC WS ──
+function fsuipcConnect() {
+  if (fsuipcWs && fsuipcWs.readyState === WebSocket.OPEN) return;
+  fsuipcDisconnect(false); // limpiar sin deshabilitar
+
+  const url = ($('fsuipcUrl')?.value.trim()) || 'ws://127.0.0.1:2048';
+  fsuipcUpdateBadge('connecting');
+  fsuipcSetStatus(`Conectando a ${url}…`, null);
+  console.log('[FSUIPC] Conectando a', url);
+
+  try {
+    fsuipcWs = new WebSocket(url);
+  } catch(e) {
+    fsuipcSetStatus(`✗ URL inválida: ${e.message}`, false);
+    fsuipcUpdateBadge('ivao');
+    return;
+  }
+
+  // Timeout de conexión: 8 segundos
+  const connTimeout = setTimeout(() => {
+    if (fsuipcWs && fsuipcWs.readyState !== WebSocket.OPEN) {
+      fsuipcWs.close();
+      fsuipcSetStatus('✗ Timeout — simulador no responde (¿FSUIPC WS Server activo?)', false);
+      fsuipcUpdateBadge('ivao');
+      fsuipcScheduleRetry();
+    }
+  }, 8000);
+
+  fsuipcWs.addEventListener('open', () => {
+    clearTimeout(connTimeout);
+    fsuipcConnected  = true;
+    fsuipcRetryCount = 0;
+    console.log('[FSUIPC] Conexión establecida');
+    fsuipcSetStatus('✓ WS conectado — registrando offsets…', true);
+    fsuipcRegisterGroup();
+    // Poll activo cada pollInterval ms para garantizar datos frescos
+    const pollMs = Math.max(200, parseInt($('fsuipcPoll')?.value) || 500);
+    fsuipcPollTimer = setInterval(() => {
+      if (fsuipcWs?.readyState === WebSocket.OPEN) {
+        fsuipcWs.send(JSON.stringify({ command: 'groups.read', name: FSUIPC_GROUP_NAME }));
+      }
+    }, pollMs);
+  });
+
+  fsuipcWs.addEventListener('message', fsuipcHandleMessage);
+
+  fsuipcWs.addEventListener('close', (evt) => {
+    clearTimeout(connTimeout);
+    clearInterval(fsuipcPollTimer);
+    fsuipcConnected = false;
+    fsuipcReady     = false;
+    const reason = evt.wasClean ? 'cierre limpio' : `código ${evt.code}`;
+    console.log(`[FSUIPC] Desconectado (${reason})`);
+
+    // Si sigue habilitado, reintentar
+    if ($('fsuipcEn')?.checked) {
+      fsuipcUpdateBadge('connecting');
+      fsuipcSetStatus(`Desconectado (${reason}) — reintentando…`, null);
+      fsuipcScheduleRetry();
+    } else {
+      fsuipcUpdateBadge('ivao');
+      fsuipcData = null;
+      fsuipcSetStatus('Desactivado', null);
+    }
+  });
+
+  fsuipcWs.addEventListener('error', (e) => {
+    clearTimeout(connTimeout);
+    console.warn('[FSUIPC] Error WS:', e);
+    // close se dispara tras error — el retry lo maneja el handler close
+  });
+}
+
+// ── Programar reintento de conexión ──
+function fsuipcScheduleRetry() {
+  if (fsuipcRetryCount >= FSUIPC_MAX_RETRY) {
+    fsuipcSetStatus(`✗ Sin conexión tras ${FSUIPC_MAX_RETRY} intentos — desactiva/activa para reintentar`, false);
+    fsuipcUpdateBadge('ivao');
+    return;
+  }
+  fsuipcRetryCount++;
+  const delay = FSUIPC_RETRY_DELAY;
+  clearTimeout(fsuipcRetryTimer);
+  fsuipcSetStatus(`Reintento ${fsuipcRetryCount}/${FSUIPC_MAX_RETRY} en ${delay/1000}s…`, null);
+  fsuipcRetryTimer = setTimeout(() => {
+    if ($('fsuipcEn')?.checked) fsuipcConnect();
+  }, delay);
+}
+
+// ── Desconectar limpiamente ──
+function fsuipcDisconnect(resetData = true) {
+  clearTimeout(fsuipcRetryTimer);
+  clearInterval(fsuipcPollTimer);
+  fsuipcRetryCount = 0;
+  if (fsuipcWs) {
+    fsuipcWs.onclose = null; // evitar loop de retry
+    fsuipcWs.onerror = null;
+    if (fsuipcWs.readyState === WebSocket.OPEN || fsuipcWs.readyState === WebSocket.CONNECTING) {
+      fsuipcWs.close(1000, 'Usuario desactivó FSUIPC');
+    }
+    fsuipcWs = null;
+  }
+  fsuipcConnected = false;
+  fsuipcReady     = false;
+  if (resetData) fsuipcData = null;
+}
+
+// ── Toggle desde checkbox de config ──
+function fsuipcOnToggle() {
+  const enabled = $('fsuipcEn').checked;
+  const fields  = $('fsuipcCfgFields');
+  if (fields) { fields.style.opacity = enabled ? '1' : '.45'; fields.style.pointerEvents = enabled ? '' : 'none'; }
+  if (enabled) {
+    fsuipcRetryCount = 0;
+    fsuipcConnect();
+  } else {
+    fsuipcDisconnect(true);
+    fsuipcUpdateBadge('ivao');
+    fsuipcSetStatus('Desactivado — activa para conectar al simulador local', null);
+  }
+  saveCfg();
+}
+
+// ── API pública: ¿hay datos FSUIPC válidos y frescos? ──
+// maxAgeMs: máximo tiempo aceptable desde el último dato (default 5s)
+function fsuipcGetData(maxAgeMs = 5000) {
+  if (!fsuipcConnected || !fsuipcReady || !fsuipcData) return null;
+  if (Date.now() - fsuipcData.ts > maxAgeMs) return null; // datos obsoletos
+  return fsuipcData;
+}
+
+// ── Inyectar datos FSUIPC en el objeto de vuelo de opsScan ──
+// Cuando el piloto local (mi callsign) está volando, sustituye los datos IVAO
+// por los datos del simulador en tiempo real.
+function fsuipcInjectIntoFlight(flt, csLocal) {
+  if (!csLocal) return false;
+  if (flt.callsign !== csLocal.toUpperCase()) return false;
+  const sim = fsuipcGetData();
+  if (!sim) return false;
+
+  flt.alt       = sim.altitude;
+  flt.gs        = sim.groundSpeed;
+  flt.heading   = sim.heading;
+  flt.lat       = sim.lat;
+  flt.lng       = sim.lon;
+  flt.onGround  = sim.onGround;
+  flt.vs        = sim.verticalSpeed;
+  flt.squawk    = sim.squawk;
+  flt.srcSim    = true; // Marca visual SIM en opsRender
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  FIN MÓDULO FSUIPC
+// ══════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════
+//  DISCORD WEBHOOK MODULE v1.0 — AirNubeiro ACARS
+//  Envía embeds a un canal Discord para eventos clave de OPS:
+//  vuelo detectado, cambio de fase, TELEX enviado, alertas.
+//  Rate limit Discord: 5 req / 2s por webhook → cola con debounce.
+// ══════════════════════════════════════════════════════════════════
+
+// ── Cola anti-rate-limit ──
+const discordQueue   = [];       // Cola de payloads pendientes
+let discordSending   = false;    // Mutex de envío
+let discordLastSent  = 0;        // Timestamp del último envío exitoso
+const DISCORD_MIN_GAP = 420;     // ms mínimos entre envíos (≤5 req/2s con margen)
+
+// Colores por fase/tipo (hex decimal)
+const DISCORD_COLORS = {
+  PREFLIGHT: 0xFBBF24,   // Ámbar
+  ENROUTE:   0x60A5FA,   // Azul
+  DESCENT:   0xA78BFA,   // Violeta
+  LANDED:    0x34D399,   // Verde
+  DETECTED:  0x2E8CF0,   // Azul corporativo NBV
+  TELEX:     0x6EE7B7,   // Verde claro
+  ALERT:     0xF87171,   // Rojo
+  TEST:      0x7289DA,   // Discord blurple
+};
+
+// ── Helpers ──
+function discordEnabled()  { return $('discordEn')?.checked && !!$('discordUrl')?.value.trim(); }
+function discordEvFlight() { return discordEnabled() && $('dcEvFlight')?.checked; }
+function discordEvPhase()  { return discordEnabled() && $('dcEvPhase')?.checked; }
+function discordEvTelex()  { return discordEnabled() && $('dcEvTelex')?.checked; }
+function discordEvAlert()  { return discordEnabled() && $('dcEvAlert')?.checked; }
+
+function discordSetStatus(msg, ok) {
+  const el = $('discordStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok === true ? '#7289da' : ok === false ? 'var(--wrn)' : 'var(--tx3)';
+}
+
+function discordOnToggle() {
+  const enabled = $('discordEn').checked;
+  const fields  = $('discordCfgFields');
+  if (fields) { fields.style.opacity = enabled ? '1' : '.45'; fields.style.pointerEvents = enabled ? '' : 'none'; }
+  discordSetStatus(enabled ? 'Activado — webhook listo' : 'Desactivado', enabled ? true : null);
+  saveCfg();
+}
+
+// ── Encolar un payload (objeto Discord embed) ──
+function discordEnqueue(payload) {
+  if (!discordEnabled()) return;
+  discordQueue.push(payload);
+  discordFlush();
+}
+
+// ── Procesador de cola ──
+async function discordFlush() {
+  if (discordSending || !discordQueue.length) return;
+  discordSending = true;
+  while (discordQueue.length) {
+    const payload = discordQueue.shift();
+    const now     = Date.now();
+    const gap     = now - discordLastSent;
+    if (gap < DISCORD_MIN_GAP) {
+      await new Promise(r => setTimeout(r, DISCORD_MIN_GAP - gap));
+    }
+    try {
+      const url = $('discordUrl')?.value.trim();
+      if (!url) break;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(8000),
+      });
+      discordLastSent = Date.now();
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        console.warn(`[Discord] HTTP ${resp.status}:`, txt);
+        if (resp.status === 429) {
+          // Rate limited — reencolar y esperar
+          const retryAfter = parseFloat(resp.headers.get('Retry-After') || '2') * 1000;
+          discordQueue.unshift(payload);
+          await new Promise(r => setTimeout(r, retryAfter + 200));
+        } else {
+          discordSetStatus(`⚠ Error webhook: HTTP ${resp.status}`, false);
+        }
+      } else {
+        discordSetStatus(`✓ Último envío: ${new Date().toISOString().substring(11,19)}Z`, true);
+      }
+    } catch(e) {
+      console.warn('[Discord] Error de red:', e.message);
+      discordSetStatus(`✗ Error de red: ${e.message}`, false);
+    }
+  }
+  discordSending = false;
+}
+
+// ── Constructor de embed base ──
+function discordEmbed({ color, title, description, fields = [], footer = '' }) {
+  return {
+    embeds: [{
+      color,
+      title,
+      description: description || undefined,
+      fields: fields.map(f => ({ name: f.name, value: String(f.value || '—'), inline: f.inline !== false })),
+      footer: { text: footer || `AirNubeiro OPS • ${new Date().toUTCString().substring(5,22)} UTC` },
+      timestamp: new Date().toISOString(),
+    }]
+  };
+}
+
+// ── Truncar texto a límite Discord (1024 chars en field, 4096 en description) ──
+function dTrunc(str, max = 1024) {
+  const s = String(str || '');
+  return s.length > max ? s.substring(0, max - 3) + '…' : s;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  Eventos públicos — llamados desde opsScan, sendOpsTx, etc.
+// ══════════════════════════════════════════════════════════════════
+
+// Evento: nuevo vuelo detectado
+function discordNotifyDetected(flt) {
+  if (!discordEvFlight()) return;
+  discordEnqueue(discordEmbed({
+    color: DISCORD_COLORS.DETECTED,
+    title: `✈ Vuelo detectado — ${flt.callsign}`,
+    fields: [
+      { name: 'Callsign',  value: flt.callsign,   inline: true },
+      { name: 'Ruta',      value: `${flt.dep} → ${flt.arr}`, inline: true },
+      { name: 'Aeronave',  value: flt.aircraft || '—', inline: true },
+      { name: 'Fase',      value: 'PREFLIGHT',    inline: true },
+      { name: 'Fuente',    value: flt.srcSim ? 'SIM' : flt.srcPhpvms ? 'phpVMS' : 'IVAO', inline: true },
+      { name: 'Piloto',    value: flt.pilotName || '—', inline: true },
+    ],
+  }));
+}
+
+// Evento: cambio de fase
+function discordNotifyPhase(flt, oldPhase, newPhase) {
+  if (!discordEvPhase()) return;
+  const phaseLabels = {
+    PREFLIGHT: '🟡 PREFLIGHT',
+    ENROUTE:   '🔵 ENROUTE',
+    DESCENT:   '🟣 DESCENT',
+    LANDED:    '🟢 LANDED',
+  };
+  const color = DISCORD_COLORS[newPhase] || DISCORD_COLORS.DETECTED;
+  discordEnqueue(discordEmbed({
+    color,
+    title: `${phaseLabels[newPhase] || newPhase} — ${flt.callsign}`,
+    fields: [
+      { name: 'Callsign', value: flt.callsign,  inline: true },
+      { name: 'Ruta',     value: `${flt.dep} → ${flt.arr}`, inline: true },
+      { name: 'Fase',     value: `${oldPhase} → **${newPhase}**`, inline: true },
+      { name: 'FL',       value: `FL${Math.round((flt.alt || 0) / 100)}`, inline: true },
+      { name: 'GS',       value: `${flt.gs || 0} kt`, inline: true },
+      { name: 'HDG',      value: `${flt.heading || 0}°`,   inline: true },
+    ],
+  }));
+}
+
+// Evento: TELEX enviado (auto-OPS o manual)
+function discordNotifyTelex(to, body, auto = false) {
+  if (!discordEvTelex()) return;
+  const station = $('cS')?.value.toUpperCase() || 'OPS';
+  discordEnqueue(discordEmbed({
+    color: DISCORD_COLORS.TELEX,
+    title: `📨 TELEX ${auto ? '[AUTO]' : '[MANUAL]'} → ${to}`,
+    fields: [
+      { name: 'De',      value: station,          inline: true },
+      { name: 'Para',    value: to,               inline: true },
+      { name: 'Tipo',    value: auto ? 'Auto-OPS' : 'Manual', inline: true },
+      { name: 'Mensaje', value: dTrunc(body, 512), inline: false },
+    ],
+  }));
+}
+
+// Evento: alerta OPS (ATC congestion, weather warning, etc.)
+function discordNotifyAlert(callsign, alertType, detail) {
+  if (!discordEvAlert()) return;
+  discordEnqueue(discordEmbed({
+    color: DISCORD_COLORS.ALERT,
+    title: `🚨 Alerta OPS — ${alertType}`,
+    fields: [
+      { name: 'Vuelo',  value: callsign || '—', inline: true },
+      { name: 'Tipo',   value: alertType,       inline: true },
+      { name: 'Detalle', value: dTrunc(detail, 512), inline: false },
+    ],
+  }));
+}
+
+// Botón de prueba desde el panel cfg
+async function discordTest() {
+  if (!$('discordUrl')?.value.trim()) {
+    discordSetStatus('✗ Introduce primero la URL del webhook', false);
+    return;
+  }
+  discordEnqueue(discordEmbed({
+    color: DISCORD_COLORS.TEST,
+    title: '✅ AirNubeiro ACARS — Test de conexión',
+    description: 'El webhook de Discord está correctamente configurado.',
+    fields: [
+      { name: 'App',     value: 'ACARS Dispatch v4.1',  inline: true },
+      { name: 'Estación', value: $('cS')?.value || '—', inline: true },
+      { name: 'Hora',    value: `${new Date().toISOString().substring(11,19)}Z`, inline: true },
+    ],
+  }));
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  FIN MÓDULO DISCORD
+// ══════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════
+//  phpVMS INTEGRATION MODULE v1.0 — AirNubeiro ACARS
+//  Fuente secundaria de datos: vuelos activos desde phpVMS/vmsACARS.
+//  Endpoint principal: GET /api/acars/geojson (público, sin auth)
+//  Enriquecimiento: GET /api/pireps/{id} (con X-API-Key, cacheado)
+//  Prioridad datos: FSUIPC > IVAO Whazzup > phpVMS
+// ══════════════════════════════════════════════════════════════════
+
+let phpvmsInterval    = null;  // Handle del setInterval de scan
+let phpvmsPirepCache  = {};    // { pirepId: { ...pirepData, cachedAt } }
+let phpvmsActive      = {};    // { callsign: { ...flightData } } — vuelos activos phpVMS
+let phpvmsScanCount   = 0;     // Contador de scans para logging
+
+const PHPVMS_CACHE_TTL = 300000; // 5 min — tiempo máximo de cacheo de PIREP detail
+
+// ── Helpers internos ──
+function phpvmsSetStatus(msg, ok) {
+  const el = $('phpvmsStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok === true ? '#a78bfa' : ok === false ? 'var(--wrn)' : 'var(--tx3)';
+}
+
+function phpvmsProxy(url) {
+  // Reutiliza el CORS proxy ya configurado en la app
+  const p = $('cP')?.value.trim();
+  return p ? `${p}${encodeURIComponent(url)}` : url;
+}
+
+// ── Construir callsign desde datos del PIREP ──
+// phpVMS almacena airline.icao + flight_number → "NBV" + "011" = "NBV011"
+function phpvmsCallsign(pirep) {
+  const prefix = pirep?.airline?.icao || pirep?.airline_icao || '';
+  const num    = String(pirep?.flight_number || '').padStart(3, '0');
+  if (!prefix || !num || num === '000') return null;
+  return `${prefix}${num}`.toUpperCase();
+}
+
+// ── Fetch GeoJSON público — lista de vuelos activos ──
+async function phpvmsFetchGeojson() {
+  const base = ($('phpvmsUrl')?.value.trim() || '').replace(/\/$/, '');
+  if (!base) throw new Error('URL phpVMS no configurada');
+  const url = `${base}/api/acars/geojson?_t=${Date.now()}`;
+  const resp = await fetch(phpvmsProxy(url), {
+    signal: AbortSignal.timeout(15000),
+    headers: { 'Cache-Control': 'no-cache' }
+  });
+  if (!resp.ok) throw new Error(`GeoJSON HTTP ${resp.status}`);
+  const json = await resp.json();
+  // Estructura: { data: { type: "FeatureCollection", features: [...] } }
+  return (json?.data?.features || json?.features || []);
+}
+
+// ── Fetch detalle de un PIREP (cacheado) ──
+async function phpvmsFetchPirep(pirepId) {
+  // Verificar caché
+  const cached = phpvmsPirepCache[pirepId];
+  if (cached && (Date.now() - cached.cachedAt) < PHPVMS_CACHE_TTL) {
+    return cached;
+  }
+  const base = ($('phpvmsUrl')?.value.trim() || '').replace(/\/$/, '');
+  const key  = $('phpvmsKey')?.value.trim();
+  if (!base) return null;
+  const headers = { 'Accept': 'application/json', 'Cache-Control': 'no-cache' };
+  if (key) headers['X-API-Key'] = key;
+  try {
+    const resp = await fetch(phpvmsProxy(`${base}/api/pireps/${pirepId}`), {
+      signal: AbortSignal.timeout(10000),
+      headers
+    });
+    if (!resp.ok) return null;
+    const json = await resp.json();
+    const data = json?.data || json;
+    if (!data?.id) return null;
+    phpvmsPirepCache[pirepId] = { ...data, cachedAt: Date.now() };
+    return phpvmsPirepCache[pirepId];
+  } catch(e) {
+    console.warn(`[phpVMS] Error fetching pirep ${pirepId}:`, e.message);
+    return null;
+  }
+}
+
+// ── Scan principal: GeoJSON → enriquecimiento → merge con opsFlights ──
+async function phpvmsScan() {
+  if (!$('phpvmsEn')?.checked) return;
+  phpvmsScanCount++;
+  try {
+    const features = await phpvmsFetchGeojson();
+    phpvmsSetStatus(`Scan #${phpvmsScanCount}: ${features.length} vuelo(s) activo(s) en phpVMS`, true);
+
+    if (!features.length) {
+      // Sin vuelos activos — limpiar entradas phpVMS de opsFlights que ya no están
+      phpvmsPurgeInactive(new Set());
+      phpvmsActive = {};
+      return;
+    }
+
+    const activePirepIds = new Set();
+
+    for (const feat of features) {
+      const props = feat.properties || {};
+      const coords = feat.geometry?.coordinates || [];
+      const pirepId = props.pirep_id;
+      if (!pirepId) continue;
+      activePirepIds.add(pirepId);
+
+      // Coordenadas GeoJSON: [lon, lat, alt]
+      const lon = parseFloat(coords[0]) || 0;
+      const lat = parseFloat(coords[1]) || 0;
+      const alt = parseFloat(coords[2] ?? props.alt) || 0;
+      const hdg = parseFloat(props.heading) || 0;
+
+      // Intentar obtener detalle del PIREP (cacheado)
+      const pirep = await phpvmsFetchPirep(pirepId);
+      const cs = pirep ? phpvmsCallsign(pirep) : null;
+      if (!cs) {
+        console.log(`[phpVMS] PIREP ${pirepId}: no se pudo determinar callsign`);
+        continue;
+      }
+
+      // Construir objeto de vuelo phpVMS
+      const dep = pirep?.dpt_airport_id || '????';
+      const arr = pirep?.arr_airport_id || '????';
+      const aircraft = pirep?.aircraft?.icao || pirep?.aircraft_icao || '????';
+
+      phpvmsActive[cs] = {
+        pirepId, callsign: cs,
+        lat, lon, alt, heading: hdg,
+        dep, arr, aircraft,
+        gs: 0,         // GeoJSON no incluye GS — se mantiene 0 o se hereda de IVAO
+        onGround: alt < 100,
+        pirepState: pirep?.state ?? -1,
+        pilotName: pirep?.user?.name || '',
+        updatedAt: Date.now(),
+        srcPhpvms: true,
+      };
+    }
+
+    // Purgar vuelos ya no activos en phpVMS
+    phpvmsPurgeInactive(activePirepIds);
+
+    // Merge con opsFlights
+    phpvmsMergeWithOps();
+
+    console.log(`[phpVMS] Scan #${phpvmsScanCount}: ${Object.keys(phpvmsActive).length} vuelo(s) — ${Object.keys(phpvmsPirepCache).length} PIREPs en caché`);
+
+  } catch(e) {
+    phpvmsSetStatus(`✗ Error: ${e.message}`, false);
+    console.error('[phpVMS] Error en scan:', e);
+  }
+}
+
+// ── Purgar del caché vuelos que ya no aparecen en el GeoJSON ──
+function phpvmsPurgeInactive(activePirepIds) {
+  for (const cs of Object.keys(phpvmsActive)) {
+    const pid = phpvmsActive[cs]?.pirepId;
+    if (pid && !activePirepIds.has(pid)) {
+      console.log(`[phpVMS] Vuelo ${cs} ya no activo — eliminando`);
+      delete phpvmsActive[cs];
+    }
+  }
+  // Limpiar caché de PIREPs expirados
+  const now = Date.now();
+  for (const pid of Object.keys(phpvmsPirepCache)) {
+    if (now - phpvmsPirepCache[pid].cachedAt > PHPVMS_CACHE_TTL * 2) {
+      delete phpvmsPirepCache[pid];
+    }
+  }
+}
+
+// ── Merge phpVMS → opsFlights ──
+// Solo añade pilotos que NO están ya en IVAO Whazzup (evita duplicar).
+// Si el piloto ya está en IVAO, solo enriquece con pilotName si falta.
+function phpvmsMergeWithOps() {
+  const prefix = ($('opsPrefix')?.value.trim().toUpperCase()) || 'NBV';
+
+  for (const [cs, pv] of Object.entries(phpvmsActive)) {
+    // Solo pilotos que coincidan con el prefijo configurado
+    if (!cs.startsWith(prefix)) continue;
+
+    if (opsFlights[cs] && !opsFlights[cs]._off) {
+      // Piloto ya detectado por IVAO — enriquecer datos si es útil
+      if (!opsFlights[cs].pilotName && pv.pilotName) {
+        opsFlights[cs].pilotName = pv.pilotName;
+      }
+      // Actualizar dep/arr si IVAO los tiene como '????' y phpVMS los conoce
+      if (opsFlights[cs].dep === '????' && pv.dep !== '????') opsFlights[cs].dep = pv.dep;
+      if (opsFlights[cs].arr === '????' && pv.arr !== '????') opsFlights[cs].arr = pv.arr;
+      continue;
+    }
+
+    // Piloto NO detectado por IVAO — añadir desde phpVMS como fuente alternativa
+    const safeNum = v => parseFloat(v) || 0;
+    const prevPhase = opsFlights[cs]?.phase || 'PREFLIGHT';
+
+    // Detectar fase usando los datos disponibles de phpVMS
+    const simPhase = detectPhase({
+      lastTrack: {
+        altitude: pv.alt, groundSpeed: pv.gs,
+        onGround: pv.onGround, latitude: pv.lat, longitude: pv.lon,
+      }
+    }, opsFlights[cs] || null);
+
+    const phaseChanged = opsFlights[cs] && opsFlights[cs].phase !== simPhase;
+
+    opsFlights[cs] = {
+      callsign: cs, phase: simPhase,
+      dep: pv.dep, arr: pv.arr, aircraft: pv.aircraft,
+      alt: pv.alt, gs: pv.gs, heading: pv.heading,
+      lat: pv.lat, lng: pv.lon,
+      onGround: pv.onGround,
+      pilotName: pv.pilotName,
+      pirepId: pv.pirepId,
+      firstSeen: opsFlights[cs]?.firstSeen || Date.now(),
+      enrouteStart: opsFlights[cs]?.enrouteStart || 0,
+      lastRouteInfo: opsFlights[cs]?.lastRouteInfo || 0,
+      assignedParking: opsFlights[cs]?.assignedParking || null,
+      plannedDepTime: opsFlights[cs]?.plannedDepTime || null,
+      _off: null,
+      srcPhpvms: true,
+      srcSim: false,
+      sent: opsFlights[cs]?.sent || { preflight: false, enroute: false, descent: false, landed: false },
+    };
+
+    if (!opsFlights[cs]?.firstSeen || phaseChanged) {
+      if (phaseChanged) opsLog(`${cs} [phpVMS]: ${prevPhase} → ${simPhase}`, 'ops');
+      else opsLog(`✈ ${cs} [phpVMS] detectado: ${pv.dep}→${pv.arr}`, 'ops');
+    }
+  }
+
+  // Actualizar render
+  opsRender();
+}
+
+// ── Toggle desde checkbox de config ──
+function phpvmsOnToggle() {
+  const enabled = $('phpvmsEn').checked;
+  const fields  = $('phpvmsCfgFields');
+  if (fields) { fields.style.opacity = enabled ? '1' : '.45'; fields.style.pointerEvents = enabled ? '' : 'none'; }
+  if (enabled) {
+    phpvmsActive = {};
+    phpvmsPirepCache = {};
+    phpvmsScanCount = 0;
+    phpvmsScan(); // Scan inmediato
+    const pollMs = Math.max(15, parseInt($('phpvmsPoll')?.value) || 30) * 1000;
+    phpvmsInterval = setInterval(phpvmsScan, pollMs);
+    phpvmsSetStatus('Activado — primer scan en curso…', null);
+  } else {
+    clearInterval(phpvmsInterval);
+    phpvmsInterval = null;
+    phpvmsActive = {};
+    phpvmsSetStatus('Desactivado', null);
+  }
+  saveCfg();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  FIN MÓDULO phpVMS
+// ══════════════════════════════════════════════════════════════════
+
 // ── Init ──
 loadCfg(); loadList('rx'); loadList('tx'); updBtn();
+// Pre-fill phpVMS defaults si no había config guardada
+if ($('phpvmsUrl') && !$('phpvmsUrl').value) $('phpvmsUrl').value = 'https://operaciones.airnubeiro.es';
+if ($('phpvmsKey') && !$('phpvmsKey').value) $('phpvmsKey').value = 'c2a31edcf70e7003d4b2';
 $('btnSnd').textContent = soundOn ? '🔔' : '🔕';
 if (!$('cL').value.trim()) { $('cfgP').classList.add('v'); $('btnCfg').classList.add('on'); }
 else ss('ok', `Estación ${$('cS').value||'???'} lista`);

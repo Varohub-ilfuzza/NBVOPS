@@ -450,7 +450,7 @@
       </table>
       <div class="aoc-empty" id="aocEmpty">Ningun vuelo NBV detectado — inicia el monitor</div>
     </div>
-    <div class="aoc-footer">AirNubeiro OPS Center v4.2 — Dispatch Automatizado</div>
+    <div class="aoc-footer">AirNubeiro OPS Center v4.3.3 — Dispatch Automatizado</div>
   </div>
 
   <!-- ═══ FOOTER ═══ -->
@@ -1719,11 +1719,10 @@ async function scan() {
   if (!prefix) return;
 
   try {
-    // Robust cache-busting: unique param per scan to defeat any proxy caching
-    const ivaoUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
-    const resp = await fetch(proxy(ivaoUrl), {
+    // IVAO Whazzup devuelve datos frescos en cada petición — sin cache-busting extra
+    const resp = await fetch(proxy(IVAO_WHAZZUP), {
       signal: AbortSignal.timeout(30000),
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+      cache: 'no-store',
     });
     if (!resp.ok) throw new Error(`IVAO HTTP ${resp.status}`);
     const text = await resp.text();
@@ -2409,102 +2408,307 @@ function apikeyClear() {
 // ══════════════════════════════════════════════════════════════════
 //  FSUIPC WEBSOCKET MODULE — OPS Center
 // ══════════════════════════════════════════════════════════════════
-let fsuipcWs = null, fsuipcConnected = false, fsuipcReady = false;
-let fsuipcData = null, fsuipcRetryTimer = null, fsuipcRetryCount = 0, fsuipcPollTimer = null;
-const FSUIPC_MAX_RETRY = 8, FSUIPC_RETRY_DELAY = 15000, FSUIPC_GROUP = 'AN_OPS_DATA';
+let fsuipcWs         = null;   // Instancia WebSocket activa
+let fsuipcConnected  = false;  // true = WS abierto
+let fsuipcReady      = false;  // true = offsets declarados y recibiendo datos
+let fsuipcData       = null;   // Último snapshot normalizado del simulador
+let fsuipcRetryTimer = null;   // Handle del timer de reintento
+let fsuipcRetryCount = 0;      // Contador de reintentos consecutivos
+
+const FSUIPC_MAX_RETRY   = 8;      // Reintentos antes de rendirse
+const FSUIPC_RETRY_DELAY = 15000;  // 15 s entre reintentos
+const FSUIPC_GROUP_NAME  = 'AN_FLIGHT_DATA';
+
+// ── Offsets FSUIPC — protocolo Paul Henty WebSocket Server ──
+// Tipos soportados: lat, lon, int, uint, float, string
+// lat/lon: el servidor devuelve grados decimales directamente (sin conversión)
+// Compatibles con FSUIPC4 (FS9/FSX), FSUIPC5 (P3D), FSUIPC7 (MSFS 2020/2024)
 const FSUIPC_OFFSETS = [
-  { name:'lat',       address:'0x0560', type:'DBL',    size:8 },
-  { name:'lon',       address:'0x0568', type:'DBL',    size:8 },
-  { name:'altMeters', address:'0x0574', type:'INT64',  size:8 },
-  { name:'gs',        address:'0x02B8', type:'UINT32', size:4 },
-  { name:'hdg',       address:'0x0580', type:'UINT32', size:4 },
-  { name:'vs',        address:'0x030C', type:'INT32',  size:4 },
-  { name:'onGround',  address:'0x0366', type:'INT16',  size:2 },
-  { name:'squawk',    address:'0x0354', type:'UINT16', size:2 },
+  { name: 'lat',      address: '0x0560', type: 'lat',   size: 8 }, // Latitud  — decimal ° (auto)
+  { name: 'lon',      address: '0x0568', type: 'lon',   size: 8 }, // Longitud — decimal ° (auto)
+  { name: 'altM',     address: '0x6020', type: 'float', size: 8 }, // Altitud MSL en metros
+  { name: 'gs',       address: '0x02B4', type: 'uint',  size: 4 }, // Ground speed (m/s × 65536)
+  { name: 'hdg',      address: '0x0580', type: 'uint',  size: 4 }, // True heading (deg × 65536)
+  { name: 'vs',       address: '0x02C8', type: 'int',   size: 4 }, // VS (m/s × 256)
+  { name: 'onGround', address: '0x0366', type: 'uint',  size: 2 }, // 1=suelo, 0=vuelo
+  { name: 'squawk',   address: '0x0354', type: 'uint',  size: 2 }, // Transponder BCD
+  { name: 'flaps',    address: '0x0BDC', type: 'uint',  size: 4 }, // Flaps handle position
+  { name: 'fuel',     address: '0x0AF8', type: 'uint',  size: 4 }, // Combustible total (gal × 128)
 ];
 
-function fsuipcSetStatus(msg, ok) {
-  const el = $('fsuipcStatus'); if (!el) return;
-  el.textContent = msg;
-  el.style.color = ok === true ? '#34d399' : ok === false ? 'var(--wrn,#fbbf24)' : 'var(--tx3)';
-}
-function fsuipcUpdateBadge(state) {
-  const b = $('fsuipcBadge'); if (!b) return;
-  b.className = `fsuipc-badge src-${state}`;
-  b.innerHTML = `<span class="fd"></span>${state === 'fsuipc' ? 'SIM' : state === 'connecting' ? 'SIM…' : 'IVAO'}`;
-  b.title = state === 'fsuipc' ? 'Fuente: FSUIPC (simulador local)' : state === 'connecting' ? 'FSUIPC: conectando…' : 'Fuente: IVAO Whazzup';
-}
-function fsuipcNormalize(r) {
-  const gsKts = Math.round((r.gs||0)/65536*1.94384);
-  const hdgDeg = Math.round(((r.hdg||0)/65536)*360)%360;
-  const altFt  = Math.round((r.altMeters||0)*3.28084);
-  const vsFpm  = Math.round((r.vs||0)/256);
-  const sq = r.squawk ? `${(r.squawk>>12)&0xF}${(r.squawk>>8)&0xF}${(r.squawk>>4)&0xF}${r.squawk&0xF}` : '0000';
-  return { lat:r.lat||0, lon:r.lon||0, altitude:altFt, groundSpeed:gsKts, heading:hdgDeg, verticalSpeed:vsFpm, onGround:r.onGround===1||r.onGround===true, squawk:sq, ts:Date.now() };
-}
-function fsuipcRegisterGroup() {
-  if (!fsuipcWs || fsuipcWs.readyState !== WebSocket.OPEN) return;
-  const pollMs = Math.max(200, parseInt($('fsuipcPoll')?.value)||500);
-  fsuipcWs.send(JSON.stringify({ command:'groups.add', parameters:[{ name:FSUIPC_GROUP, pollInterval:pollMs, offsets:FSUIPC_OFFSETS }] }));
-}
-function fsuipcHandleMessage(evt) {
-  let msg; try { msg = JSON.parse(evt.data); } catch { return; }
-  if (msg.command === FSUIPC_GROUP && msg.data) {
-    fsuipcReady = true; fsuipcData = fsuipcNormalize(msg.data);
-    fsuipcUpdateBadge('fsuipc');
-    fsuipcSetStatus(`✓ Sim: Alt${fsuipcData.altitude}ft GS${fsuipcData.groundSpeed}kt`, true);
+// ── Normalización: raw FSUIPC → formato interno ──
+function fsuipcNormalize(raw) {
+  // Ground speed: uint32, m/s × 65536 → knots
+  const gsKts = Math.round((raw.gs || 0) / 65536 * 1.943844);
+
+  // Heading: uint32, deg × 65536 → grados
+  const hdgDeg = Math.round((raw.hdg || 0) / 65536) % 360;
+
+  // Altitud: float metros → feet
+  const altFt = Math.round((raw.altM || 0) * 3.28084);
+
+  // VS: int32, m/s × 256 → ft/min
+  const vsFpm = Math.round((raw.vs || 0) * 60 * 3.28084 / 256);
+
+  // onGround: uint16, 1 = suelo
+  const onGround = (raw.onGround === 1 || raw.onGround === true);
+
+  // Squawk BCD → string 4 dígitos
+  let squawk = '2000';
+  if (raw.squawk) {
+    const v = parseInt(raw.squawk);
+    const d1 = (v >> 12) & 0xF;
+    const d2 = (v >> 8)  & 0xF;
+    const d3 = (v >> 4)  & 0xF;
+    const d4 =  v        & 0xF;
+    squawk = `${d1}${d2}${d3}${d4}`;
   }
-  if (msg.success === true) { fsuipcReady = true; fsuipcSetStatus('✓ Grupo registrado', true); }
-  if (msg.error) fsuipcSetStatus(`⚠ ${msg.error}`, false);
+
+  // Combustible: uint32, gal × 128 → litros (1 gal = 3.785 l)
+  const fuelL = Math.round((raw.fuel || 0) / 128 * 3.785);
+
+  return {
+    lat:           raw.lat       || 0,
+    lon:           raw.lon       || 0,
+    altitude:      altFt,
+    groundSpeed:   gsKts,
+    heading:       hdgDeg,
+    verticalSpeed: vsFpm,
+    onGround:      onGround,
+    squawk:        squawk,
+    flaps:         raw.flaps || 0,
+    fuelL:         fuelL,
+    ts:            Date.now(),
+  };
 }
+
+// ── Badge de fuente de datos ──
+function fsuipcUpdateBadge(state) {
+  const b = $('fsuipcBadge');
+  if (!b) return;
+  b.className = `fsuipc-badge src-${state}`;
+  const labels = { ivao: 'IVAO', fsuipc: 'SIM', connecting: 'SIM…' };
+  const titles = {
+    ivao:       'Fuente: IVAO Whazzup (red)',
+    fsuipc:     'Fuente: FSUIPC WebSocket (simulador local)',
+    connecting: 'FSUIPC: conectando…',
+  };
+  b.innerHTML = `<span class="fsuipc-dot"></span>${labels[state] || 'IVAO'}`;
+  b.title = titles[state] || '';
+}
+
+// ── Estado visible en panel cfg ──
+function fsuipcSetStatus(msg, ok) {
+  const el = $('fsuipcStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok === true ? '#34d399' : ok === false ? 'var(--wrn)' : 'var(--tx3)';
+}
+
+// ── Declarar offsets y arrancar push periódico ──
+function fsuipcRegisterOffsets() {
+  if (!fsuipcWs || fsuipcWs.readyState !== WebSocket.OPEN) return;
+  const pollMs = Math.max(200, parseInt($('fsuipcPoll')?.value) || 500);
+
+  // 1. Declarar el grupo de offsets
+  fsuipcWs.send(JSON.stringify({
+    command: 'offsets.declare',
+    name:    FSUIPC_GROUP_NAME,
+    offsets: FSUIPC_OFFSETS,
+  }));
+
+  // 2. Iniciar lectura continua con push automático del servidor
+  fsuipcWs.send(JSON.stringify({
+    command:  'offsets.read',
+    name:     FSUIPC_GROUP_NAME,
+    interval: pollMs,   // ms — el servidor hace push a este ritmo
+  }));
+
+  fsuipcSetStatus(`✓ Offsets registrados — intervalo ${pollMs}ms`, true);
+}
+
+// ── Parsear mensajes del servidor FSUIPC ──
+function fsuipcHandleMessage(evt) {
+  let msg;
+  try { msg = JSON.parse(evt.data); } catch { return; }
+
+  // Datos de vuelo: success + name del grupo + data object
+  if (msg.success && msg.name === FSUIPC_GROUP_NAME && msg.data) {
+    // data puede ser objeto {key:val} o array [{name,value}]
+    let raw = msg.data;
+    if (Array.isArray(raw)) {
+      raw = {};
+      for (const item of msg.data) { if (item.name) raw[item.name] = item.value; }
+    }
+    fsuipcReady = true;
+    fsuipcData  = fsuipcNormalize(raw);
+    fsuipcUpdateBadge('fsuipc');
+    fsuipcSetStatus(
+      `✓ Sim: Alt ${fsuipcData.altitude}ft  GS ${fsuipcData.groundSpeed}kt  ${fsuipcData.onGround ? 'TIERRA' : 'VUELO'}`,
+      true
+    );
+    return;
+  }
+
+  // Confirmación de declare/read (sin datos)
+  if (msg.success && msg.name === FSUIPC_GROUP_NAME) {
+    fsuipcSetStatus('✓ Offsets aceptados — recibiendo datos…', true);
+    return;
+  }
+
+  // Error del servidor
+  if (msg.success === false) {
+    const err = msg.errorMessage || msg.error || msg.errorCode || 'desconocido';
+    console.warn('[FSUIPC] Error servidor:', err, msg);
+    fsuipcSetStatus(`⚠ Error servidor: ${err}`, false);
+  }
+}
+
+// ── Conectar al servidor FSUIPC WebSocket ──
+function fsuipcConnect() {
+  if (fsuipcWs && fsuipcWs.readyState === WebSocket.OPEN) return;
+  fsuipcDisconnect(false);
+
+  const url = ($('fsuipcUrl')?.value.trim()) || 'ws://127.0.0.1:2048';
+  fsuipcUpdateBadge('connecting');
+  fsuipcSetStatus(`Conectando a ${url}…`, null);
+  console.log('[FSUIPC] Conectando a', url);
+
+  try {
+    // Subprotocolo 'fsuipc' requerido por Paul Henty WS Server
+    fsuipcWs = new WebSocket(url, 'fsuipc');
+  } catch(e) {
+    fsuipcSetStatus(`✗ URL inválida: ${e.message}`, false);
+    fsuipcUpdateBadge('ivao');
+    return;
+  }
+
+  // Timeout de conexión: 8 segundos
+  const connTimeout = setTimeout(() => {
+    if (fsuipcWs && fsuipcWs.readyState !== WebSocket.OPEN) {
+      fsuipcWs.close();
+      fsuipcSetStatus('✗ Timeout — ¿FSUIPC WS Server activo y con sim abierto?', false);
+      fsuipcUpdateBadge('ivao');
+      fsuipcScheduleRetry();
+    }
+  }, 8000);
+
+  fsuipcWs.addEventListener('open', () => {
+    clearTimeout(connTimeout);
+    fsuipcConnected  = true;
+    fsuipcRetryCount = 0;
+    console.log('[FSUIPC] Conexión WS establecida — registrando offsets');
+    fsuipcSetStatus('✓ WS conectado — declarando offsets…', true);
+    fsuipcRegisterOffsets();
+  });
+
+  fsuipcWs.addEventListener('message', fsuipcHandleMessage);
+
+  fsuipcWs.addEventListener('close', (evt) => {
+    clearTimeout(connTimeout);
+    fsuipcConnected = false;
+    fsuipcReady     = false;
+    const reason = evt.wasClean ? 'cierre limpio' : `código ${evt.code}`;
+    console.log(`[FSUIPC] Desconectado (${reason})`);
+    if ($('fsuipcEn')?.checked) {
+      fsuipcUpdateBadge('connecting');
+      fsuipcSetStatus(`Desconectado (${reason}) — reintentando…`, null);
+      fsuipcScheduleRetry();
+    } else {
+      fsuipcUpdateBadge('ivao');
+      fsuipcData = null;
+      fsuipcSetStatus('Desactivado', null);
+    }
+  });
+
+  fsuipcWs.addEventListener('error', (e) => {
+    clearTimeout(connTimeout);
+    console.warn('[FSUIPC] Error WS:', e);
+    // 'close' se dispara tras 'error' — el retry lo gestiona el handler close
+  });
+}
+
+// ── Programar reintento ──
 function fsuipcScheduleRetry() {
-  if (fsuipcRetryCount >= FSUIPC_MAX_RETRY) { fsuipcSetStatus(`✗ Sin conexión tras ${FSUIPC_MAX_RETRY} intentos`, false); fsuipcUpdateBadge('ivao'); return; }
+  if (fsuipcRetryCount >= FSUIPC_MAX_RETRY) {
+    fsuipcSetStatus(`✗ Sin conexión tras ${FSUIPC_MAX_RETRY} intentos — desactiva y reactiva`, false);
+    fsuipcUpdateBadge('ivao');
+    return;
+  }
   fsuipcRetryCount++;
   clearTimeout(fsuipcRetryTimer);
   fsuipcSetStatus(`Reintento ${fsuipcRetryCount}/${FSUIPC_MAX_RETRY} en ${FSUIPC_RETRY_DELAY/1000}s…`, null);
-  fsuipcRetryTimer = setTimeout(() => { if ($('fsuipcEn')?.checked) fsuipcConnect(); }, FSUIPC_RETRY_DELAY);
+  fsuipcRetryTimer = setTimeout(() => {
+    if ($('fsuipcEn')?.checked) fsuipcConnect();
+  }, FSUIPC_RETRY_DELAY);
 }
-function fsuipcDisconnect(resetData=true) {
-  clearTimeout(fsuipcRetryTimer); clearInterval(fsuipcPollTimer); fsuipcRetryCount=0;
-  if (fsuipcWs) { fsuipcWs.onclose=null; fsuipcWs.onerror=null; if(fsuipcWs.readyState<2) fsuipcWs.close(1000,'User'); fsuipcWs=null; }
-  fsuipcConnected=false; fsuipcReady=false; if(resetData) fsuipcData=null;
+
+// ── Desconectar limpiamente ──
+function fsuipcDisconnect(resetData = true) {
+  clearTimeout(fsuipcRetryTimer);
+  fsuipcRetryCount = 0;
+  if (fsuipcWs) {
+    fsuipcWs.onclose = null;
+    fsuipcWs.onerror = null;
+    if (fsuipcWs.readyState === WebSocket.OPEN || fsuipcWs.readyState === WebSocket.CONNECTING) {
+      fsuipcWs.close(1000, 'Usuario desactivó FSUIPC');
+    }
+    fsuipcWs = null;
+  }
+  fsuipcConnected = false;
+  fsuipcReady     = false;
+  if (resetData) fsuipcData = null;
 }
-function fsuipcConnect() {
-  if (fsuipcWs?.readyState===WebSocket.OPEN) return;
-  fsuipcDisconnect(false);
-  const url = $('fsuipcUrl')?.value.trim() || 'ws://127.0.0.1:2048';
-  fsuipcUpdateBadge('connecting'); fsuipcSetStatus(`Conectando a ${url}…`, null);
-  try { fsuipcWs = new WebSocket(url); } catch(e) { fsuipcSetStatus(`✗ URL inválida: ${e.message}`,false); fsuipcUpdateBadge('ivao'); return; }
-  const timeout = setTimeout(() => { if(fsuipcWs?.readyState!==WebSocket.OPEN){fsuipcWs.close();fsuipcSetStatus('✗ Timeout — ¿FSUIPC WS activo?',false);fsuipcUpdateBadge('ivao');fsuipcScheduleRetry();} }, 8000);
-  fsuipcWs.addEventListener('open', () => {
-    clearTimeout(timeout); fsuipcConnected=true; fsuipcRetryCount=0;
-    fsuipcSetStatus('✓ Conectado — registrando offsets…', true); fsuipcRegisterGroup();
-    const ms = Math.max(200, parseInt($('fsuipcPoll')?.value)||500);
-    fsuipcPollTimer = setInterval(() => { if(fsuipcWs?.readyState===WebSocket.OPEN) fsuipcWs.send(JSON.stringify({command:'groups.read',name:FSUIPC_GROUP})); }, ms);
-  });
-  fsuipcWs.addEventListener('message', fsuipcHandleMessage);
-  fsuipcWs.addEventListener('close', (e) => { clearTimeout(timeout); clearInterval(fsuipcPollTimer); fsuipcConnected=false; fsuipcReady=false; if($('fsuipcEn')?.checked){fsuipcUpdateBadge('connecting');fsuipcScheduleRetry();}else{fsuipcUpdateBadge('ivao');fsuipcData=null;fsuipcSetStatus('Desconectado',null);} });
-  fsuipcWs.addEventListener('error', () => { clearTimeout(timeout); });
-}
+
+// ── Toggle desde checkbox ──
 function fsuipcOnToggle() {
-  const en = $('fsuipcEn').checked;
-  $('fsuipcCfgFields').classList.toggle('active', en);
-  if (en) { fsuipcRetryCount=0; fsuipcConnect(); } else { fsuipcDisconnect(true); fsuipcUpdateBadge('ivao'); fsuipcSetStatus('Desactivado',null); }
+  const enabled = $('fsuipcEn').checked;
+  const fields  = $('fsuipcCfgFields');
+  if (fields) {
+    fields.style.opacity      = enabled ? '1' : '.45';
+    fields.style.pointerEvents = enabled ? '' : 'none';
+  }
+  if (enabled) {
+    fsuipcRetryCount = 0;
+    fsuipcConnect();
+  } else {
+    fsuipcDisconnect(true);
+    fsuipcUpdateBadge('ivao');
+    fsuipcSetStatus('Desactivado — activa para conectar al simulador local', null);
+  }
   saveCfg();
 }
-function fsuipcGetData(maxAgeMs=5000) {
-  if (!fsuipcConnected||!fsuipcReady||!fsuipcData) return null;
-  if (Date.now()-fsuipcData.ts>maxAgeMs) return null;
+
+// ── API pública: datos frescos del simulador ──
+function fsuipcGetData(maxAgeMs = 5000) {
+  if (!fsuipcConnected || !fsuipcReady || !fsuipcData) return null;
+  if (Date.now() - fsuipcData.ts > maxAgeMs) return null;
   return fsuipcData;
 }
+
+// ── Inyectar datos FSUIPC en el vuelo local ──
 function fsuipcInjectIntoFlight(flt) {
   const csLocal = $('fsuipcCs')?.value.trim().toUpperCase();
-  if (!csLocal || flt.callsign !== csLocal) return false;
-  const sim = fsuipcGetData(); if (!sim) return false;
-  flt.alt=sim.altitude; flt.gs=sim.groundSpeed; flt.heading=sim.heading;
-  flt.lat=sim.lat; flt.lng=sim.lon; flt.onGround=sim.onGround; flt.srcSim=true;
+  if (!csLocal) return false;
+  if (flt.callsign !== csLocal) return false;
+  const sim = fsuipcGetData();
+  if (!sim) return false;
+
+  flt.alt       = sim.altitude;
+  flt.gs        = sim.groundSpeed;
+  flt.heading   = sim.heading;
+  flt.lat       = sim.lat;
+  flt.lng       = sim.lon;
+  flt.onGround  = sim.onGround;
+  flt.vs        = sim.verticalSpeed;
+  flt.squawk    = sim.squawk;
+  flt.srcSim    = true;
   return true;
 }
+
+// ══════════════════════════════════════════════════════════════════
+//  FIN MÓDULO FSUIPC
+// ══════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════
 //  phpVMS INTEGRATION MODULE — OPS Center
@@ -2728,7 +2932,7 @@ async function discordTest() {
   if (!$('discordUrl')?.value.trim()) { discordSetStatus('✗ Introduce la URL del webhook',false); return; }
   discordEnqueue(discordEmbed({ color:DC_COLORS.TEST, title:'✅ AirNubeiro OPS Center — Test de conexión',
     description:'Webhook correctamente configurado.',
-    fields:[{name:'App',value:'OPS Center v4.2',inline:true},{name:'Estación',value:$('cS')?.value||'—',inline:true},
+    fields:[{name:'App',value:'OPS Center v4.3.3',inline:true},{name:'Estación',value:$('cS')?.value||'—',inline:true},
       {name:'Hora',value:`${new Date().toISOString().slice(11,19)}Z`,inline:true}] }));
 }
 
@@ -2755,7 +2959,7 @@ function discordNotifyOpsMsg({ type = 'TELEX', to, body, auto = true, ok = true 
       { name: 'Tipo',    value: auto ? 'Auto-OPS' : 'Manual', inline: true },
       { name: 'Mensaje', value: dTrunc(body, 512), inline: false },
     ],
-    footer: `AirNubeiro OPS Center v4.2 • ${new Date().toISOString().slice(11,19)}Z`,
+    footer: `AirNubeiro OPS Center v4.3.3 • ${new Date().toISOString().slice(11,19)}Z`,
   }));
 }
 

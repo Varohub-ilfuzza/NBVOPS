@@ -208,3 +208,101 @@ Si el vuelo ya está en IVAO Whazzup, los datos phpVMS enriquecen el objeto exis
 
 El label del campo en la UI se ha actualizado con tooltip explicativo.
 
+
+---
+
+## [v4.3.1] — 2026-02-28
+
+### Bug fixes
+
+#### ATIS múltiple — fix panel Quick Dispatch
+Cuando Hoppie devuelve una lista de estaciones (`AVAILABLE ATIS FOR XXXX`) en lugar del ATIS directamente, el texto anterior `{acars info {AVAILABLE ATIS FOR LEST\nLEST-APP\nLEST-TWR\nLEST-GND}}` se mostraba en bruto y el botón Enviar TELEX enviaba ese literal sin valor.
+
+Comportamiento nuevo:
+1. Detecta automáticamente la respuesta de lista múltiple
+2. Auto-selecciona por prioridad: APP → TWR → GND → DEP → primera disponible
+3. Hace una segunda petición automática a la estación seleccionada
+4. Muestra el ATIS real — el botón Enviar TELEX funciona correctamente
+
+#### HTTP 413 en proxy CORS — fix global
+`ivaoFetch()` y todas las peticiones a IVAO Whazzup incluían parámetros de cache-busting (`?_t=EPOCH&_r=RANDOM`) que inflaban la URL hasta superar el límite del proxy CORS, devolviendo silenciosamente 0 pilotos y 0 ATCs.
+
+Afectaba a:
+- OPS Monitor (scan de pilotos NBV)
+- Quick Dispatch — tráfico de aeropuerto
+- `opsAutoRouteInfo` — ATC en ruta y tráfico en destino
+- OPS Center — scan general (fix previo en v4.3.0 patch)
+
+Eliminado el cache-busting innecesario en todos los puntos. El endpoint IVAO Whazzup ya sirve datos frescos en cada petición.
+
+### Versiones actualizadas
+- `index.html`: AirNubeiro v4.3.1 / ACARS Dispatch v4.3.1
+- `ops-center.html`: OPS Center v4.3.1
+- `sw.js`: CACHE_NAME `an-acars-v4.3.1`
+
+---
+
+## [v4.3.2] — 2026-03-01
+
+### FSUIPC WebSocket — Reescritura completa del módulo
+
+Módulo reescrito desde cero con el protocolo correcto del FSUIPC WebSocket Server de Paul Henty. La implementación anterior nunca llegó a conectarse porque usaba comandos que no existen en el servidor.
+
+#### Bugs corregidos
+
+| # | Bug | Antes | Ahora |
+|---|-----|-------|-------|
+| 1 | Subprotocolo WS | `new WebSocket(url)` | `new WebSocket(url, 'fsuipc')` — requerido por el servidor |
+| 2 | Comando declarar | `groups.add` (no existe) | `offsets.declare` con array de offsets |
+| 3 | Comando leer | `groups.read` (no existe) | `offsets.read` con parámetro `interval` (ms) |
+| 4 | Push automático | Poll manual con `setInterval` | El servidor hace push al ritmo de `interval` — sin timer manual |
+| 5 | Respuesta parsing | `msg.command === GROUP_NAME` | `msg.success && msg.name === GROUP_NAME && msg.data` |
+| 6 | Offset altitud | `0x0574` INT64 | `0x6020` float size 8 (metros → feet) |
+| 7 | Offset GS | `0x02B8` | `0x02B4` uint size 4 |
+| 8 | Offset VS | `0x030C` | `0x02C8` int size 4 |
+| 9 | Tipos lat/lon | `DBL` | `lat` / `lon` — el servidor devuelve decimal° directamente |
+| 10 | Fórmula heading | `(raw/65536)*360` (doble escala) | `raw/65536` |
+| 11 | Tipos squawk/flaps | `UINT16` / `UINT32` | `uint` |
+
+#### Flujo de conexión correcto
+```
+1. new WebSocket(url, 'fsuipc')     ← subprotocolo obligatorio
+2. onopen → offsets.declare         ← declara el grupo de offsets
+3. onopen → offsets.read + interval ← servidor arranca push automático
+4. onmessage → { success, name, data: {lat, lon, altM, gs, hdg, ...} }
+```
+
+#### Compatibilidad
+Validado contra implementaciones reales (FSUIPC-Shirley-Bridge, flightsim-aircraft-panel). Offsets verificados para FSUIPC4/5/7 (FS9, FSX, P3D, MSFS 2020/2024).
+
+---
+
+## [v4.3.3] — 2026-03-01
+
+### OCC — OPS Center embebido via iframe
+
+El tab OCC del ACARS Dispatch ahora carga el OPS Center completo mediante un `<iframe>`. Ambas aplicaciones conviven en el mismo despliegue de GitHub Pages sin interferencias.
+
+**Decisión de arquitectura:** integración directa de código descartada por inviabilidad técnica (69 funciones con nombre idéntico, 8 constantes duplicadas, cientos de IDs HTML en colisión). El iframe aísla completamente ambos contextos JS y es la solución mantenible a largo plazo.
+
+**Requisito de despliegue:** ambos archivos deben servirse desde el mismo origen (GitHub Pages). Si se abre `index.html` desde `file://` local el iframe puede bloquearse — funciona correctamente desde el servidor.
+
+**Limpieza de código:** eliminado el bloque "OPS CENTER ENGINE portado" (~1800 líneas) que era código muerto desde el rediseño, y corregida una llave `}` sobrante en `saveCfg()`.
+
+---
+
+## [v4.3.3] — 2026-03-01
+
+### OPS Center integrado en pestaña OCC (iframe embed)
+
+La pestaña OCC del ACARS ahora carga el `ops-center.html` completo en un iframe. El usuario trabaja desde un único punto de entrada (`index.html`) y tiene acceso al OPS Center sin abrir una segunda pestaña.
+
+**Motivo del enfoque iframe** (vs merge de código): ambos archivos comparten 68 IDs idénticos en el DOM. Un merge directo generaría colisiones de `document.getElementById()` que romperían la funcionalidad en ambas direcciones. El iframe aisla los contextos DOM y JS completamente.
+
+**Funcionalidad:**
+- Botón ⟳ recarga el OPS Center sin recargar el ACARS
+- Botón ⬡ abre el OPS Center en pestaña independiente si se prefiere pantalla completa
+- La altura del iframe ocupa `100dvh - 130px` (adapta a cualquier pantalla)
+- Config del OPS Center se guarda en `an_ops` (localStorage), independiente de `an3` (ACARS)
+
+**Requisito de deploy:** `index.html` y `ops-center.html` deben estar en la misma carpeta. En GitHub Pages ya es el caso por defecto.

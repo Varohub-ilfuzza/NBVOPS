@@ -338,6 +338,291 @@
     .stream-overlay { padding: 16px; }
     .str-tbl { font-size: 0.7rem; }
   }
+
+  /* ── OPS Center / OCC Monitor ── */
+.dot-live { width: 8px; height: 8px; background: var(--ok); border-radius: 50%; animation: pulse 1.5s infinite; }
+
+.uc { text-transform: uppercase; }
+
+/* ── Módulos externos (FSUIPC / phpVMS / Discord) ── */
+  .cfg-module { margin-top: 8px; padding: 8px 10px; background: var(--bg3,#071018); border: 1px solid var(--brd); border-radius: 6px; }
+
+.cfg-mod-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+
+.cfg-mod-ttl { font: 600 0.65rem var(--mono); letter-spacing: .5px; }
+
+.cfg-mod-ttl.fsuipc  { color: #34d399; }
+
+.cfg-mod-ttl.phpvms  { color: #a78bfa; }
+
+.cfg-mod-ttl.discord { color: #7289da; }
+
+.mod-toggle { display: flex; align-items: center; gap: 5px; cursor: pointer; font: 500 0.63rem var(--mono); color: var(--tx2); }
+
+.mod-toggle input[type=checkbox] { width: 12px; height: 12px; }
+
+.mod-toggle.fsuipc  input { accent-color: #34d399; }
+
+.mod-toggle.phpvms  input { accent-color: #a78bfa; }
+
+.mod-toggle.discord input { accent-color: #7289da; }
+
+.cfg-mod-fields { opacity: .45; pointer-events: none; margin-top: 4px; }
+
+.cfg-mod-fields.active { opacity: 1; pointer-events: auto; }
+
+.cfg-mod-status { font: 500 0.6rem var(--mono); color: var(--tx3); margin-top: 4px; }
+
+/* Badge de fuente en tarjetas de vuelo */
+  .src-sim    { font: 700 0.52rem var(--mono); color: #34d399; background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.3); border-radius: 3px; padding: 1px 4px; }
+
+.src-phpvms { font: 700 0.52rem var(--mono); color: #a78bfa; background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.3); border-radius: 3px; padding: 1px 4px; }
+
+.src-ivao   { font: 700 0.52rem var(--mono); color: var(--tx3); background: var(--bg3,#071018); border: 1px solid var(--brd); border-radius: 3px; padding: 1px 4px; }
+
+.fsuipc-badge.src-ivao   { color: var(--tx3); border-color: var(--brd); background: transparent; }
+
+/* Discord events grid */
+  .dc-events { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; margin-top: 3px; }
+
+.dc-events label { display: flex; align-items: center; gap: 4px; font: 500 0.62rem var(--mono); color: var(--tx2); cursor: pointer; }
+
+.dc-events input { accent-color: #7289da; width: 11px; height: 11px; }
+
+.dc-test-btn { margin-top: 5px; padding: 3px 9px; background: rgba(114,137,218,.12); border: 1px solid rgba(114,137,218,.3); color: #7289da; border-radius: 4px; font: 600 0.62rem var(--mono); cursor: pointer; }
+
+.dc-test-btn:hover { background: rgba(114,137,218,.22); }
+
+/* ── Roster ── */
+  .roster { background: var(--bg1); border: 1px solid var(--brd); border-radius: 8px; padding: 14px; }
+
+.roster h3 { font: 600 0.72rem var(--mono); color: var(--ops); letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
+
+.roster-help { font: 400 0.68rem var(--sans); color: var(--tx3); margin-bottom: 10px; line-height: 1.4; }
+
+.roster-row { display: flex; gap: 6px; align-items: center; margin-bottom: 5px; }
+
+.roster-row input { flex: 1; }
+
+.roster-row .rm { background: none; border: 1px solid var(--brd); color: var(--tx3); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+
+.roster-row .rm:hover { border-color: var(--err); color: var(--err); }
+
+.roster-add { background: rgba(244,114,182,.08); border: 1px dashed rgba(244,114,182,.3); color: var(--ops); padding: 6px; border-radius: 5px; width: 100%; font: 500 0.68rem var(--mono); cursor: pointer; transition: .12s; }
+
+.roster-add:hover { background: rgba(244,114,182,.15); }
+
+/* ── Dashboard ── */
+  .dash { display: flex; flex-direction: column; gap: 8px; }
+
+.dash-empty { text-align: center; padding: 30px; color: var(--tx3); font: 400 0.8rem var(--mono); }
+
+.flt-card { background: var(--bg1); border: 1px solid var(--brd); border-radius: 8px; padding: 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; transition: border-color .2s; }
+
+.flt-card.ph-preflight { border-left: 3px solid var(--wrn); }
+
+.flt-card.ph-enroute { border-left: 3px solid var(--inf); }
+
+.flt-card.ph-descent { border-left: 3px solid var(--cpdlc); }
+
+.flt-card.ph-landed { border-left: 3px solid var(--ok); }
+
+.flt-cs { font: 700 1rem var(--mono); color: var(--acc); }
+
+.flt-route { font: 500 0.72rem var(--mono); color: var(--tx2); margin-top: 2px; }
+
+.flt-ac { font: 400 0.65rem var(--mono); color: var(--tx3); }
+
+.flt-data { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+
+.flt-d { font: 400 0.65rem var(--mono); color: var(--tx3); }
+
+.flt-d span { color: var(--tx1); font-weight: 600; }
+
+.flt-phase { padding: 4px 10px; border-radius: 4px; font: 700 0.62rem var(--mono); letter-spacing: .8px; text-align: center; white-space: nowrap; }
+
+.flt-phase.preflight { background: rgba(251,191,36,.1); color: var(--wrn); }
+
+.flt-phase.enroute { background: rgba(96,165,250,.1); color: var(--inf); }
+
+.flt-phase.descent { background: rgba(167,139,250,.1); color: var(--cpdlc); }
+
+.flt-phase.landed { background: rgba(52,211,153,.1); color: var(--ok); }
+
+.flt-msgs { grid-column: 1 / -1; display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+
+.flt-msg { padding: 2px 8px; border-radius: 3px; font: 500 0.58rem var(--mono); letter-spacing: .3px; }
+
+.flt-msg.sent { background: rgba(52,211,153,.1); color: var(--ok); }
+
+.flt-msg.pending { background: rgba(125,138,160,.1); color: var(--tx3); }
+
+.flt-msg.sending { background: rgba(224,163,72,.1); color: var(--acc); }
+
+.flt-msg.error { background: rgba(248,113,113,.1); color: var(--err); }
+
+/* ── Stats bar ── */
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; padding: 8px 0; }
+
+.stat { display: flex; align-items: center; gap: 5px; font: 400 0.68rem var(--mono); color: var(--tx3); }
+
+.stat .n { font-weight: 700; font-size: 1rem; }
+
+.stat .n.wrn { color: var(--wrn); }
+
+.stat .n.inf { color: var(--inf); }
+
+.stat .n.cpdlc { color: var(--cpdlc); }
+
+.stat .n.ok { color: var(--ok); }
+
+.stat .n.acc { color: var(--acc); }
+
+/* ── Log ── */
+  .log { background: var(--bg1); border: 1px solid var(--brd); border-radius: 8px; max-height: 260px; overflow-y: auto; }
+
+.log::-webkit-scrollbar { width: 4px; }
+
+.log::-webkit-scrollbar-thumb { background: var(--brd); border-radius: 2px; }
+
+.log-h { font: 600 0.66rem var(--mono); color: var(--tx3); letter-spacing: 1px; text-transform: uppercase; padding: 10px 12px 6px; position: sticky; top: 0; background: var(--bg1); display: flex; justify-content: space-between; align-items: center; }
+
+.log-h button { background: none; border: none; color: var(--tx3); font: 400 0.6rem var(--mono); cursor: pointer; }
+
+.log-h button:hover { color: var(--err); }
+
+.log-e { padding: 4px 12px; font: 400 0.65rem/1.5 var(--mono); border-bottom: 1px solid rgba(28,35,51,.5); display: flex; gap: 8px; }
+
+.log-e:last-child { border-bottom: none; }
+
+.log-e .lt { color: var(--tx3); flex-shrink: 0; }
+
+.log-e .lm { color: var(--tx2); }
+
+.log-e.ok .lm { color: var(--ok); }
+
+.log-e.err .lm { color: var(--err); }
+
+.log-e.wrn .lm { color: var(--wrn); }
+
+.log-e.ops .lm { color: var(--ops); }
+
+.log-empty { text-align: center; padding: 16px; color: var(--tx3); font: 400 0.7rem var(--mono); }
+
+/* ── Sections ── */
+  .sec-h { font: 600 0.66rem var(--mono); color: var(--tx3); letter-spacing: 1px; text-transform: uppercase; padding: 4px 0; }
+
+.hi:hover .tt, .hi:focus .tt { display: block; }
+
+.tt { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--brd); border-radius: 6px; padding: 8px; font: 400 0.62rem/1.4 var(--sans); color: var(--tx2); width: 220px; z-index: 10; white-space: normal; }
+
+/* ── Responsive ── */
+  @media (max-width: 600px) {
+    html { font-size: 14px; }
+    .app { padding: 8px; }
+    .cfg-g { grid-template-columns: 1fr; }
+    .flt-card { grid-template-columns: 1fr; }
+    .flt-phase { justify-self: start; }
+    .stats { gap: 8px; }
+  }
+
+/* ── AOC Fullscreen ── */
+  .aoc-overlay { position: fixed; inset: 0; z-index: 9999; background: #040810; display: flex; flex-direction: column; overflow: hidden; }
+
+.aoc-header { display: flex; align-items: center; gap: 20px; padding: 12px 24px; background: linear-gradient(180deg, #0a1428 0%, #060e1c 100%); border-bottom: 2px solid #0062B8; flex-shrink: 0; }
+
+.aoc-brand { display: flex; align-items: center; gap: 12px; }
+
+.aoc-logo { font-size: 1.6rem; }
+
+.aoc-title { font: 700 1.1rem var(--mono); color: #ffffff; letter-spacing: 3px; text-transform: uppercase; }
+
+.aoc-sub { font: 400 .58rem var(--mono); color: #4a7bb5; letter-spacing: 1.5px; }
+
+.aoc-clock { font: 700 1.6rem var(--mono); color: #2e8cf0; letter-spacing: 3px; margin-left: auto; text-shadow: 0 0 20px rgba(46,140,240,.3); }
+
+.aoc-stats { display: flex; gap: 16px; margin-left: 24px; }
+
+.aoc-st { font: 600 .6rem var(--mono); color: #6b8ab5; text-align: center; padding: 4px 8px; background: rgba(46,140,240,.05); border: 1px solid rgba(46,140,240,.15); border-radius: 6px; }
+
+.aoc-st span { display: block; font-size: 1.2rem; font-weight: 700; color: #e2eaf4; }
+
+.aoc-close { font: 600 .65rem var(--mono); background: rgba(239,68,68,.08); color: #f87171; border: 1px solid rgba(239,68,68,.25); border-radius: 6px; padding: 6px 14px; cursor: pointer; margin-left: 16px; transition: .2s; }
+
+.aoc-close:hover { background: rgba(239,68,68,.15); }
+
+.aoc-board { flex: 1; overflow-y: auto; padding: 12px 20px; }
+
+.aoc-tbl { width: 100%; border-collapse: collapse; font: .68rem var(--mono); }
+
+.aoc-tbl th { background: #0c1628; color: #4a7bb5; padding: 10px 12px; text-align: left; border-bottom: 2px solid #162240; position: sticky; top: 0; z-index: 1; letter-spacing: 1.5px; font-weight: 600; font-size: .6rem; text-transform: uppercase; }
+
+.aoc-tbl td { padding: 8px 12px; border-bottom: 1px solid #0f1a30; color: #c0d0e4; vertical-align: middle; }
+
+.aoc-tbl tr:hover td { background: rgba(46,140,240,.04); }
+
+.aoc-tbl .aoc-cs { font-weight: 700; color: #ffffff; font-size: .75rem; letter-spacing: .5px; }
+
+.aoc-tbl .aoc-ph { display: inline-block; padding: 3px 10px; border-radius: 4px; font-weight: 700; font-size: .58rem; letter-spacing: .5px; }
+
+.aoc-empty { text-align: center; padding: 80px 20px; font: .8rem var(--mono); color: #2a4060; }
+
+.aoc-footer { text-align: center; padding: 10px; font: .56rem var(--mono); color: #1a3050; border-top: 1px solid #0f1a30; flex-shrink: 0; letter-spacing: 1px; }
+
+.aoc-msg { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: .5rem; font-weight: 600; margin: 1px; }
+
+.aoc-msg.sent { background: rgba(52,199,89,.15); color: #34c759; }
+
+.aoc-msg.sending { background: rgba(56,189,248,.15); color: #38bdf8; }
+
+.aoc-msg.pending { background: rgba(250,204,21,.15); color: #facc15; }
+
+.aoc-msg.error { background: rgba(239,68,68,.15); color: #f87171; }
+
+/* ── Message History ── */
+  .mh { background: var(--bg1); border: 1px solid var(--brd); border-radius: 8px; overflow: hidden; }
+
+.mh-h { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--brd); cursor: pointer; }
+
+.mh-h span { font: 600 .68rem var(--mono); color: var(--tx2); letter-spacing: .5px; }
+
+.mh-h .mh-cnt { font: 700 .62rem var(--mono); background: var(--acc); color: var(--bg0); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+
+.mh-h button { font: 400 .6rem var(--mono); background: 0; border: 1px solid var(--brd); color: var(--tx3); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+
+.mh-body { max-height: 300px; overflow-y: auto; display: none; }
+
+.mh-body.open { display: block; }
+
+.mh-tbl { width: 100%; border-collapse: collapse; font: .6rem var(--mono); }
+
+.mh-tbl th { background: var(--bg2); color: var(--tx3); padding: 4px 6px; text-align: left; position: sticky; top: 0; font-weight: 600; letter-spacing: .5px; }
+
+.mh-tbl td { padding: 3px 6px; border-top: 1px solid var(--brd); color: var(--tx2); vertical-align: top; }
+
+.mh-tbl tr:hover td { background: rgba(255,255,255,.03); }
+
+.mh-st { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: .55rem; font-weight: 600; }
+
+.mh-st.sent { background: rgba(52,199,89,.15); color: #34c759; }
+
+.mh-st.error { background: rgba(255,69,58,.15); color: #ff453a; }
+
+.mh-st.skip { background: rgba(142,142,147,.15); color: #8e8e93; }
+
+.mh-clickable { cursor: pointer; }
+
+.mh-clickable:hover td { background: rgba(46,140,240,.06) !important; }
+
+.mh-expand { color: var(--acc); margin-right: 4px; font-size: .65rem; transition: transform .2s; display: inline-block; }
+
+.mh-body-row { display: none; }
+
+.mh-body-row.open { display: table-row; }
+
+.mh-body-row td { padding: 0 6px 6px 6px !important; border-top: none !important; }
+
+.mh-body-pre { white-space: pre-wrap; word-break: break-all; font: .56rem/1.5 var(--mono); color: var(--tx1); background: var(--bg0); border: 1px solid var(--brd); border-radius: 4px; padding: 6px 8px; margin: 2px 0 4px 0; max-height: 200px; overflow-y: auto; }
 </style>
 </head>
 <body>
@@ -349,7 +634,7 @@
       <div class="hdr-ico">AN</div>
       <div class="hdr-t">
         <h1>ACARS Dispatch</h1>
-        <div class="sub">AirNubeiro v4.2</div>
+        <div class="sub">AirNubeiro v4.3.3</div>
       </div>
     </div>
     <div class="hdr-r">
@@ -476,8 +761,8 @@
     <button class="tab" data-t="info" onclick="sw('info')">INFO</button>
     <button class="tab" data-t="cpdlc" onclick="sw('cpdlc')">CPDLC</button>
     <button class="tab" data-t="dsp" onclick="sw('dsp')">DSP</button>
-    <button class="tab" data-t="ops" onclick="sw('ops')">OPS</button>
-    <button class="tab" data-t="occ" onclick="sw('occ');refreshOcc()">OCC</button>
+    
+    <button class="tab" data-t="occ" onclick="sw('occ')">OCC</button>
     <button class="tab" data-t="rx" onclick="sw('rx')">Recibidos <span class="tb" id="rxTab">0</span></button>
     <button class="tab" data-t="tx" onclick="sw('tx')">Enviados</button>
   </div>
@@ -658,49 +943,25 @@
     <button class="bp dsp-btn" id="dspAll" onclick="sendAllDispatch()" style="display:none">📤 ENVIAR TODOS LOS TELEX</button>
   </div>
 
-  <!-- ═══ OPS CENTER (embedded) ═══ -->
-  <div class="pnl" id="p-ops">
-    <div class="cd">
-      <div class="ct dsp">OPS Center — Monitor IVAO</div>
-      <div style="font:.62rem var(--mono);color:var(--tx3);margin-bottom:8px;line-height:1.4">Monitoriza vuelos NBV en IVAO y les envía automáticamente TELEX de tráfico, meteorología, ATIS, conexiones PAX y crew info según la fase de vuelo. <a href="ops-center.html" target="_blank" style="color:var(--inf)">Versión completa ↗</a></div>
-      <div class="r2" style="margin-bottom:6px">
-        <div class="f"><label>PREFIJO AEROLÍNEA</label><input type="text" id="opsPrefix" class="uc" value="NBV" maxlength="6" autocomplete="off" spellcheck="false"></div>
-        <div class="f"><label>SCAN (seg)</label><input type="number" id="opsInterval" value="45" min="15" max="180" step="5"></div>
-      </div>
-      <div class="r2" style="margin-bottom:6px">
-        <div class="f"><label>ROUTE INFO CADA (min)
-          <span class="hi" tabindex="0">?<span class="tt">Envía ATCs+frecuencias, SIGMETs y PIREPs a pilotos en crucero cada X minutos.</span></span>
-        </label><input type="number" id="opsRI" value="10" min="5" max="60" step="1"></div>
-        <div class="f"></div>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button class="bp dsp-btn" id="opsBtn" onclick="toggleOpsMonitor()" style="flex:1">▶ INICIAR MONITOR</button>
-        <a href="ops-center.html" target="_blank" class="bp" style="flex:0;padding:0 14px;display:flex;align-items:center;font-size:.7rem;text-decoration:none;background:var(--bg2);color:var(--tx2);border:1px solid var(--brd)">↗ COMPLETO</a>
-      </div>
-    </div>
-    <!-- OPS stats -->
-    <div id="opsStats" style="display:none;font:.65rem var(--mono);color:var(--tx3);padding:6px 0;display:flex;gap:10px;flex-wrap:wrap">
-    </div>
-    <!-- Flight list -->
-    <div id="opsFlights"></div>
-    <!-- OPS log -->
-    <div id="opsLog" style="max-height:160px;overflow-y:auto"></div>
-  </div>
 
-  <!-- ═══ OCC BOARD ═══ -->
-  <div class="pnl" id="p-occ">
-    <div class="cd">
-      <div class="ct inf">OCC Board — Vuelos AirNubeiro</div>
-      <div class="occ-bar">
-        <div class="occ-count" id="occCount">Cargando...</div>
-        <div class="occ-refresh" id="occRefresh"></div>
-      </div>
-      <div class="occ-scroll">
-        <div id="occBody">
-          <div class="occ-empty">Cargando datos IVAO...</div>
-        </div>
+  <!-- ═══ OCC — OPS Center Integrado ═══ -->
+  <div class="pnl" id="p-occ" style="gap:0;padding:0">
+    <!-- Barra superior mínima -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg1);border-bottom:1px solid var(--brd);border-radius:8px 8px 0 0">
+      <span style="font:.62rem var(--mono);color:var(--acc);font-weight:600;letter-spacing:.7px">✈ OPS CENTER — AirNubeiro</span>
+      <div style="display:flex;gap:6px">
+        <button class="sm" onclick="occFrameReload()" title="Recargar OPS Center">⟳</button>
+        <a href="ops-center.html" target="_blank" class="sm" style="text-decoration:none;display:inline-flex;align-items:center;padding:3px 7px" title="Abrir en pestaña nueva">⬡</a>
       </div>
     </div>
+    <!-- Iframe del OPS Center -->
+    <iframe
+      id="occFrame"
+      src="ops-center.html"
+      style="width:100%;height:calc(100dvh - 130px);min-height:500px;border:none;border-radius:0 0 8px 8px;background:var(--bg0)"
+      loading="lazy"
+      title="OPS Center AirNubeiro"
+    ></iframe>
   </div>
 
   <!-- ═══ RECIBIDOS ═══ -->
@@ -728,6 +989,36 @@
   </div>
 
 </div>
+
+  <!-- ═══ AOC FULLSCREEN OVERLAY ═══ -->
+  <div id="aocOverlay" class="aoc-overlay" style="display:none">
+    <div class="aoc-header">
+      <div class="aoc-brand">
+        <span class="aoc-logo">✈</span>
+        <div><div class="aoc-title">AirNubeiro AOC</div><div class="aoc-sub">Operations Control Center — Dispatch Automatizado</div></div>
+      </div>
+      <div class="aoc-clock" id="aocClock">00:00:00Z</div>
+      <div class="aoc-stats">
+        <div class="aoc-st"><span id="aocTotal">0</span> ACTIVOS</div>
+        <div class="aoc-st"><span id="aocPre">0</span> PRE</div>
+        <div class="aoc-st"><span id="aocEnr">0</span> ENR</div>
+        <div class="aoc-st"><span id="aocDsc">0</span> DSC</div>
+        <div class="aoc-st"><span id="aocLnd">0</span> LND</div>
+      </div>
+      <button class="aoc-close" onclick="toggleOccAoc()">✕ CERRAR</button>
+    </div>
+    <div class="aoc-board" id="aocBoard">
+      <table class="aoc-tbl">
+        <thead>
+          <tr><th>CALLSIGN</th><th>ACFT</th><th>DEP</th><th>ARR</th><th>FL</th><th>GS</th><th>HDG</th><th>FASE</th><th>EET</th><th>ENR</th><th>PARKING</th><th>MSGS</th></tr>
+        </thead>
+        <tbody id="aocRows"></tbody>
+      </table>
+      <div class="aoc-empty" id="aocEmpty">Ningún vuelo NBV — inicia el monitor</div>
+    </div>
+    <div class="aoc-footer">AirNubeiro ACARS v4.3.3 — OPS Center integrado</div>
+  </div>
+
 
 <!-- ═══ STREAM MODE OVERLAY ═══ -->
 <div class="stream-overlay" id="streamOverlay">
@@ -797,6 +1088,11 @@ function saveCfg() {
     dcEvPhase:      $('dcEvPhase')?.checked      ?? true,
     dcEvTelex:      $('dcEvTelex')?.checked      ?? true,
     dcEvAlert:      $('dcEvAlert')?.checked      ?? true,
+    opsPrefix: $('opsPrefix')?.value || 'NBV',
+    opsInterval: $('opsInterval')?.value || '45',
+    opsRI:     $('opsRI')?.value     || 'smart',
+    cAuto:     $('cAuto')?.value     || '1',
+    occRosterData: typeof occRoster !== 'undefined' ? occRoster : {},
   })); } catch(e) {}
 }
 function loadCfg() {
@@ -811,6 +1107,15 @@ function loadCfg() {
       if(c.fsuipcUrl  && $('fsuipcUrl'))  $('fsuipcUrl').value  = c.fsuipcUrl;
       if(c.fsuipcCs   && $('fsuipcCs'))   $('fsuipcCs').value   = c.fsuipcCs;
       if(c.fsuipcPoll && $('fsuipcPoll')) $('fsuipcPoll').value = c.fsuipcPoll;
+      if(c.cAuto    && $('cAuto'))    $('cAuto').value    = c.cAuto;
+      if(c.opsPrefix   && $('opsPrefix'))   $('opsPrefix').value   = c.opsPrefix;
+      if(c.opsInterval && $('opsInterval')) $('opsInterval').value = c.opsInterval;
+      if(c.opsRI       && $('opsRI'))       $('opsRI').value       = c.opsRI;
+      if(c.occRosterData && typeof occRoster !== 'undefined') {
+        occRoster = c.occRosterData;
+        if (typeof occRenderRoster === 'function') occRenderRoster();
+        if (typeof occRenderRosterChips === 'function') occRenderRosterChips();
+      }
       if(c.fsuipcEn && $('fsuipcEn')) {
         $('fsuipcEn').checked = true;
         const fields = $('fsuipcCfgFields');
@@ -1036,7 +1341,37 @@ async function sendInfo() {
       const hType = type === 'ivaoatis' ? 'IVAOATIS' : 'VATATIS';
       const raw = await hReq('SERVER', 'inforeq', `${hType} ${icao}`);
       ok = raw.toLowerCase().startsWith('ok');
-      txt = ok ? cleanHoppie(raw.substring(2).trim()) : raw;
+      let cleaned = ok ? cleanHoppie(raw.substring(2).trim()) : raw;
+
+      // Detectar respuesta de lista múltiple: "AVAILABLE ATIS FOR XXXX\nXXXX-APP\nXXXX-TWR..."
+      if (ok && cleaned.toUpperCase().includes('AVAILABLE ATIS FOR')) {
+        // Extraer las estaciones disponibles
+        const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l && !l.toUpperCase().startsWith('AVAILABLE'));
+        // Prioridad: APP > TWR > GND > primera de la lista
+        const priority = ['APP','TWR','GND','DEP','ATIS'];
+        let target = null;
+        for (const p of priority) {
+          target = lines.find(l => l.toUpperCase().includes(`-${p}`) || l.toUpperCase().endsWith(p));
+          if (target) break;
+        }
+        if (!target) target = lines[0]; // fallback: primera disponible
+
+        if (target) {
+          // Solicitar el ATIS de la estación específica
+          ss('snd', `ATIS múltiple — solicitando ${target}...`);
+          const raw2 = await hReq('SERVER', 'inforeq', `${hType} ${target}`);
+          const ok2 = raw2.toLowerCase().startsWith('ok');
+          if (ok2) {
+            cleaned = cleanHoppie(raw2.substring(2).trim());
+            cleaned = `[${target}]\n${cleaned}`;
+          } else {
+            // No se pudo obtener — mostrar lista con instrucción
+            cleaned = `Múltiples ATIS disponibles:\n${lines.join('\n')}\n\nSolicita el deseado usando el ICAO específico (ej: ${lines[0]})`;
+            ok = false;
+          }
+        }
+      }
+      txt = cleaned;
     }
 
     $('inR').style.display = 'block'; $('inRT').textContent = txt || '(vacio)';
@@ -1323,13 +1658,17 @@ async function qdFetch(type) {
     if (type === 'traffic') {
       title = `📡 TRÁFICO ${icao}`;
       ss('snd', `Trafico IVAO ${icao}...`);
-      const ivUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
-      const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
-      const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
+      const ivResp = await ivaoFetch();
       const ivData = await ivResp.json();
       const pilots = ivData.clients?.pilots || [];
-      const arriving = pilots.filter(p => p.flightPlan?.arrivalId === icao);
-      const departing = pilots.filter(p => p.flightPlan?.departureId === icao);
+      const arriving = pilots.filter(p => {
+        const arr = p.flightPlan?.arrivalId;
+        return typeof arr === 'string' ? arr.toUpperCase() === icao : (arr?.id || arr?.code || '').toUpperCase() === icao;
+      });
+      const departing = pilots.filter(p => {
+        const dep = p.flightPlan?.departureId;
+        return typeof dep === 'string' ? dep.toUpperCase() === icao : (dep?.id || dep?.code || '').toUpperCase() === icao;
+      });
       const total = arriving.length + departing.length;
       const density = total === 0 ? 'NINGUNO' : total <= 3 ? 'BAJO' : total <= 8 ? 'MODERADO' : 'ALTO';
 
@@ -1613,9 +1952,7 @@ async function fetchDispatch() {
 
       // CTR/FSS on route + destination ATC (APP/TWR)
       try {
-        const ivUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
-        const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
-        const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
+        const ivResp = await ivaoFetch();
         const ivData = await ivResp.json();
         const atcs = ivData.clients?.atcs || [];
         const destPrefix = dest_icao.substring(0, 4);
@@ -1661,9 +1998,7 @@ async function fetchDispatch() {
     ss('snd', 'Trafico IVAO...');
     let trafficMsg = `=== TRAFFIC ${dest_icao} ===\n`;
     try {
-      const ivUrl = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
-      const ivFetch = proxy ? `${proxy}${encodeURIComponent(ivUrl)}` : ivUrl;
-      const ivResp = await fetch(ivFetch, { signal: AbortSignal.timeout(10000) });
+      const ivResp = await ivaoFetch();
       const ivData = await ivResp.json();
       const pilots = ivData.clients?.pilots || [];
       const arriving = pilots.filter(p => p.flightPlan?.arrivalId === dest_icao);
@@ -1880,23 +2215,14 @@ async function cxSendTelex() {
 // ══════════════════════════════════════════════════════════════════
 let riLastBody = '';
 
-function haversineNm(lat1, lon1, lat2, lon2) {
-  const R = 3440.065;
-  const dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
+
 function bearingTo(lat1, lon1, lat2, lon2) {
   const dLon = (lon2-lon1)*Math.PI/180;
   const y = Math.sin(dLon)*Math.cos(lat2*Math.PI/180);
   const x = Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180) - Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos(dLon);
   return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
 }
-function isAhead(pLat, pLon, hdg, tLat, tLon) {
-  let diff = Math.abs(bearingTo(pLat,pLon,tLat,tLon) - hdg);
-  if (diff > 180) diff = 360 - diff;
-  return diff < 100;
-}
+
 function fmtFreq(f) {
   if (!f) return '---';
   if (f > 100000) return (f/1000000).toFixed(3);
@@ -2279,10 +2605,9 @@ function proxy(url) { const p = $('cP').value.trim(); return p ? `${p}${encodeUR
 
 // Cache-busting wrapper for IVAO API to defeat stale CORS proxy responses
 function ivaoFetch() {
-  const url = `${IVAO_WHAZZUP}?_t=${Date.now()}&_r=${Math.random().toString(36).substring(2,8)}`;
-  return fetch(proxy(url), {
+  return fetch(proxy(IVAO_WHAZZUP), {
     signal: AbortSignal.timeout(25000),
-    headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+    cache: 'no-store',
   });
 }
 
@@ -2402,88 +2727,7 @@ const GALICIAN_BASES = ['LEST','LECO','LEVX'];
 const SPAIN_DOMESTIC = ['LEMD','LEBL','LEPA','LEAL','LEMG','LEZL','LEBB','LEVC','LEXJ','LEZG','GCXO','GCLP','GCFV','GCTS'];
 const EUROPE_DEST = ['LFPG','EGLL','EDDF','LIRF','EHAM','EBBR','LPPT','LFBO','EDDM','LSZH','LOWW','LKPR','EPWA','EKCH','ENGM','LGAV','EIDW','ESSA'];
 
-function genPaxConnections(arrIcao) {
-  if (!arrIcao || arrIcao === '????') return '';
-  // 40% probability: no connecting passengers
-  if (Math.random() < 0.40) {
-    return `=== CONEXIONES PAX ${arrIcao} ===\n0 PAX EN CONEXION\nNo hay pasajeros con enlaces en este vuelo.`;
-  }
-  const prefix = arrIcao.substring(0,2);
-  const local = AIRLINES_BY_PREFIX[prefix] || ['NBV','RYR','EZY'];
-  const pool = [...new Set([...local,'NBV','IBE','AFR','BAW','DLH','KLM'])];
-  const localD = DESTINATIONS_BY_PREFIX[prefix] || [];
-  const allD = [...new Set([...localD,...EUROPE_DEST])].filter(d => d !== arrIcao);
-  const n = 2 + Math.floor(Math.random()*3);
-  const used = new Set(), conns = [], now = new Date();
-  const baseMin = 45 + Math.floor(Math.random()*75);
-  for (let i = 0; i < n && allD.length; i++) {
-    let dest, att = 0;
-    do { dest = allD[Math.floor(Math.random()*allD.length)]; att++; } while (used.has(dest) && att < 20);
-    if (used.has(dest)) continue; used.add(dest);
-    const al = Math.random() < 0.4 ? 'NBV' : pool[Math.floor(Math.random()*pool.length)];
-    const fn = `${al}${String(Math.floor(Math.random()*9000)+1000)}`;
-    const gate = genParkingStand(arrIcao) || `GATE ${Math.floor(Math.random()*40)+1}`;
-    const dt = new Date(now.getTime() + (baseMin + i*(15+Math.floor(Math.random()*30)))*60000);
-    const ds = `${String(dt.getUTCHours()).padStart(2,'0')}:${String(dt.getUTCMinutes()).padStart(2,'0')}z`;
-    const pax = Math.floor(Math.random()*12)+1;
-    conns.push({fn,dest,gate,ds,pax});
-  }
-  if (!conns.length) return '';
-  let msg = `=== CONEXIONES PAX ${arrIcao} ===\n${conns.reduce((s,c)=>s+c.pax,0)} PAX EN CONEXION:\n`;
-  for (const c of conns) msg += `${c.fn} → ${c.dest} GATE ${c.gate} ETD ${c.ds} (${c.pax}pax)\n`;
-  return msg;
-}
 
-function genCrewInfo(flt) {
-  const arr = flt.arr||'????', now = new Date(), h = now.getUTCHours(), m = now.getUTCMinutes();
-  const localOff = getLocalOffset(arr);
-  const localH = (h + localOff + 24) % 24, localM = m;
-  const isBase = GALICIAN_BASES.includes(arr);
-  let cc, reason, goodnight = false;
-  // Late night: local >= 00:30 → last flight, buenas noches
-  if (localH >= 0 && localH < 5 && (localH > 0 || localM >= 30)) {
-    cc = true; goodnight = true; reason = 'ULTIMO VUELO DEL DIA';
-  } else if (h >= 21 || localH >= 23) { cc = true; reason = 'ULTIMO VUELO DEL DIA'; }
-  else if (h >= 19 || localH >= 21) { cc = Math.random() < (isBase?.5:.7); reason = cc?'VUELO NOCTURNO - RELEVO PROGRAMADO':null; }
-  else { cc = Math.random() < (isBase?.1:.2); reason = cc?'RELEVO DE TRIPULACION PROGRAMADO':null; }
-  let msg = '';
-  if (cc) {
-    if (goodnight) {
-      msg += `--- TRIPULACION ---\nNO HAY MÁS VUELOS PROGRAMADOS HOY\nTripulacion libre de servicio.\nBuenas noches y buen descanso.\n`;
-    } else {
-      msg += `--- TRIPULACION ---\nCAMBIO: ${reason}\nTripulacion entrante reportar a briefing.\n`;
-    }
-  } else {
-    msg += `--- TRIPULACION ---\nSIN CAMBIO - MISMA TRIPULACION CONTINÚA\n`;
-    const nf = genNextFlight(flt, arr);
-    if (nf) {
-      msg += `PROXIMO: ${nf.fn} ${nf.dep}→${nf.dest} ETD ${nf.etd}\n`;
-      msg += `GATE: ${nf.gate} TURN: ${nf.turn}min${nf.isRet?' (RETORNO BASE)':''}\n`;
-    }
-  }
-  return msg;
-}
-
-function getLocalOffset(icao) {
-  if (!icao || icao.length < 2) return 1;
-  if (icao.startsWith('GC')) return 0;
-  const pfx = icao.substring(0,2);
-  const o = {'LE':1,'LP':0,'LF':1,'EG':0,'ED':1,'LI':1,'EH':1,'EB':1,'EI':0,'ES':1,'EN':1,'EK':1,'LO':1,'LS':1,'LK':1,'EP':1,'LG':2,'LT':3,'LC':2,'LH':1,'LR':2,'LZ':2};
-  return o[pfx] ?? 1;
-}
-
-function genNextFlight(flt, apt) {
-  const roll = Math.random(); let dest, isRet = false;
-  if (roll < 0.50) { const b = GALICIAN_BASES.filter(x=>x!==apt); dest = b.length?b[Math.floor(Math.random()*b.length)]:GALICIAN_BASES[0]; isRet = true; }
-  else if (roll < 0.80) { const d = SPAIN_DOMESTIC.filter(x=>x!==apt); dest = d[Math.floor(Math.random()*d.length)]||'LEMD'; }
-  else { const e = EUROPE_DEST.filter(x=>x!==apt); dest = e[Math.floor(Math.random()*e.length)]||'LFPG'; }
-  const turn = 35+Math.floor(Math.random()*40);
-  const dt = new Date(Date.now()+turn*60000);
-  const etd = `${String(dt.getUTCHours()).padStart(2,'0')}:${String(dt.getUTCMinutes()).padStart(2,'0')}z`;
-  const fn = `NBV${String(Math.floor(Math.random()*9000)+1000)}`;
-  const gate = genParkingStand(apt) || `STAND ${Math.floor(Math.random()*30)+1}`;
-  return {fn,dep:apt,dest,etd,gate,turn,isRet};
-}
 
 function genParkingStand(icao) {
   if (!icao || icao === '????') return '';
@@ -2705,34 +2949,6 @@ async function opsAutoRouteInfo(flt, ivaoData) {
 // ══════════════════════════════════════════════════════════════════
 //  DELAY DETECTION & REPORT
 // ══════════════════════════════════════════════════════════════════
-function genDelayReport(flt) {
-  if (!flt.plannedDepTime || !flt.enrouteStart) return null;
-  let plannedMin = 0;
-  const pdt = flt.plannedDepTime;
-  if (typeof pdt === 'number') {
-    if (pdt > 100000) { const d = new Date(pdt*1000); plannedMin = d.getUTCHours()*60+d.getUTCMinutes(); }
-    else { plannedMin = Math.floor(pdt/100)*60+(pdt%100); }
-  } else if (typeof pdt === 'string') {
-    const m = pdt.match(/(\d{1,2}):?(\d{2})/);
-    if (m) plannedMin = parseInt(m[1])*60+parseInt(m[2]); else return null;
-  } else return null;
-  const ad = new Date(flt.enrouteStart);
-  const actualMin = ad.getUTCHours()*60+ad.getUTCMinutes();
-  let delayMin = actualMin - plannedMin;
-  if (delayMin < -720) delayMin += 1440;
-  if (delayMin > 720) delayMin -= 1440;
-  if (delayMin <= 15) return null;
-  const pH = String(Math.floor(plannedMin/60)).padStart(2,'0');
-  const pM = String(plannedMin%60).padStart(2,'0');
-  const aH = String(ad.getUTCHours()).padStart(2,'0');
-  const aM = String(ad.getUTCMinutes()).padStart(2,'0');
-  const tpls = [
-    `=== DELAY REPORT ${flt.callsign} ===\n${flt.dep}→${flt.arr}\nETD PLAN: ${pH}${pM}z / REAL: ${aH}${aM}z\nDELAY: +${delayMin} MIN\n---\nACCION REQUERIDA:\nReportar motivo del retraso a OPS.\nCodigo delay IATA requerido.\nContactar jefe de operaciones antes\nde iniciar siguiente rotacion.`,
-    `=== DELAY REPORT ${flt.callsign} ===\n${flt.dep}→${flt.arr}\nRETRASO: +${delayMin} MIN (${pH}${pM}z→${aH}${aM}z)\n---\nDOCUMENTACION PENDIENTE:\nCompletar formulario de incidencia\noperacional post-vuelo.\nIncluir codigo IATA y descripcion.\nEntregar en briefing room o vía email\na ops@airnubeiro.va`,
-    `=== DELAY REPORT ${flt.callsign} ===\n${flt.dep}→${flt.arr} — DELAY +${delayMin}MIN\nPLAN: ${pH}${pM}z / REAL: ${aH}${aM}z\n---\nPAPERWORK REQUERIDO:\nRellenar delay report antes de\nabandonar la aeronave.\nMotivo + codigo IATA + firma PIC.\nCopia a dispatch y crew planning.`,
-  ];
-  return tpls[Math.floor(Math.random()*tpls.length)];
-}
 
 async function sendOpsTx(to, body) {
   const chunks = splitMsg(body, 480);
@@ -2749,7 +2965,7 @@ async function sendOpsTx(to, body) {
 }
 
 function opsRender() {
-  const c = $('opsFlights');
+  const c = $('dashboard');
   const active = Object.values(opsFlights).filter(f => !f._off);
   if (!active.length) { c.innerHTML = '<div style="text-align:center;padding:12px;color:var(--tx3);font:.7rem var(--mono)">Sin vuelos detectados</div>'; return; }
   const order = { PREFLIGHT:0, ENROUTE:1, DESCENT:2, LANDED:3 };
@@ -2780,7 +2996,9 @@ function opsRender() {
 }
 
 function opsLog(msg, cls = '') {
+  if (typeof occLog === 'function') { occLog(msg, cls); return; }
   const c = $('opsLog');
+  if (!c) return;
   const e = document.createElement('div');
   e.className = `ops-log-e ${cls}`;
   e.innerHTML = `<span class="t">${tsShort()}</span>${esc(msg)}`;
@@ -2788,48 +3006,6 @@ function opsLog(msg, cls = '') {
   while (c.children.length > 50) c.removeChild(c.lastChild);
 }
 
-function toggleOpsMonitor() {
-  if (opsInterval) {
-    clearInterval(opsInterval); opsInterval = null;
-    $('opsBtn').textContent = '▶ INICIAR MONITOR';
-    $('opsBtn').style.background = '';
-    ss('ok', 'OPS monitor detenido');
-    opsLog('Monitor detenido', 'wrn');
-  } else {
-    if (!$('cL').value.trim() || !$('cS').value.trim()) { ss('err', '✗ Configura logon y callsign'); return; }
-    const iv = Math.max(15, parseInt($('opsInterval').value) || 45) * 1000;
-    opsLog(`Monitor iniciado — ${$('opsPrefix').value.toUpperCase()} cada ${iv/1000}s`, 'ops');
-    opsScan();
-    opsInterval = setInterval(opsScan, iv);
-    $('opsBtn').textContent = '⏹ DETENER MONITOR';
-    $('opsBtn').style.background = 'var(--ok)';
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════
-//  OCC BOARD — Fleet Overview (NBV flights from IVAO Whazzup)
-// ══════════════════════════════════════════════════════════════════
-let occTimer = null;
-let lastOccData = null; // cache to share with Stream Mode
-
-// Airport coordinates cache for distance/ETA calculation
-const APT_COORDS = {};
-
-// State label/class mapping from IVAO lastTrack.state
-function mapState(st) {
-  if (!st) return { label:'UNKNOWN', cls:'gnd' };
-  const s = String(st).toUpperCase();
-  // IVAO states: "En Route", "Boarding", "Departing", "Climbing", "Cruising", "Descending", "Approaching", "On Blocks", "Arrived", "Initial Climb"
-  if (s.includes('BOARD') || s.includes('BLOCK') || s.includes('PARKED')) return { label:'GROUND', cls:'gnd' };
-  if (s.includes('DEPART') || s.includes('TAXI')) return { label:'DEPARTING', cls:'dep' };
-  if (s.includes('INITIAL') || s.includes('CLIMB')) return { label:'CLIMBING', cls:'clb' };
-  if (s.includes('CRUIS')) return { label:'CRUISE', cls:'crz' };
-  if (s.includes('EN ROUTE') || s === 'EN ROUTE') return { label:'EN ROUTE', cls:'enr' };
-  if (s.includes('DESCEND')) return { label:'DESCEND', cls:'dsc' };
-  if (s.includes('APPROACH') || s.includes('LANDING')) return { label:'APPROACH', cls:'app' };
-  if (s.includes('ARRIV') || s.includes('LANDED')) return { label:'LANDED', cls:'lnd' };
-  return { label: s.substring(0,12), cls:'gnd' };
-}
 
 async function refreshOcc() {
   try {
@@ -3225,92 +3401,95 @@ document.addEventListener('keydown', e => {
 
 // ── Estado global ──
 let fsuipcWs         = null;   // Instancia WebSocket activa
-let fsuipcConnected  = false;  // true = conexión WS establecida
-let fsuipcReady      = false;  // true = grupo registrado y recibiendo datos
+let fsuipcConnected  = false;  // true = WS abierto
+let fsuipcReady      = false;  // true = offsets declarados y recibiendo datos
 let fsuipcData       = null;   // Último snapshot normalizado del simulador
 let fsuipcRetryTimer = null;   // Handle del timer de reintento
 let fsuipcRetryCount = 0;      // Contador de reintentos consecutivos
-let fsuipcPollTimer  = null;   // Handle del poll periódico
 
-const FSUIPC_MAX_RETRY   = 8;     // Reintentos antes de darse por vencido
-const FSUIPC_RETRY_DELAY = 15000; // 15 s entre reintentos
+const FSUIPC_MAX_RETRY   = 8;      // Reintentos antes de rendirse
+const FSUIPC_RETRY_DELAY = 15000;  // 15 s entre reintentos
 const FSUIPC_GROUP_NAME  = 'AN_FLIGHT_DATA';
 
-// ── Offsets FSUIPC (Paul Henty WebSocket Server) ──
+// ── Offsets FSUIPC — protocolo Paul Henty WebSocket Server ──
+// Tipos soportados: lat, lon, int, uint, float, string
+// lat/lon: el servidor devuelve grados decimales directamente (sin conversión)
 // Compatibles con FSUIPC4 (FS9/FSX), FSUIPC5 (P3D), FSUIPC7 (MSFS 2020/2024)
 const FSUIPC_OFFSETS = [
-  { name: 'lat',      address: '0x0560', type: 'DBL',    size: 8 }, // Latitud decimal (°)
-  { name: 'lon',      address: '0x0568', type: 'DBL',    size: 8 }, // Longitud decimal (°)
-  { name: 'altMeters',address: '0x0574', type: 'INT64',  size: 8 }, // Altitud metros MSL
-  { name: 'gs',       address: '0x02B8', type: 'UINT32', size: 4 }, // Ground speed (m/s × 65536)
-  { name: 'hdg',      address: '0x0580', type: 'UINT32', size: 4 }, // Heading (° × 65536 / 360 × 65536)
-  { name: 'vs',       address: '0x030C', type: 'INT32',  size: 4 }, // Vertical speed (ft/min × 256)
-  { name: 'onGround', address: '0x0366', type: 'INT16',  size: 2 }, // 1 = en tierra, 0 = en vuelo
-  { name: 'squawk',   address: '0x0354', type: 'UINT16', size: 2 }, // Transponder BCD
-  { name: 'flaps',    address: '0x0BE0', type: 'UINT32', size: 4 }, // Posición flaps handle
-  { name: 'fuel',     address: '0x126C', type: 'UINT32', size: 4 }, // Combustible total (kg × 65536)
+  { name: 'lat',      address: '0x0560', type: 'lat',   size: 8 }, // Latitud  — decimal ° (auto)
+  { name: 'lon',      address: '0x0568', type: 'lon',   size: 8 }, // Longitud — decimal ° (auto)
+  { name: 'altM',     address: '0x6020', type: 'float', size: 8 }, // Altitud MSL en metros
+  { name: 'gs',       address: '0x02B4', type: 'uint',  size: 4 }, // Ground speed (m/s × 65536)
+  { name: 'hdg',      address: '0x0580', type: 'uint',  size: 4 }, // True heading (deg × 65536)
+  { name: 'vs',       address: '0x02C8', type: 'int',   size: 4 }, // VS (m/s × 256)
+  { name: 'onGround', address: '0x0366', type: 'uint',  size: 2 }, // 1=suelo, 0=vuelo
+  { name: 'squawk',   address: '0x0354', type: 'uint',  size: 2 }, // Transponder BCD
+  { name: 'flaps',    address: '0x0BDC', type: 'uint',  size: 4 }, // Flaps handle position
+  { name: 'fuel',     address: '0x0AF8', type: 'uint',  size: 4 }, // Combustible total (gal × 128)
 ];
 
-// ── Normalización de datos brutos FSUIPC → formato interno ──
+// ── Normalización: raw FSUIPC → formato interno ──
 function fsuipcNormalize(raw) {
-  // Ground speed: UINT32 en m/s × 65536 → knots
-  const gsMs  = (raw.gs || 0) / 65536;
-  const gsKts = Math.round(gsMs * 1.94384);
-  // Heading: UINT32, valor = degrees × (65536 / 360) × 65536 → reducir a grados
-  // Formato real FSUIPC: heading_degrees = raw_value / 65536 * 360 / 65536 * 360... simplificado:
-  // heading en degrees = (raw / 65536) * 360 si el valor viene como (deg/360)*65536
-  const hdgDeg = Math.round(((raw.hdg || 0) / 65536) * 360) % 360;
-  // Altitud: INT64 en metros → feet
-  const altFt  = Math.round((raw.altMeters || 0) * 3.28084);
-  // VS: INT32 en ft/min × 256
-  const vsFpm  = Math.round((raw.vs || 0) / 256);
-  // onGround: INT16, 1 = suelo
+  // Ground speed: uint32, m/s × 65536 → knots
+  const gsKts = Math.round((raw.gs || 0) / 65536 * 1.943844);
+
+  // Heading: uint32, deg × 65536 → grados
+  const hdgDeg = Math.round((raw.hdg || 0) / 65536) % 360;
+
+  // Altitud: float metros → feet
+  const altFt = Math.round((raw.altM || 0) * 3.28084);
+
+  // VS: int32, m/s × 256 → ft/min
+  const vsFpm = Math.round((raw.vs || 0) * 60 * 3.28084 / 256);
+
+  // onGround: uint16, 1 = suelo
   const onGround = (raw.onGround === 1 || raw.onGround === true);
-  // Transponder BCD → string 4 dígitos
-  let squawk = '0000';
+
+  // Squawk BCD → string 4 dígitos
+  let squawk = '2000';
   if (raw.squawk) {
-    // BCD decode: cada 4 bits = un dígito octal
-    const d1 = (raw.squawk >> 12) & 0xF;
-    const d2 = (raw.squawk >> 8)  & 0xF;
-    const d3 = (raw.squawk >> 4)  & 0xF;
-    const d4 =  raw.squawk        & 0xF;
+    const v = parseInt(raw.squawk);
+    const d1 = (v >> 12) & 0xF;
+    const d2 = (v >> 8)  & 0xF;
+    const d3 = (v >> 4)  & 0xF;
+    const d4 =  v        & 0xF;
     squawk = `${d1}${d2}${d3}${d4}`;
   }
-  // Combustible: UINT32 en kg × 65536
-  const fuelKg = Math.round((raw.fuel || 0) / 65536);
+
+  // Combustible: uint32, gal × 128 → litros (1 gal = 3.785 l)
+  const fuelL = Math.round((raw.fuel || 0) / 128 * 3.785);
 
   return {
-    lat:       raw.lat       || 0,
-    lon:       raw.lon       || 0,
-    altitude:  altFt,            // ft MSL
-    groundSpeed: gsKts,          // knots
-    heading:   hdgDeg,           // grados true
-    verticalSpeed: vsFpm,        // ft/min
-    onGround:  onGround,
-    squawk:    squawk,
-    flaps:     raw.flaps || 0,
-    fuelKg:    fuelKg,
-    ts:        Date.now(),
+    lat:           raw.lat       || 0,
+    lon:           raw.lon       || 0,
+    altitude:      altFt,
+    groundSpeed:   gsKts,
+    heading:       hdgDeg,
+    verticalSpeed: vsFpm,
+    onGround:      onGround,
+    squawk:        squawk,
+    flaps:         raw.flaps || 0,
+    fuelL:         fuelL,
+    ts:            Date.now(),
   };
 }
 
-// ── Actualizar UI del badge de fuente ──
+// ── Badge de fuente de datos ──
 function fsuipcUpdateBadge(state) {
-  // state: 'ivao' | 'fsuipc' | 'connecting'
   const b = $('fsuipcBadge');
   if (!b) return;
   b.className = `fsuipc-badge src-${state}`;
   const labels = { ivao: 'IVAO', fsuipc: 'SIM', connecting: 'SIM…' };
   const titles = {
-    ivao: 'Fuente: IVAO Whazzup (red)',
-    fsuipc: 'Fuente: FSUIPC WebSocket (simulador local)',
-    connecting: 'FSUIPC: conectando...',
+    ivao:       'Fuente: IVAO Whazzup (red)',
+    fsuipc:     'Fuente: FSUIPC WebSocket (simulador local)',
+    connecting: 'FSUIPC: conectando…',
   };
   b.innerHTML = `<span class="fsuipc-dot"></span>${labels[state] || 'IVAO'}`;
   b.title = titles[state] || '';
 }
 
-// ── Actualizar estado visible en el panel cfg ──
+// ── Estado visible en panel cfg ──
 function fsuipcSetStatus(msg, ok) {
   const el = $('fsuipcStatus');
   if (!el) return;
@@ -3318,53 +3497,69 @@ function fsuipcSetStatus(msg, ok) {
   el.style.color = ok === true ? '#34d399' : ok === false ? 'var(--wrn)' : 'var(--tx3)';
 }
 
-// ── Registrar grupo de offsets tras conexión ──
-function fsuipcRegisterGroup() {
+// ── Declarar offsets y arrancar push periódico ──
+function fsuipcRegisterOffsets() {
   if (!fsuipcWs || fsuipcWs.readyState !== WebSocket.OPEN) return;
   const pollMs = Math.max(200, parseInt($('fsuipcPoll')?.value) || 500);
-  const msg = JSON.stringify({
-    command: 'groups.add',
-    parameters: [{
-      name:         FSUIPC_GROUP_NAME,
-      pollInterval: pollMs,
-      offsets:      FSUIPC_OFFSETS,
-    }]
-  });
-  fsuipcWs.send(msg);
+
+  // 1. Declarar el grupo de offsets
+  fsuipcWs.send(JSON.stringify({
+    command: 'offsets.declare',
+    name:    FSUIPC_GROUP_NAME,
+    offsets: FSUIPC_OFFSETS,
+  }));
+
+  // 2. Iniciar lectura continua con push automático del servidor
+  fsuipcWs.send(JSON.stringify({
+    command:  'offsets.read',
+    name:     FSUIPC_GROUP_NAME,
+    interval: pollMs,   // ms — el servidor hace push a este ritmo
+  }));
+
+  fsuipcSetStatus(`✓ Offsets registrados — intervalo ${pollMs}ms`, true);
 }
 
-// ── Parsear mensajes entrantes del WS ──
+// ── Parsear mensajes del servidor FSUIPC ──
 function fsuipcHandleMessage(evt) {
   let msg;
   try { msg = JSON.parse(evt.data); } catch { return; }
 
-  // El servidor puede enviar datos con command = nombre del grupo
-  if (msg.command === FSUIPC_GROUP_NAME && msg.data) {
+  // Datos de vuelo: success + name del grupo + data object
+  if (msg.success && msg.name === FSUIPC_GROUP_NAME && msg.data) {
+    // data puede ser objeto {key:val} o array [{name,value}]
+    let raw = msg.data;
+    if (Array.isArray(raw)) {
+      raw = {};
+      for (const item of msg.data) { if (item.name) raw[item.name] = item.value; }
+    }
     fsuipcReady = true;
-    fsuipcData  = fsuipcNormalize(msg.data);
+    fsuipcData  = fsuipcNormalize(raw);
     fsuipcUpdateBadge('fsuipc');
-    fsuipcSetStatus(`✓ Sim conectado — Alt:${fsuipcData.altitude}ft GS:${fsuipcData.groundSpeed}kt`, true);
+    fsuipcSetStatus(
+      `✓ Sim: Alt ${fsuipcData.altitude}ft  GS ${fsuipcData.groundSpeed}kt  ${fsuipcData.onGround ? 'TIERRA' : 'VUELO'}`,
+      true
+    );
     return;
   }
 
-  // Respuesta de confirmación de registro del grupo
-  if (msg.command === 'groups.add' || msg.success === true) {
-    fsuipcReady = true;
-    fsuipcSetStatus('✓ Grupo registrado — esperando datos del sim', true);
+  // Confirmación de declare/read (sin datos)
+  if (msg.success && msg.name === FSUIPC_GROUP_NAME) {
+    fsuipcSetStatus('✓ Offsets aceptados — recibiendo datos…', true);
     return;
   }
 
-  // Error reportado por el servidor
-  if (msg.error || msg.command === 'error') {
-    console.warn('[FSUIPC] Error servidor:', msg.error || msg.message || JSON.stringify(msg));
-    fsuipcSetStatus(`⚠ Error servidor: ${msg.error || msg.message || 'desconocido'}`, false);
+  // Error del servidor
+  if (msg.success === false) {
+    const err = msg.errorMessage || msg.error || msg.errorCode || 'desconocido';
+    console.warn('[FSUIPC] Error servidor:', err, msg);
+    fsuipcSetStatus(`⚠ Error servidor: ${err}`, false);
   }
 }
 
-// ── Conectar al servidor FSUIPC WS ──
+// ── Conectar al servidor FSUIPC WebSocket ──
 function fsuipcConnect() {
   if (fsuipcWs && fsuipcWs.readyState === WebSocket.OPEN) return;
-  fsuipcDisconnect(false); // limpiar sin deshabilitar
+  fsuipcDisconnect(false);
 
   const url = ($('fsuipcUrl')?.value.trim()) || 'ws://127.0.0.1:2048';
   fsuipcUpdateBadge('connecting');
@@ -3372,7 +3567,8 @@ function fsuipcConnect() {
   console.log('[FSUIPC] Conectando a', url);
 
   try {
-    fsuipcWs = new WebSocket(url);
+    // Subprotocolo 'fsuipc' requerido por Paul Henty WS Server
+    fsuipcWs = new WebSocket(url, 'fsuipc');
   } catch(e) {
     fsuipcSetStatus(`✗ URL inválida: ${e.message}`, false);
     fsuipcUpdateBadge('ivao');
@@ -3383,7 +3579,7 @@ function fsuipcConnect() {
   const connTimeout = setTimeout(() => {
     if (fsuipcWs && fsuipcWs.readyState !== WebSocket.OPEN) {
       fsuipcWs.close();
-      fsuipcSetStatus('✗ Timeout — simulador no responde (¿FSUIPC WS Server activo?)', false);
+      fsuipcSetStatus('✗ Timeout — ¿FSUIPC WS Server activo y con sim abierto?', false);
       fsuipcUpdateBadge('ivao');
       fsuipcScheduleRetry();
     }
@@ -3393,29 +3589,19 @@ function fsuipcConnect() {
     clearTimeout(connTimeout);
     fsuipcConnected  = true;
     fsuipcRetryCount = 0;
-    console.log('[FSUIPC] Conexión establecida');
-    fsuipcSetStatus('✓ WS conectado — registrando offsets…', true);
-    fsuipcRegisterGroup();
-    // Poll activo cada pollInterval ms para garantizar datos frescos
-    const pollMs = Math.max(200, parseInt($('fsuipcPoll')?.value) || 500);
-    fsuipcPollTimer = setInterval(() => {
-      if (fsuipcWs?.readyState === WebSocket.OPEN) {
-        fsuipcWs.send(JSON.stringify({ command: 'groups.read', name: FSUIPC_GROUP_NAME }));
-      }
-    }, pollMs);
+    console.log('[FSUIPC] Conexión WS establecida — registrando offsets');
+    fsuipcSetStatus('✓ WS conectado — declarando offsets…', true);
+    fsuipcRegisterOffsets();
   });
 
   fsuipcWs.addEventListener('message', fsuipcHandleMessage);
 
   fsuipcWs.addEventListener('close', (evt) => {
     clearTimeout(connTimeout);
-    clearInterval(fsuipcPollTimer);
     fsuipcConnected = false;
     fsuipcReady     = false;
     const reason = evt.wasClean ? 'cierre limpio' : `código ${evt.code}`;
     console.log(`[FSUIPC] Desconectado (${reason})`);
-
-    // Si sigue habilitado, reintentar
     if ($('fsuipcEn')?.checked) {
       fsuipcUpdateBadge('connecting');
       fsuipcSetStatus(`Desconectado (${reason}) — reintentando…`, null);
@@ -3430,33 +3616,31 @@ function fsuipcConnect() {
   fsuipcWs.addEventListener('error', (e) => {
     clearTimeout(connTimeout);
     console.warn('[FSUIPC] Error WS:', e);
-    // close se dispara tras error — el retry lo maneja el handler close
+    // 'close' se dispara tras 'error' — el retry lo gestiona el handler close
   });
 }
 
-// ── Programar reintento de conexión ──
+// ── Programar reintento ──
 function fsuipcScheduleRetry() {
   if (fsuipcRetryCount >= FSUIPC_MAX_RETRY) {
-    fsuipcSetStatus(`✗ Sin conexión tras ${FSUIPC_MAX_RETRY} intentos — desactiva/activa para reintentar`, false);
+    fsuipcSetStatus(`✗ Sin conexión tras ${FSUIPC_MAX_RETRY} intentos — desactiva y reactiva`, false);
     fsuipcUpdateBadge('ivao');
     return;
   }
   fsuipcRetryCount++;
-  const delay = FSUIPC_RETRY_DELAY;
   clearTimeout(fsuipcRetryTimer);
-  fsuipcSetStatus(`Reintento ${fsuipcRetryCount}/${FSUIPC_MAX_RETRY} en ${delay/1000}s…`, null);
+  fsuipcSetStatus(`Reintento ${fsuipcRetryCount}/${FSUIPC_MAX_RETRY} en ${FSUIPC_RETRY_DELAY/1000}s…`, null);
   fsuipcRetryTimer = setTimeout(() => {
     if ($('fsuipcEn')?.checked) fsuipcConnect();
-  }, delay);
+  }, FSUIPC_RETRY_DELAY);
 }
 
 // ── Desconectar limpiamente ──
 function fsuipcDisconnect(resetData = true) {
   clearTimeout(fsuipcRetryTimer);
-  clearInterval(fsuipcPollTimer);
   fsuipcRetryCount = 0;
   if (fsuipcWs) {
-    fsuipcWs.onclose = null; // evitar loop de retry
+    fsuipcWs.onclose = null;
     fsuipcWs.onerror = null;
     if (fsuipcWs.readyState === WebSocket.OPEN || fsuipcWs.readyState === WebSocket.CONNECTING) {
       fsuipcWs.close(1000, 'Usuario desactivó FSUIPC');
@@ -3468,11 +3652,14 @@ function fsuipcDisconnect(resetData = true) {
   if (resetData) fsuipcData = null;
 }
 
-// ── Toggle desde checkbox de config ──
+// ── Toggle desde checkbox ──
 function fsuipcOnToggle() {
   const enabled = $('fsuipcEn').checked;
   const fields  = $('fsuipcCfgFields');
-  if (fields) { fields.style.opacity = enabled ? '1' : '.45'; fields.style.pointerEvents = enabled ? '' : 'none'; }
+  if (fields) {
+    fields.style.opacity      = enabled ? '1' : '.45';
+    fields.style.pointerEvents = enabled ? '' : 'none';
+  }
   if (enabled) {
     fsuipcRetryCount = 0;
     fsuipcConnect();
@@ -3484,17 +3671,14 @@ function fsuipcOnToggle() {
   saveCfg();
 }
 
-// ── API pública: ¿hay datos FSUIPC válidos y frescos? ──
-// maxAgeMs: máximo tiempo aceptable desde el último dato (default 5s)
+// ── API pública: datos frescos del simulador ──
 function fsuipcGetData(maxAgeMs = 5000) {
   if (!fsuipcConnected || !fsuipcReady || !fsuipcData) return null;
-  if (Date.now() - fsuipcData.ts > maxAgeMs) return null; // datos obsoletos
+  if (Date.now() - fsuipcData.ts > maxAgeMs) return null;
   return fsuipcData;
 }
 
-// ── Inyectar datos FSUIPC en el objeto de vuelo de opsScan ──
-// Cuando el piloto local (mi callsign) está volando, sustituye los datos IVAO
-// por los datos del simulador en tiempo real.
+// ── Inyectar datos FSUIPC en el vuelo local ──
 function fsuipcInjectIntoFlight(flt, csLocal) {
   if (!csLocal) return false;
   if (flt.callsign !== csLocal.toUpperCase()) return false;
@@ -3509,13 +3693,26 @@ function fsuipcInjectIntoFlight(flt, csLocal) {
   flt.onGround  = sim.onGround;
   flt.vs        = sim.verticalSpeed;
   flt.squawk    = sim.squawk;
-  flt.srcSim    = true; // Marca visual SIM en opsRender
+  flt.srcSim    = true;
   return true;
 }
 
 // ══════════════════════════════════════════════════════════════════
 //  FIN MÓDULO FSUIPC
 // ══════════════════════════════════════════════════════════════════
+
+
+
+
+// ── Variables globales OCC Monitor ──
+let occMonitorInterval = null;
+let occTotalMsgsSent   = 0;
+let occSentRegistry    = {};
+let occLastIvaoData    = null;
+let occRoster          = {};
+const SENT_STORAGE_KEY = 'an_occ_sent';
+const HIST_STORAGE_KEY = 'an_occ_hist';
+let msgHistory         = [];
 
 // ══════════════════════════════════════════════════════════════════
 //  DISCORD WEBHOOK MODULE v1.0 — AirNubeiro ACARS
@@ -3720,7 +3917,7 @@ async function discordTest() {
     title: '✅ AirNubeiro ACARS — Test de conexión',
     description: 'El webhook de Discord está correctamente configurado.',
     fields: [
-      { name: 'App',     value: 'ACARS Dispatch v4.2',  inline: true },
+      { name: 'App',     value: 'ACARS Dispatch v4.3.3',  inline: true },
       { name: 'Estación', value: $('cS')?.value || '—', inline: true },
       { name: 'Hora',    value: `${new Date().toISOString().substring(11,19)}Z`, inline: true },
     ],
@@ -3755,7 +3952,7 @@ function discordNotifyMsg({ direction, cls, type, route, body, st, ok }) {
       { name: 'Estado',  value: st || '—',       inline: true },
       { name: 'Mensaje', value: dTrunc(body, 512), inline: false },
     ],
-    footer: `AirNubeiro ACARS v4.2 • ${new Date().toISOString().substring(11,19)}Z`,
+    footer: `AirNubeiro ACARS v4.3.3 • ${new Date().toISOString().substring(11,19)}Z`,
   }));
 }
 
@@ -4156,6 +4353,13 @@ function phpvmsOnToggle() {
 // ══════════════════════════════════════════════════════════════════
 //  FIN MÓDULO phpVMS
 // ══════════════════════════════════════════════════════════════════
+
+
+// ── OCC iframe helpers ──
+function occFrameReload() {
+  const f = $('occFrame');
+  if (f) { f.src = f.src; }
+}
 
 // ── Init ──
 loadCfg(); loadList('rx'); loadList('tx'); updBtn();

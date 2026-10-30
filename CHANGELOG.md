@@ -4,6 +4,15 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v4.6.2] — 2026-10-30
+
+- **METAR y TAF con fuentes de respaldo**: si aviationweather.gov falla o no tiene datos, la app prueba sola VATSIM (METAR) y NOAA (METAR y TAF), y para el TAF también Hoppie. La barra de estado indica cuándo se ha usado una fuente secundaria. Aplica a Meteo, Dispatch, Route Info y a los mensajes automáticos del OPS Center.
+- **Hoppie por HTTPS**: TELEX, CPDLC y consultas a Hoppie van por HTTPS y sin proxy (Hoppie admite CORS). En la versión web funcionan aunque no haya Worker configurado.
+- **Versión web sin proxy**: aviso informativo (no error) que explica qué funciona y qué necesita el proxy.
+- Lista blanca del proxy local y del Worker ampliada a `tgftp.nws.noaa.gov` y `metar.vatsim.net`.
+
+---
+
 ## [v4.6.1] — 2026-10-30
 
 Correcciones tras la primera prueba de la 4.6.

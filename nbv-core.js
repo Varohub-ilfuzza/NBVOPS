@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-//  NBV CORE v4.6.1 — AirNubeiro ACARS / OPS Center
+//  NBV CORE v4.6.2 — AirNubeiro ACARS / OPS Center
 //  Módulo común cargado por index.html y ops-center.html.
 //  Red (proxy local), IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC,
 //  cifrado de API key, generadores OPS y utilidades.
@@ -8,16 +8,20 @@
 'use strict';
 
 const NBV = window.NBV = window.NBV || {};
-NBV.VERSION = '4.6.1';
+NBV.VERSION = '4.6.2';
 
 // ── Endpoints ──
-const HURL         = 'http://www.hoppie.nl/acars/system/connect.html';
+const HURL         = 'https://www.hoppie.nl/acars/system/connect.html'; // HTTPS + CORS: funciona sin proxy
 const IVAO_WHAZZUP = 'https://api.ivao.aero/v2/tracker/whazzup';
 const SIMBRIEF_API = 'https://www.simbrief.com/api/xml.fetcher.php';
 const METAR_API    = 'https://aviationweather.gov/api/data/metar';
 const TAF_API      = 'https://aviationweather.gov/api/data/taf';
 const SIGMET_API   = 'https://aviationweather.gov/api/data/isigmet'; // internacional (Europa incluida)
 const PIREP_API    = 'https://aviationweather.gov/api/data/pirep';   // requiere bbox o id+distance
+// Fuentes meteo secundarias (solo si aviationweather.gov falla o no tiene datos)
+const VATSIM_METAR = 'https://metar.vatsim.net/';                              // METAR, admite CORS (sin proxy)
+const NOAA_METAR   = 'https://tgftp.nws.noaa.gov/data/observations/metar/stations/';
+const NOAA_TAF     = 'https://tgftp.nws.noaa.gov/data/forecasts/taf/stations/';
 
 // ══════════════════════════════════════════════════════════════════
 //  UTILIDADES
@@ -86,7 +90,7 @@ function errorSound() { NBV.sound.play('error'); }
 // ══════════════════════════════════════════════════════════════════
 NBV.net = (() => {
   // Verificado 2026-10: estas APIs devuelven Access-Control-Allow-Origin
-  const DIRECT_CORS = new Set(['api.ivao.aero', 'www.simbrief.com', 'discord.com', 'discordapp.com', 'www.hoppie.nl']);
+  const DIRECT_CORS = new Set(['api.ivao.aero', 'www.simbrief.com', 'discord.com', 'discordapp.com', 'www.hoppie.nl', 'metar.vatsim.net']);
   const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
   let localProxy = null; // null = sin comprobar, true/false tras probe
 
@@ -128,6 +132,7 @@ NBV.net = (() => {
   function mode() {
     if (onLocalServer() && localProxy !== false) return { ok: true, label: 'Proxy local' };
     if (customProxy()) return { ok: true, label: 'Proxy personalizado' };
+    if (!onLocalServer()) return { ok: false, partial: true, label: 'Versión web sin proxy: TELEX, CPDLC, IVAO y METAR funcionan; TAF, SIGMET y phpVMS necesitan el proxy (Ajustes → Proxy personalizado)' };
     return { ok: false, label: 'Sin proxy — abre la app con START-ACARS.bat' };
   }
   // fetch con enrutado + timeout + error HTTP explícito
@@ -261,7 +266,7 @@ function cfgApplyFields(c) {
 async function netCheckBanner() {
   await NBV.net.probe();
   const m = NBV.net.mode();
-  if (!m.ok) ss('err', `✗ ${m.label}`);
+  if (!m.ok) ss(m.partial ? 'idle' : 'err', m.partial ? m.label : `✗ ${m.label}`);
   return m;
 }
 
@@ -448,14 +453,40 @@ NBV.wx = (() => {
   }
   const ids = list => [].concat(list).map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z0-9]{3,4}$/.test(x) && x !== '????');
   // METAR crudo; hours=1 → la observación más reciente primero
+  // Prueba fuentes en orden; la primera con datos gana. Error solo si todas fallan.
+  const src = {};
+  async function firstOk(kind, tries) {
+    const errs = [];
+    for (const [name, fn] of tries) {
+      try { const v = String(await fn() || '').trim(); if (v) { src[kind] = name; return v; } errs.push(`${name}: sin datos`); }
+      catch (e) { errs.push(`${name}: ${e.message}`); }
+    }
+    src[kind] = '';
+    if (errs.every(e => e.endsWith('sin datos'))) return '';
+    throw new Error(errs.join(' · '));
+  }
+  // NOAA: un fichero por estación; 1.ª línea = fecha
+  async function noaa(base, i) {
+    const parts = await Promise.all(i.map(id => NBV.net.text(`${base}${id}.TXT`, { timeout: 8000 })
+      .then(t => t.split('\n').slice(1).map(l => l.trim()).filter(Boolean).join('\n')).catch(() => '')));
+    return parts.filter(Boolean).join('\n');
+  }
   async function metar(list, hours = 1) {
     const i = ids(list); if (!i.length) return '';
-    return cached(`m:${i}:${hours}`, 120000, async () => (await NBV.net.text(`${METAR_API}?ids=${i.join(',')}&format=raw&hours=${hours}`, { timeout: 8000 })).trim());
+    return cached(`m:${i}:${hours}`, 120000, () => firstOk('metar', [
+      ['aviationweather.gov', async () => NBV.net.text(`${METAR_API}?ids=${i.join(',')}&format=raw&hours=${hours}`, { timeout: 7000 })],
+      ['VATSIM', async () => NBV.net.text(`${VATSIM_METAR}${i.join(',')}`, { timeout: 7000 })],
+      ['NOAA', () => noaa(NOAA_METAR, i)],
+    ]));
   }
   async function metarLatest(icao) { return (await metar(icao, 1)).split('\n').find(l => l.trim()) || ''; }
   async function taf(list) {
     const i = ids(list); if (!i.length) return '';
-    return cached(`t:${i}`, 600000, async () => (await NBV.net.text(`${TAF_API}?ids=${i.join(',')}&format=raw`, { timeout: 8000 })).trim());
+    return cached(`t:${i}`, 600000, () => firstOk('taf', [
+      ['aviationweather.gov', async () => NBV.net.text(`${TAF_API}?ids=${i.join(',')}&format=raw`, { timeout: 7000 })],
+      ['NOAA', () => noaa(NOAA_TAF, i)],
+      ['Hoppie', async () => (await Promise.all(i.map(id => hoppieInfo('TAF', id).catch(() => '')))).filter(Boolean).join('\n')],
+    ]));
   }
   // SIGMET internacionales cerca de una posición
   async function sigmetsNear(lat, lon, radiusNm = 400, { prefixes = [] } = {}) {
@@ -492,7 +523,7 @@ NBV.wx = (() => {
     }
     return out.sort((a, b) => a.dist - b.dist);
   }
-  return { metar, metarLatest, taf, sigmetsNear, pirepsNear };
+  return { metar, metarLatest, taf, sigmetsNear, pirepsNear, source: kind => src[kind] || '' };
 })();
 
 function parseMetarSummary(raw) {

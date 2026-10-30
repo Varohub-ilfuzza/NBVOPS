@@ -75,7 +75,7 @@
   <header class="top">
     <div class="top-t">
       <h1 id="viewTitle">Flota en vivo</h1>
-      <div class="sub" id="viewSub">AirNubeiro ACARS · v4.6.1</div>
+      <div class="sub" id="viewSub">AirNubeiro ACARS · v4.6.2</div>
     </div>
     <div class="sb idle" id="sBar" role="status" aria-live="polite"><div class="d"></div><span id="sTxt">Configura logon y callsign</span></div>
     <div class="top-r">
@@ -367,7 +367,7 @@
             </div>
           </div>
         </div>
-        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v4.6.1</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
+        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v4.6.2</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
       </div>
     </section>
   </main>
@@ -444,7 +444,7 @@
 <script src="nbv-core.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════
-//  ACARS DISPATCH v4.6.1 — AirNubeiro
+//  ACARS DISPATCH v4.6.2 — AirNubeiro
 //  Creado por Varo para AirNubeiro · Todos los derechos reservados
 // ══════════════════════════════════════════════════════════════════
 
@@ -651,7 +651,8 @@ async function sendInfo() {
     lastInfoResult = `${type.toUpperCase()} ${icao}: ${txt}`;
     const label = type === 'metar-hist' ? 'METAR HIST' : type.toUpperCase();
     addMsg('rx', { cls: 'in', type: 'INFO', badge: 'b-in', route: `SERVER → ${$('cS').value.toUpperCase()}`, body: `${label} ${icao}:\n${txt}`, time: ts(), st: ok ? '✓ OK' : '✗ Sin datos', ok });
-    ss(ok ? 'ok' : 'err', ok ? `✓ ${label} ${icao}` : `✗ ${label} ${icao}: sin datos`);
+    const wxs = type.startsWith('metar') ? NBV.wx.source('metar') : type === 'taf' ? NBV.wx.source('taf') : '';
+    ss(ok ? 'ok' : 'err', ok ? `✓ ${label} ${icao}${wxs && wxs !== 'aviationweather.gov' ? ` (fuente secundaria: ${wxs})` : ''}` : `✗ ${label} ${icao}: sin datos`);
     if (ok) notifySound();
   } catch (e) { $('inR').style.display = 'block'; $('inRT').textContent = `Error: ${e.message}`; ss('err', `✗ ${e.message}`); errorSound(); }
   busy = false; $('inB').textContent = 'SOLICITAR'; updBtn();

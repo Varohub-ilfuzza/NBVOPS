@@ -4,6 +4,109 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v4.6.1] — 2026-10-30
+
+Correcciones tras la primera prueba de la 4.6.
+
+- **Interfaz antigua al abrir la 4.6 (Windows)**: el servidor local compartía el puerto 8433 con una versión anterior que siguiera abierta y el navegador acababa en la vieja. Ahora el puerto es exclusivo; si otra versión lo ocupa, el lanzador lo dice con su número de versión y espera a que la cierres. Si es la misma versión, abre el navegador.
+- **FSUIPC parpadeando en naranja sin conectar**: FSUIPC WebSocket Server atiende en la ruta `/fsuipc/` y la app conectaba a la raíz. La URL se completa sola (`ws://127.0.0.1:2048` → `ws://127.0.0.1:2048/fsuipc/`), también para configuraciones guardadas. Mensajes claros cuando la conexión no es posible (versión web hacia otro equipo, móvil sin simulador) y el indicador del ACARS refleja el estado real del OPS Center en lugar de quedarse en «conectando».
+- **Versión publicada**: admite un proxy por defecto fijado al compilar (`NBV_PROXY`), para no tener que escribirlo en cada móvil.
+
+---
+
+## [v4.6.0] — 2026-10-30
+
+Rediseño completo de la interfaz «Torre de control»: minimalista, con la identidad de AirNubeiro, modo claro y oscuro, y pensada para dejar la estación en servicio.
+
+### Interfaz
+- **Nueva estructura**: barra lateral (Flota · Mensajes · Meteo · Dispatch · Ajustes), barra superior con el estado y panel **Redactar** fijo a la derecha (TELEX / CPDLC). En pantallas medianas Redactar se abre como panel lateral; en móvil, navegación inferior y botón flotante **Redactar**.
+- **Pantalla de inicio «Flota en vivo»**: el OPS Center integrado sin cabecera duplicada, con indicadores de vuelos por fase, botón Iniciar/Detener monitor, pantalla AOC, ajustes de flota y estado del último escaneo.
+- **Tarjetas de vuelo rediseñadas**: ruta con barra de progreso, ALT/GS/ETA/DEST/EET, fuente de datos y mensajes por fase (los pendientes o con error se envían con un clic). **Clic en una tarjeta → Redactar con el destino ya puesto.**
+- **Tema claro, oscuro o automático** (sigue al sistema), compartido entre ACARS y OPS Center, sin parpadeo al cargar. Stream Mode y pantalla AOC siempre en modo noche.
+- Paleta AirNubeiro (#0070CB) con contraste AA en ambos temas, tipografías Raleway (marca), IBM Plex Sans (interfaz) y JetBrains Mono (datos), iconos SVG en lugar de emoji, logotipo del triskel e iconos PWA nuevos.
+
+### Uso continuado
+- **«Pon la torre en servicio»**: lista de 4 pasos (estación Hoppie, monitor, recepción automática, sonido) que desaparece cuando todo está activo y vuelve si algo se apaga.
+- **Actividad de hoy**: vuelos atendidos, mensajes enviados y recibidos, y tiempo de servicio del monitor (UTC, compartido entre ventanas sin contar doble).
+- **Recepción automática persistente**: si estaba activa, se reanuda al abrir la app. Píldoras de estado *Monitor* y *Recepción* siempre visibles.
+- En Redactar, **chips con los vuelos activos** para elegir destino con un clic. Estados vacíos con explicación y acción directa.
+
+### Técnico
+- Hoja de estilos compartida `nbv-ui.css` (tokens claro/oscuro); todos los IDs de 4.5 se conservan. `NBV.ui` en el núcleo (iconos, tema, actividad). `opsUiState()` expone el estado del OPS Center a la shell.
+
+---
+
+## [v4.5.0] — 2026-10-30
+
+Mejoras de operación diaria: el monitor sobrevive a una recarga, avisos sonoros por tipo de evento, Route Info por corredor de ruta, webhook de Discord cifrado y plantillas editables.
+
+### Nuevas funciones
+- **Estado persistente del OPS Center**: las tarjetas de vuelo, el estado de cada mensaje y su contenido se conservan al recargar la página (vuelos vistos en los últimos 20 min). Los envíos interrumpidos por la recarga quedan como **✗ retry**.
+- **Auto-iniciar monitor** (config del OPS Center): *Como estaba al cerrar* (por defecto), *Siempre* o *Nunca*.
+- **Avisos sonoros por evento**, sin notificaciones de Windows: TELEX recibido (3 notas ascendentes), CPDLC (doble nota), solicitud de LOGON (insistente), vuelo detectado, cambio de fase y error. Suenan con la ventana en segundo plano tras el primer clic en la app. Modo configurable: *Todos*, *Solo mensajes recibidos y errores* o *Ninguno*; 🔔 silencia todo. Con la pestaña oculta, el título muestra el número de mensajes nuevos: `(2) ✉ …`.
+- **Route Info por corredor de ruta**: ATC (CTR/FSS a ≤150 NM), SIGMET y PIREP (a ≤80 NM) a lo largo del tramo que queda hasta destino, en lugar de un círculo de 400 NM alrededor del avión. El destino se localiza con phpVMS, la tabla interna o la API de aeropuertos de aviationweather.gov (cualquier ICAO); si no se encuentra, se proyecta por rumbo y distancia restante.
+- **ETA y distancia con datos de IVAO** para cualquier destino: nuevas columnas DIST y ETA en Stream Mode y ETA en las tarjetas del OPS Center.
+- **Plantillas editables** (botón **✎ Editar** en Telex y CPDLC; **✎ Bienvenidas y plantillas** en el OPS Center): TELEX, PDC (autorizaciones de salida), CPDLC y bienvenidas por aeropuerto. Variables `{CS}`, `{STN}`, `{UTC}`, `{DEP}`, `{ARR}` (estas dos, del plan de vuelo IVAO del destinatario). Se comparten entre ACARS y OPS Center.
+
+### Seguridad
+- **Webhook de Discord cifrado** con AES-256-GCM, igual que la API key de phpVMS. El campo queda vacío tras guardarlo y muestra que hay un webhook cifrado; botón **✕ Borrar webhook**. Las URL en claro de versiones anteriores se migran y se eliminan del almacenamiento solo cuando la copia cifrada ya está guardada. Se rechazan URL que no sean de `discord.com/api/webhooks/`.
+
+### Correcciones y limpieza
+- Eliminadas `processMessagesConditional` y `discordNotifyOpsMsg` (unas 60 líneas sin uso que seguían en la 4.4.0) y las antiguas funciones de plantillas fijas.
+- Si el cifrado no está disponible (app abierta por IP en lugar de `localhost`), el webhook sigue funcionando en memoria con un aviso, en vez de fallar.
+
+### Validación
+- 74 pruebas funcionales contra las APIs reales (47 de la 4.4.0 + 27 nuevas), 0 funciones inalcanzables, 0 identificadores sin declarar.
+
+---
+
+## [v4.4.0] — 2026-10-30
+
+Revisión completa del código y refactor profundo. Recupera todas las funciones que habían dejado de funcionar y unifica la lógica de ACARS y OPS Center en un módulo común.
+
+### Causa raíz de los fallos
+- **corsproxy.io retiró el acceso anónimo** (`403 keyless_legacy_url`). Todo el tráfico de ambas apps pasaba por él, por lo que IVAO, Hoppie, METAR/TAF, phpVMS y Discord fallaban a la vez.
+- Solución: **`nbv-server.py`**, servidor local con proxy propio en `/proxy` (lista blanca de hosts, solo escucha en 127.0.0.1). `START-ACARS.bat` lo arranca y abre el navegador.
+- Enrutado automático (`NBV.net`): IVAO, Hoppie, SimBrief y Discord van **directos** (admiten CORS); aviationweather.gov y phpVMS van por el proxy local. El campo de proxy pasa a ser opcional (Cloudflare Worker para GitHub Pages). El valor heredado de corsproxy.io se limpia solo.
+
+### Funciones restauradas (ReferenceError desde v4.3.3)
+- **ROUTE INFO** (pestaña DSP): faltaban `haversineNm` / `isAhead`.
+- **CONEXIONES PAX** y **CREW INFO**: faltaban `genPaxConnections` / `genCrewInfo`.
+- **STREAM MODE (F11)**: faltaban `mapState`, `APT_COORDS`, `lastOccData`.
+- **OPS Center**: el iframe tenía `loading="lazy"` dentro de una pestaña oculta → el monitor no arrancaba hasta abrir OCC. Ahora carga al inicio.
+
+### Bugs corregidos
+- **Frecuencias ATC**: IVAO v2 da MHz (`118.555`); se mostraban como `0.119`.
+- **EET**: `flightPlan.eet` está en segundos; vuelos de menos de 2h45 se leían como HHMM (1h → 36h), rompiendo el ROUTE INFO de mitad de vuelo.
+- **Delay report**: `departureTime` está en segundos desde 00Z; generaba retrasos absurdos.
+- **Fase de vuelo**: tras aterrizar, el estado IVAO `On Blocks` devolvía el vuelo a PREFLIGHT. Ahora se mantiene LANDED; una nueva pierna con plan distinto reinicia el ciclo de mensajes. Un vuelo detectado por primera vez ya en tierra junto al destino entra directamente como LANDED.
+- **Envío manual** desde el dashboard: el contenido del mensaje se perdía en el siguiente scan. Ahora persiste (`msgBodies`).
+- **SIGMET**: se consultaba `airsigmet` (solo EE.UU.). Ahora `isigmet` internacional con distancia real al polígono.
+- **PIREP**: la API exige `bbox` → devolvía HTTP 400. Corregido.
+- **API key phpVMS**: ACARS y OPS la cifraban con huellas distintas sobre la misma clave de almacenamiento, y además dependía de la resolución de pantalla. Cifrado estable común; las keys de 4.3.x se migran automáticamente.
+- **phpVMS en ACARS** escribía en un `#dashboard` inexistente → error en cada scan. El escaneo phpVMS lo ejecuta solo el OPS Center.
+- **Dashboard OPS**: los vuelos solo-phpVMS no tenían `msgStatus` → el render lanzaba excepción.
+- **SimBrief**: un usuario inexistente mostraba `HTTP 400`; ahora muestra el mensaje real de SimBrief.
+- **Discord**: los TELEX manuales se notificaban dos veces.
+- **FSUIPC**: al reconectar, el evento `close` del socket antiguo programaba reintentos fantasma.
+- **Service Worker**: estrategia cache-first servía versiones antiguas y podía cachear respuestas del proxy. Ahora red primero, sin cachear APIs.
+
+### Refactor y optimización
+- **`nbv-core.js`** (nuevo): red, IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC, cifrado, generadores OPS y fase de vuelo en un único módulo compartido. 61 funciones duplicadas entre ambos archivos eliminadas.
+- **Configuración compartida** (`nbv_shared`): logon, callsign, FSUIPC, phpVMS y Discord se configuran una vez y se sincronizan en vivo entre ACARS y OPS Center. Migración automática desde la config 4.3.x.
+- **Un único dueño por módulo**: FSUIPC y phpVMS corren solo en el OPS Center; el ACARS refleja su estado (badge SIM y estado phpVMS). Se elimina la doble conexión WebSocket y el doble polling.
+- **Whazzup IVAO con caché compartida** (TTL 15 s, peticiones simultáneas agrupadas): una sola descarga de unos 800 KB sirve a ambas apps. Antes se descargaba por cada vuelo y por cada mensaje.
+- **ATIS IVAO** leído directamente del whazzup (con Hoppie como respaldo).
+- Reintento automático en GET ante timeout o fallo de red transitorio.
+- Eliminadas unas 550 líneas de código muerto (motor OPS antiguo del ACARS) y el overlay AOC huérfano del ACARS (el OPS Center conserva el suyo).
+- Tamaño total: 365 KB → 290 KB (−21 %), con el núcleo descargado una sola vez.
+
+### Validación
+- Sintaxis de todos los scripts, grafo de llamadas (0 funciones inalcanzables), 0 identificadores sin declarar y 0 colisiones de declaración entre el núcleo y las apps.
+- 47 pruebas funcionales contra las APIs reales (IVAO, Hoppie, aviationweather.gov, phpVMS, SimBrief), con vuelos NBV en vivo.
+
+---
+
 ## [v4.2.0] — 2026-02-27
 
 ### Nuevas funciones
@@ -129,20 +232,24 @@ Versiones anteriores con paleta ámbar. No documentadas en este changelog.
 |---|---|
 | `index.html` | ACARS Dispatch — aplicación principal |
 | `ops-center.html` | OPS Center — monitor de flota automatizado |
+| `nbv-core.js` | Núcleo común (red, IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC) |
+| `nbv-server.py` | Servidor local + proxy CORS |
+| `START-ACARS.bat` | Lanzador Windows (arranca `nbv-server.py`) |
 | `sw.js` | Service Worker — PWA y caché offline |
 | `manifest.json` | PWA Manifest |
 | `icons/` | Iconos PNG (192px, 512px) y SVG |
 
 ## URLs de despliegue
 
-- ACARS Dispatch: `https://[tu-dominio]/index.html`
+- Local (recomendado): `START-ACARS.bat` → `http://localhost:8433/index.html`
+- ACARS Dispatch: `https://[tu-dominio]/index.html` (requiere proxy personalizado, p.ej. Cloudflare Worker)
 - OPS Center: `https://[tu-dominio]/ops-center.html`
 
 ## Dependencias externas (runtime)
 
 - [Hoppie ACARS](https://www.hoppie.nl/acars/) — protocolo de mensajería
 - [IVAO Whazzup v2](https://api.ivao.aero/v2/networks/whazzup) — datos de vuelo en tiempo real
-- [aviationweather.gov](https://aviationweather.gov/api/data/) — METAR/ATIS
+- [aviationweather.gov](https://aviationweather.gov/api/data/) — METAR/TAF/SIGMET/PIREP (vía proxy local)
 - [SimBrief](https://www.simbrief.com/) — planes de vuelo
 - phpVMS (`operaciones.airnubeiro.es`) — base de datos de pilotos AirNubeiro
 - FSUIPC WebSocket Server (Paul Henty) — datos del simulador local

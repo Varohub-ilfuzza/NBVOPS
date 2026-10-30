@@ -1,68 +1,29 @@
-// Service Worker — ACARS Dispatch AirNubeiro PWA
-const CACHE_NAME = 'an-acars-v4.3.3';
-const APP_SHELL = [
-  './',
-  './index.html',
-  './ops-center.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap'
-];
+// Service Worker — AirNubeiro ACARS PWA v4.6.1
+// Red primero para la app (las actualizaciones se ven al instante) y
+// caché solo como respaldo offline. Nunca cachea APIs ni el proxy local.
+const CACHE_NAME = 'an-acars-v4.6.1';
+const APP_SHELL = ['./', './index.html', './ops-center.html', './nbv-core.js', './nbv-ui.css', './manifest.json', './icons/nbv-mark.png', './icons/icon-192.png', './icons/icon-512.png'];
 
-// Install — cache app shell
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
-  );
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
 
-// Activate — clean old caches
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
+  e.waitUntil(caches.keys()
+    .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
 });
 
-// Fetch strategy:
-// - API calls (hoppie, simbrief, ivao, aviationweather) → network only
-// - App shell / fonts → cache first, network fallback
 self.addEventListener('fetch', e => {
-  const url = e.request.url;
-
-  // Network-only for API calls
-  if (
-    url.includes('hoppie.nl') ||
-    url.includes('simbrief.com') ||
-    url.includes('ivao.aero') ||
-    url.includes('aviationweather.gov') ||
-    url.includes('corsproxy.io')
-  ) {
-    e.respondWith(fetch(e.request));
-    return;
-  }
-
-  // Cache-first for everything else
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  // APIs externas, proxy local y health: siempre red, sin tocar caché
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/proxy') || url.pathname.startsWith('/__nbv')) return;
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(resp => {
-        // Cache successful GET requests
-        if (resp.ok && e.request.method === 'GET') {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
-        return resp;
-      });
-    }).catch(() => {
-      // Offline fallback for navigation
-      if (e.request.mode === 'navigate') {
-        return caches.match('./index.html');
-      }
-    })
+    fetch(req).then(resp => {
+      if (resp.ok) { const copy = resp.clone(); caches.open(CACHE_NAME).then(c => c.put(req, copy)); }
+      return resp;
+    }).catch(() => caches.match(req).then(c => c || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
   );
 });

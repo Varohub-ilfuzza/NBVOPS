@@ -1,0 +1,7 @@
+// Cloudflare Worker «nbv-proxy»: sirve la app (assets) y el proxy CORS (?url=)
+{
+  "name": "nbv-proxy",
+  "main": "worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": true }
+}

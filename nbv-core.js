@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-//  NBV CORE v4.6.2 — AirNubeiro ACARS / OPS Center
+//  NBV CORE v4.6.3 — AirNubeiro ACARS / OPS Center
 //  Módulo común cargado por index.html y ops-center.html.
 //  Red (proxy local), IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC,
 //  cifrado de API key, generadores OPS y utilidades.
@@ -8,7 +8,7 @@
 'use strict';
 
 const NBV = window.NBV = window.NBV || {};
-NBV.VERSION = '4.6.2';
+NBV.VERSION = '4.6.3';
 
 // ── Endpoints ──
 const HURL         = 'https://www.hoppie.nl/acars/system/connect.html'; // HTTPS + CORS: funciona sin proxy
@@ -99,7 +99,7 @@ NBV.net = (() => {
   // Proxy público heredado (corsproxy.io sin key) ya no funciona → se ignora
   function isLegacyProxy(p) { return /corsproxy\.io\/\?/i.test(p) && !/[?&]key=/i.test(p); }
   // Proxy por defecto de la versión publicada (GitHub Pages); se fija en el build
-  const DEFAULT_PROXY = '';
+  const DEFAULT_PROXY = 'https://nbv-proxy.ilfuzza.workers.dev/?url=';
   function customProxy() {
     const p = ($('cP')?.value || '').trim();
     if (p && !isLegacyProxy(p)) return p;

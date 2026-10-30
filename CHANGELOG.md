@@ -4,6 +4,13 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v4.6.3] — 2026-10-31
+
+- **Proxy de Cloudflare integrado**: la versión web usa por defecto `https://nbv-proxy.ilfuzza.workers.dev/?url=`; no hace falta escribirlo en cada dispositivo (Ajustes → Proxy personalizado sigue permitiendo otro).
+- **Worker «nbv-proxy» completo**: el mismo Worker sirve la app y el proxy (`wrangler.jsonc` + `worker.js` en el repositorio). Las peticiones con `?url=` pasan por el proxy con lista blanca de hosts; el resto sirve los archivos de la app.
+
+---
+
 ## [v4.6.2] — 2026-10-30
 
 - **METAR y TAF con fuentes de respaldo**: si aviationweather.gov falla o no tiene datos, la app prueba sola VATSIM (METAR) y NOAA (METAR y TAF), y para el TAF también Hoppie. La barra de estado indica cuándo se ha usado una fuente secundaria. Aplica a Meteo, Dispatch, Route Info y a los mensajes automáticos del OPS Center.

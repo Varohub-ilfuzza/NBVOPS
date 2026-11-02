@@ -75,7 +75,7 @@
   <header class="top">
     <div class="top-t">
       <h1 id="viewTitle">Flota en vivo</h1>
-      <div class="sub" id="viewSub">AirNubeiro ACARS · v4.6.3</div>
+      <div class="sub" id="viewSub">AirNubeiro ACARS · v4.7.0</div>
     </div>
     <div class="sb idle" id="sBar" role="status" aria-live="polite"><div class="d"></div><span id="sTxt">Configura logon y callsign</span></div>
     <div class="top-r">
@@ -367,7 +367,7 @@
             </div>
           </div>
         </div>
-        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v4.6.3</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
+        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v4.7.0</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
       </div>
     </section>
   </main>
@@ -381,6 +381,7 @@
       </div>
       <button class="ib cmp-x" onclick="uiComposer(false)" title="Cerrar" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
     </div>
+    <div class="hp" id="hpStatus" role="status" aria-live="polite" hidden></div>
 
     <div class="pnl on" id="p-telex">
       <div class="f"><label for="txD">Destino</label><input type="text" id="txD" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
@@ -444,7 +445,7 @@
 <script src="nbv-core.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════
-//  ACARS DISPATCH v4.6.3 — AirNubeiro
+//  ACARS DISPATCH v4.7.0 — AirNubeiro
 //  Creado por Varo para AirNubeiro · Todos los derechos reservados
 // ══════════════════════════════════════════════════════════════════
 
@@ -844,6 +845,7 @@ function addMsg(list, { cls, type, badge, route, body, time, st, ok, actions }) 
 
   saveList(list);
   NBV.ui.stats.msg(list, ok);
+  if (list === 'tx' && typeof uiHoppieCheck === 'function') uiHoppieCheck(6000);
 
   // Discord: notificar mensajes RX siempre; TX solo manuales (los auto-OPS se notifican en sendOpsTx)
   if (typeof discordNotifyMsg === 'function') {
@@ -1879,6 +1881,7 @@ function uiComposer(open = true) {
 
 function uiPickCs(cs) {
   for (const id of ['txD', 'cpD']) { $(id).value = cs; $(id).dispatchEvent(new Event('input')); }
+  uiHoppieCheck(100);
   document.querySelectorAll('#cmpFlights .chip').forEach(c => c.classList.toggle('on', c.dataset.cs === cs));
   try { ($('p-cpdlc').classList.contains('on') ? $('cpM') : $('txM')).focus(); } catch (e) {}
 }
@@ -1985,8 +1988,43 @@ function uiInit() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('cmp-open')) uiComposer(false); });
   $('occFrame').addEventListener('load', () => setTimeout(uiTick, 300));
   try { if (localStorage.getItem('nbv_autopoll') === '1' && $('cL').value.trim() && $('cS').value.trim()) toggleAutoPoll(); } catch (e) {}
+  uiHoppieInit();
   uiTick(); setInterval(uiTick, 1500);
 }
+
+let hpTimer = null, hpSeq = 0, hpForce = false;
+
+function uiHoppieCheck(delay = 700, force = false) { clearTimeout(hpTimer); hpForce = hpForce || force; hpTimer = setTimeout(uiHoppieRun, delay); }
+
+async function uiHoppieRun() {
+  const box = $('hpStatus'), cp = $('p-cpdlc').classList.contains('on');
+  const dest = (cp ? $('cpD') : $('txD')).value.trim().toUpperCase(), st = $('cS').value.trim().toUpperCase();
+  const force = hpForce; hpForce = false;
+  if (dest.length < 3 || !st) { box.hidden = true; return; }
+  const seq = ++hpSeq;
+  box.hidden = false; box.className = 'hp chk'; box.innerHTML = `<i></i><div><span>Comprobando ${esc(dest)} en Hoppie…</span></div>`;
+  let r;
+  try { r = await NBV.hoppie.check(dest, st, force); }
+  catch (e) { if (seq === hpSeq) { box.className = 'hp unk'; box.innerHTML = `<i></i><div><span>No se pudo consultar el estado en Hoppie (${esc(e.message)})</span></div>`; } return; }
+  if (seq !== hpSeq) return;
+  const L = []; let cls = 'ok';
+  if (r.destOnline) L.push(`<b>${esc(dest)}</b> conectado a Hoppie (${esc(r.net)}, desde hace ${esc(uiAgo(r.destAgo))})`);
+  else if (r.destOtherNets.length) { cls = 'err'; L.push(`<b>${esc(dest)}</b> está en ${esc(r.destOtherNets.join('/'))} y tu estación en ${esc(r.net)}: no recibirá. Usa el mismo código Hoppie, o la misma red en «My ACARS Account».`); }
+  else { cls = 'wrn'; L.push(`<b>${esc(dest)}</b> no está conectado a Hoppie. Los mensajes quedan en cola 24 h y le llegarán cuando el avión haga su primera petición (ATIS, METAR o LOGON).`); }
+  if (!r.stationOnline) { if (cls === 'ok') cls = 'wrn'; L.push(`Tu estación <b>${esc(st)}</b> no aparece conectada: activa la recepción automática para recibir respuestas y LOGON CPDLC.`); }
+  if (r.pending.length) L.push(`<b>${r.pending.length}</b> pendiente${r.pending.length > 1 ? 's' : ''} de entregar · ${r.delivered} entregado${r.delivered === 1 ? '' : 's'} (24 h)`);
+  else if (r.delivered) L.push(`Todo entregado: ${r.delivered} mensaje${r.delivered === 1 ? '' : 's'} en 24 h`);
+  box.className = 'hp ' + cls;
+  box.innerHTML = `<i></i><div>${L.map(l => `<span>${l}</span>`).join('')}</div><button type="button" class="ib" onclick="uiHoppieCheck(0,true)" title="Volver a comprobar" aria-label="Volver a comprobar">${NBV.ui.icon('refresh')}</button>`;
+}
+
+function uiHoppieInit() {
+  ['txD', 'cpD'].forEach(id => $(id).addEventListener('input', () => uiHoppieCheck(900)));
+  document.querySelectorAll('.composer .tab').forEach(t => t.addEventListener('click', () => uiHoppieCheck(100)));
+  setInterval(() => { if (!$('hpStatus').hidden && !document.hidden) uiHoppieRun(); }, 60000);
+}
+
+function uiAgo(t) { return String(t || '').replace(/\bdys?\b/g, 'd').replace(/\bhrs?\b/g, 'h').replace(/\bmns?\b/g, 'min').replace(/,/g, ''); }
 
 function occFrameReload() {
   const f = $('occFrame');

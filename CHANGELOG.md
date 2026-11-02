@@ -4,6 +4,13 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v4.7.0] — 2026-11-02
+
+- **Estado Hoppie del destino en Redactar**: al escribir o elegir un callsign, la app consulta Hoppie y muestra si el avión está conectado (y en qué red), si está en otra red distinta a tu estación (no recibiría), o si no está conectado (los mensajes quedan en cola 24 h hasta que el avión haga su primera petición). Avisa también si tu propia estación no aparece conectada.
+- **Seguimiento de entrega**: número de mensajes pendientes y entregados al destino en las últimas 24 h, según el registro de Hoppie. Se actualiza tras cada envío y cada minuto.
+
+---
+
 ## [v4.6.3] — 2026-10-31
 
 - **Proxy de Cloudflare integrado**: la versión web usa por defecto `https://nbv-proxy.ilfuzza.workers.dev/?url=`; no hace falta escribirlo en cada dispositivo (Ajustes → Proxy personalizado sigue permitiendo otro).

@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-//  NBV CORE v4.6.3 — AirNubeiro ACARS / OPS Center
+//  NBV CORE v4.7.0 — AirNubeiro ACARS / OPS Center
 //  Módulo común cargado por index.html y ops-center.html.
 //  Red (proxy local), IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC,
 //  cifrado de API key, generadores OPS y utilidades.
@@ -8,7 +8,7 @@
 'use strict';
 
 const NBV = window.NBV = window.NBV || {};
-NBV.VERSION = '4.6.3';
+NBV.VERSION = '4.7.0';
 
 // ── Endpoints ──
 const HURL         = 'https://www.hoppie.nl/acars/system/connect.html'; // HTTPS + CORS: funciona sin proxy
@@ -110,6 +110,8 @@ NBV.net = (() => {
   }
   function needsProxy(u) {
     if (location.protocol === 'https:' && u.protocol === 'http:') return true; // mixed content
+    // Hoppie solo admite CORS en connect.html; sus páginas de estado van por proxy
+    if (u.hostname === 'www.hoppie.nl' && !u.pathname.endsWith('/connect.html')) return true;
     return !DIRECT_CORS.has(u.hostname);
   }
   // Devuelve la URL real a pedir (síncrono, compatible con fetch(proxy(url)))
@@ -471,19 +473,21 @@ NBV.wx = (() => {
       .then(t => t.split('\n').slice(1).map(l => l.trim()).filter(Boolean).join('\n')).catch(() => '')));
     return parts.filter(Boolean).join('\n');
   }
+  // Mismo formato que aviationweather: cada línea empieza por METAR/SPECI
+  const withType = t => String(t || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => /^(METAR|SPECI) /.test(l) ? l : 'METAR ' + l).join('\n');
   async function metar(list, hours = 1) {
     const i = ids(list); if (!i.length) return '';
     return cached(`m:${i}:${hours}`, 120000, () => firstOk('metar', [
-      ['aviationweather.gov', async () => NBV.net.text(`${METAR_API}?ids=${i.join(',')}&format=raw&hours=${hours}`, { timeout: 7000 })],
-      ['VATSIM', async () => NBV.net.text(`${VATSIM_METAR}${i.join(',')}`, { timeout: 7000 })],
-      ['NOAA', () => noaa(NOAA_METAR, i)],
+      ['aviationweather.gov', async () => NBV.net.text(`${METAR_API}?ids=${i.join(',')}&format=raw&hours=${hours}`, { timeout: 7000, retries: 0 })],
+      ['VATSIM', async () => withType(await NBV.net.text(`${VATSIM_METAR}${i.join(',')}`, { timeout: 7000 }))],
+      ['NOAA', async () => withType(await noaa(NOAA_METAR, i))],
     ]));
   }
   async function metarLatest(icao) { return (await metar(icao, 1)).split('\n').find(l => l.trim()) || ''; }
   async function taf(list) {
     const i = ids(list); if (!i.length) return '';
     return cached(`t:${i}`, 600000, () => firstOk('taf', [
-      ['aviationweather.gov', async () => NBV.net.text(`${TAF_API}?ids=${i.join(',')}&format=raw`, { timeout: 7000 })],
+      ['aviationweather.gov', async () => NBV.net.text(`${TAF_API}?ids=${i.join(',')}&format=raw`, { timeout: 7000, retries: 0 })],
       ['NOAA', () => noaa(NOAA_TAF, i)],
       ['Hoppie', async () => (await Promise.all(i.map(id => hoppieInfo('TAF', id).catch(() => '')))).filter(Boolean).join('\n')],
     ]));
@@ -1994,6 +1998,57 @@ function fsuipcBlockedReason(url) {
   if (local && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '')) return 'El simulador no está en este dispositivo: FSUIPC solo funciona en el PC del simulador';
   return '';
 }
+
+// ══════════════════════════════════════════════════════════════════
+//  v4.7 — Estado Hoppie: ¿está conectado el destinatario? ¿le han llegado los mensajes?
+//  Fuentes públicas de Hoppie (vía proxy): online.html y callsign.html
+// ══════════════════════════════════════════════════════════════════
+NBV.hoppie = (() => {
+  const BASE = 'https://www.hoppie.nl/acars/system/';
+  let onl = null, onlAt = 0, onlP = null;
+  const dec = s => String(s || '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+  // Mapa callsign → [{ net, ago }] con todas las estaciones conectadas (caché 60 s)
+  async function online(force = false) {
+    if (!force && onl && Date.now() - onlAt < 60000) return onl;
+    if (onlP) return onlP;
+    onlP = (async () => {
+      const html = await NBV.net.text(BASE + 'online.html', { timeout: 15000 });
+      const m = new Map(), re = /<td>([^<]+)<\/td>\s*<td><a href="callsign\.html\?network=[^"&]*&(?:amp;)?callsign=[^"]*">([^<]+)<\/a><\/td>\s*<td>([^<]*)<\/td>/g;
+      let r; while ((r = re.exec(html))) { const cs = dec(r[2]).toUpperCase(); (m.get(cs) || m.set(cs, []).get(cs)).push({ net: dec(r[1]), ago: dec(r[3]) }); }
+      onl = m; onlAt = Date.now(); return m;
+    })().finally(() => { onlP = null; });
+    return onlP;
+  }
+  // Mensajes de las últimas 24 h de un callsign en una red: [{ id, from, to, type, rx, relayed, text }]
+  async function history(cs, net) {
+    const html = await NBV.net.text(`${BASE}callsign.html?network=${encodeURIComponent(net)}&callsign=${encodeURIComponent(cs)}`, { timeout: 15000 });
+    const out = [], re = /<tr[^>]*>\s*<td>(\d+)<\/td>\s*<td>([^<]*)<\/td>\s*<td>(?:<a[^>]*>)?([^<]*)(?:<\/a>)?<\/td>\s*<td>(?:<a[^>]*>)?([^<]*)(?:<\/a>)?<\/td>\s*<td>([^<]*)<\/td>\s*<td>([^<]*)<\/td>\s*<td>([^<]*)<\/td>\s*<td>[\s\S]*?<\/td>\s*<td>(?:<tt>)?([\s\S]*?)(?:<\/tt>)?<\/td>/g;
+    let r; while ((r = re.exec(html))) out.push({ id: +r[1], net: dec(r[2]), from: dec(r[3]).toUpperCase(), to: dec(r[4]).toUpperCase(), type: dec(r[5]), rx: dec(r[6]), relayed: dec(r[7]), text: dec(r[8].replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '')) });
+    return out;
+  }
+  // Diagnóstico completo de un destino respecto a nuestra estación
+  async function check(dest, station, force = false) {
+    dest = String(dest || '').trim().toUpperCase(); station = String(station || '').trim().toUpperCase();
+    const m = await online(force);
+    const st = m.get(station) || [], ds = m.get(dest) || [];
+    const net = st[0]?.net || ds[0]?.net || 'IVAO';
+    const destHere = ds.find(x => x.net === net);
+    let pending = [], delivered = 0;
+    try {
+      const h = await history(dest, net);
+      const mine = h.filter(x => x.from === station && x.to === dest);
+      pending = mine.filter(x => !x.relayed);
+      delivered = mine.length - pending.length;
+    } catch (e) {}
+    return {
+      dest, station, net,
+      stationOnline: st.some(x => x.net === net), stationNets: st.map(x => x.net),
+      destOnline: !!destHere, destAgo: destHere?.ago || '', destOtherNets: ds.filter(x => x.net !== net).map(x => x.net),
+      pending, delivered,
+    };
+  }
+  return { online, history, check };
+})();
 
 
 

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════
-   AirNubeiro ACARS — Sistema visual v4.6.3 «Torre de control»
+   AirNubeiro ACARS — Sistema visual v4.7.0 «Torre de control»
    Tokens claro/oscuro · componentes compartidos ACARS + OPS Center
    ══════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -612,3 +612,15 @@ button.flt-msg:hover { outline: 1px solid currentColor; }
   .stream-overlay { padding: 16px; }
   .str-icao { font-size: 2.2rem; }
 }
+
+/* Estado Hoppie del destino */
+.hp { display: flex; align-items: flex-start; gap: 10px; padding: 10px 6px 10px 12px; border-radius: var(--r-s); background: var(--bg2); font-size: .8rem; line-height: 1.45; color: var(--tx2); }
+.hp > i { width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--tx3); flex: none; }
+.hp > div { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.hp b { color: var(--tx1); font-family: var(--mono); font-weight: 600; }
+.hp .ib { width: 30px; height: 30px; margin: -4px 0; }
+.hp .ib .ic { width: 15px; height: 15px; }
+.hp.ok { background: var(--ok-g); } .hp.ok > i { background: var(--ok); }
+.hp.wrn { background: var(--wrn-g); } .hp.wrn > i { background: var(--wrn); }
+.hp.err { background: var(--err-g); } .hp.err > i { background: var(--err); }
+.hp.chk > i { background: var(--acc); animation: pulse 1s infinite; }

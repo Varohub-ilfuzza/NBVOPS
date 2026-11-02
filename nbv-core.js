@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-//  NBV CORE v4.7.2 — AirNubeiro ACARS / OPS Center
+//  NBV CORE v4.7.3 — AirNubeiro ACARS / OPS Center
 //  Módulo común cargado por index.html y ops-center.html.
 //  Red (proxy local), IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC,
 //  cifrado de API key, generadores OPS y utilidades.
@@ -8,7 +8,7 @@
 'use strict';
 
 const NBV = window.NBV = window.NBV || {};
-NBV.VERSION = '4.7.2';
+NBV.VERSION = '4.7.3';
 
 // ── Endpoints ──
 const HURL         = 'https://www.hoppie.nl/acars/system/connect.html'; // HTTPS + CORS: funciona sin proxy
@@ -1314,7 +1314,7 @@ function fsuipcRegisterOffsets() {
   fsuipcWs.send(JSON.stringify({
     command: 'offsets.declare',
     name:    FSUIPC_GROUP_NAME,
-    offsets: FSUIPC_OFFSETS,
+    offsets: FSUIPC_OFFSETS.map(o => ({ ...o, address: typeof o.address === 'string' ? parseInt(o.address, 16) : o.address })),
   }));
 
   // 2. Iniciar lectura continua con push automático del servidor

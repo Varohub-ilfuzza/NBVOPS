@@ -4,6 +4,13 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v4.7.3] — 2026-11-02
+
+- **FSUIPC: direcciones de offset numéricas**: el servidor WebSocket de FSUIPC espera la dirección como número (`0x0560`), y la app la enviaba como texto (`"0x0560"`). Ahora se envía en el formato documentado.
+- Herramienta de diagnóstico `tools/nbv-diag.py` para revisar Hoppie, FSUIPC e IVAO durante un vuelo.
+
+---
+
 ## [v4.7.2] — 2026-11-02
 
 - **FSUIPC: conexión a `localhost`**: FSUIPCWebSocketServer escucha por defecto en `localhost:2048/fsuipc/` y rechaza las conexiones dirigidas a `127.0.0.1` («Invalid Hostname»). La app usa ahora `ws://localhost:2048/fsuipc/` y corrige sola las configuraciones guardadas con `127.0.0.1`.

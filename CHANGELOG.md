@@ -4,6 +4,13 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v4.7.2] — 2026-11-02
+
+- **FSUIPC: conexión a `localhost`**: FSUIPCWebSocketServer escucha por defecto en `localhost:2048/fsuipc/` y rechaza las conexiones dirigidas a `127.0.0.1` («Invalid Hostname»). La app usa ahora `ws://localhost:2048/fsuipc/` y corrige sola las configuraciones guardadas con `127.0.0.1`.
+- Mensaje de error de FSUIPC con la causa más habitual: el servidor WebSocket no está abierto.
+
+---
+
 ## [v4.7.1] — 2026-11-02
 
 - **Proxy personalizado tolerante**: se acepta pegado tal cual (dominio, con o sin `https://`, sin `?url=`); antes una URL sin `?url=` rompía la consulta de Hoppie y la meteo por proxy.

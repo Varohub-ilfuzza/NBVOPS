@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-//  NBV CORE v4.7.1 — AirNubeiro ACARS / OPS Center
+//  NBV CORE v4.7.2 — AirNubeiro ACARS / OPS Center
 //  Módulo común cargado por index.html y ops-center.html.
 //  Red (proxy local), IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC,
 //  cifrado de API key, generadores OPS y utilidades.
@@ -8,7 +8,7 @@
 'use strict';
 
 const NBV = window.NBV = window.NBV || {};
-NBV.VERSION = '4.7.1';
+NBV.VERSION = '4.7.2';
 
 // ── Endpoints ──
 const HURL         = 'https://www.hoppie.nl/acars/system/connect.html'; // HTTPS + CORS: funciona sin proxy
@@ -247,7 +247,7 @@ function cfgCollectShared() {
   const v = id => ($(id)?.value ?? '').trim(), c = id => !!$(id)?.checked;
   return {
     l: v('cL'), s: v('cS').toUpperCase(), p: v('cP'),
-    fsuipcEn: c('fsuipcEn'), fsuipcUrl: v('fsuipcUrl') || 'ws://127.0.0.1:2048/fsuipc/', fsuipcCs: v('fsuipcCs').toUpperCase(), fsuipcPoll: v('fsuipcPoll') || '500',
+    fsuipcEn: c('fsuipcEn'), fsuipcUrl: v('fsuipcUrl') || 'ws://localhost:2048/fsuipc/', fsuipcCs: v('fsuipcCs').toUpperCase(), fsuipcPoll: v('fsuipcPoll') || '500',
     phpvmsEn: c('phpvmsEn'), phpvmsUrl: v('phpvmsUrl') || 'https://operaciones.airnubeiro.es', phpvmsPoll: v('phpvmsPoll') || '30',
     discordEn: c('discordEn'),
     snd: typeof soundOn === 'boolean' ? soundOn : undefined, sndMode: $('sndMode') ? v('sndMode') : undefined,
@@ -1439,7 +1439,7 @@ function fsuipcScheduleRetry() {
   }
   fsuipcRetryCount++;
   clearTimeout(fsuipcRetryTimer);
-  fsuipcSetStatus(`Reintento ${fsuipcRetryCount}/${FSUIPC_MAX_RETRY} en ${FSUIPC_RETRY_DELAY/1000}s…`, null);
+  fsuipcSetStatus(`Sin servidor en ${fsuipcWsUrl($('fsuipcUrl')?.value)} — abre FSUIPCWebSocketServer.exe (carpeta Utils de FSUIPC7) con el simulador cargado. Reintento ${fsuipcRetryCount}/${FSUIPC_MAX_RETRY} en ${FSUIPC_RETRY_DELAY/1000}s…`, null);
   fsuipcRetryTimer = setTimeout(() => {
     if ($('fsuipcEn')?.checked) fsuipcConnect();
   }, FSUIPC_RETRY_DELAY);
@@ -1994,15 +1994,21 @@ NBV.ui = (() => {
 
 // ── FSUIPC WebSocket Server (Paul Henty) escucha en /fsuipc/ ──
 function fsuipcWsUrl(v) {
-  let s = String(v || '').trim() || 'ws://127.0.0.1:2048/fsuipc/';
+  let s = String(v || '').trim() || 'ws://localhost:2048/fsuipc/';
   if (!/^wss?:\/\//i.test(s)) s = 'ws://' + s.replace(/^[a-z]+:\/\//i, '');
-  try { const u = new URL(s); if (!u.pathname || u.pathname === '/') u.pathname = '/fsuipc/'; return u.href; } catch (e) { return s; }
+  try {
+    const u = new URL(s);
+    if (!u.pathname || u.pathname === '/') u.pathname = '/fsuipc/';
+    // FSUIPCWebSocketServer escucha por defecto en «localhost» (HttpListener): con 127.0.0.1 responde 400 Invalid Hostname
+    if (u.hostname === '127.0.0.1') u.hostname = 'localhost';
+    return u.href;
+  } catch (e) { return s; }
 }
 // Motivo por el que el navegador no permitirá la conexión (o '' si es posible)
 function fsuipcBlockedReason(url) {
   let u; try { u = new URL(url); } catch (e) { return 'URL WebSocket no válida'; }
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname);
-  if (location.protocol === 'https:' && u.protocol === 'ws:' && !local) return 'Desde la versión web (https) solo se puede conectar a un simulador en este mismo equipo (ws://127.0.0.1). Usa START-ACARS.bat';
+  if (location.protocol === 'https:' && u.protocol === 'ws:' && !local) return 'Desde la versión web (https) solo se puede conectar a un simulador en este mismo equipo (ws://localhost). Usa START-ACARS.bat';
   if (local && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '')) return 'El simulador no está en este dispositivo: FSUIPC solo funciona en el PC del simulador';
   return '';
 }

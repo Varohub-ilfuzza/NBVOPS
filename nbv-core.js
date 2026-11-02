@@ -476,7 +476,7 @@ NBV.wx = (() => {
   }
   // NOAA: un fichero por estación; 1.ª línea = fecha
   async function noaa(base, i) {
-    const parts = await Promise.all(i.map(id => NBV.net.text(`${base}${id}.TXT`, { timeout: 8000 })
+    const parts = await Promise.all(i.map(id => NBV.net.text(`${base}${id}.TXT`, { timeout: 10000 })
       .then(t => t.split('\n').slice(1).map(l => l.trim()).filter(Boolean).join('\n')).catch(() => '')));
     return parts.filter(Boolean).join('\n');
   }

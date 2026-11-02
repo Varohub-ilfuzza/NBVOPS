@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════
-   AirNubeiro ACARS — Sistema visual v4.7.0 «Torre de control»
+   AirNubeiro ACARS — Sistema visual v4.7.1 «Torre de control»
    Tokens claro/oscuro · componentes compartidos ACARS + OPS Center
    ══════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -624,3 +624,23 @@ button.flt-msg:hover { outline: 1px solid currentColor; }
 .hp.wrn { background: var(--wrn-g); } .hp.wrn > i { background: var(--wrn); }
 .hp.err { background: var(--err-g); } .hp.err > i { background: var(--err); }
 .hp.chk > i { background: var(--acc); animation: pulse 1s infinite; }
+
+/* Callsign ACARS */
+.ac-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 38px; gap: 8px; align-items: center; margin-bottom: 8px; max-width: 560px; }
+.ac-row input { width: 100%; min-height: 40px; background: var(--bg3); border: 1px solid var(--brd); border-radius: var(--r-s); padding: 8px 11px; color: var(--tx1); font: 500 .86rem var(--mono); letter-spacing: .6px; text-transform: uppercase; outline: 0; }
+.ac-row input:focus { border-color: var(--brd-f); box-shadow: 0 0 0 3px var(--acc-g); }
+.ac-row span { color: var(--tx3); }
+/* Diálogo CPDLC */
+.cp-log { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.cp-log:empty { display: none; }
+.cp-log .cmp-lbl { display: flex; align-items: center; justify-content: space-between; }
+.cp-row { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 8px 10px; border-radius: var(--r-s); background: var(--bg2); font-size: .8rem; }
+.cp-row.act { cursor: pointer; outline: 1px solid color-mix(in srgb, var(--wrn) 45%, transparent); }
+.cp-row.act:hover { background: var(--wrn-g); }
+.cp-d { color: var(--tx3); font-weight: 700; }
+.cp-row b { font: 600 .8rem var(--mono); }
+.cp-row small { color: var(--tx3); }
+.cp-m { font: 400 .78rem/1.4 var(--mono); color: var(--tx2); word-break: break-word; }
+.cp-st { height: 22px; padding: 0 8px; border-radius: 999px; font: 600 .66rem/22px var(--sans); letter-spacing: .3px; background: var(--bg1); color: var(--tx3); white-space: nowrap; }
+.cp-st.ok { background: var(--ok-g); color: var(--ok); } .cp-st.err { background: var(--err-g); color: var(--err); }
+.cp-st.wrn { background: var(--wrn-g); color: var(--wrn); } .cp-st.inf { background: var(--inf-g); color: var(--inf); }

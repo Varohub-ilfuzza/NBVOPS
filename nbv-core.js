@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-//  NBV CORE v4.7.0 — AirNubeiro ACARS / OPS Center
+//  NBV CORE v4.7.1 — AirNubeiro ACARS / OPS Center
 //  Módulo común cargado por index.html y ops-center.html.
 //  Red (proxy local), IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC,
 //  cifrado de API key, generadores OPS y utilidades.
@@ -8,7 +8,7 @@
 'use strict';
 
 const NBV = window.NBV = window.NBV || {};
-NBV.VERSION = '4.7.0';
+NBV.VERSION = '4.7.1';
 
 // ── Endpoints ──
 const HURL         = 'https://www.hoppie.nl/acars/system/connect.html'; // HTTPS + CORS: funciona sin proxy
@@ -100,8 +100,15 @@ NBV.net = (() => {
   function isLegacyProxy(p) { return /corsproxy\.io\/\?/i.test(p) && !/[?&]key=/i.test(p); }
   // Proxy por defecto de la versión publicada (GitHub Pages); se fija en el build
   const DEFAULT_PROXY = 'https://nbv-proxy.ilfuzza.workers.dev/?url=';
+  // Acepta la URL del proxy tal como la pegue el usuario: dominio, con o sin https:// y sin ?url=
+  function normProxy(p) {
+    p = String(p || '').trim(); if (!p) return '';
+    if (!/^https?:\/\//i.test(p)) p = 'https://' + p;
+    if (p.includes('{url}') || /[?&][^=?&]*=$/.test(p) || p.endsWith('?')) return p;
+    try { const u = new URL(p); return u.search ? p + '&url=' : p.replace(/\/?$/, '/?url='); } catch (e) { return p; }
+  }
   function customProxy() {
-    const p = ($('cP')?.value || '').trim();
+    const p = normProxy($('cP')?.value);
     if (p && !isLegacyProxy(p)) return p;
     return DEFAULT_PROXY && !onLocalServer() ? DEFAULT_PROXY : '';
   }
@@ -163,7 +170,7 @@ NBV.net = (() => {
     if (!r.ok) throw new Error(`HTTP ${r.status} ${new URL(url).hostname}`);
     return r.json();
   }
-  return { route, probe, mode, req, text, json, isLegacyProxy, get localProxy() { return localProxy; } };
+  return { route, probe, mode, req, text, json, isLegacyProxy, normProxy, get localProxy() { return localProxy; } };
 })();
 
 // Compatibilidad con el código existente
@@ -1593,9 +1600,10 @@ NBV.sound = (() => {
     detected: [[523, .12, 0], [784, .2, 150]],                       // OPS: vuelo detectado
     phase:    [[740, .14, 0]],                                       // OPS: cambio de fase
     ok:       [[800, .12, 0], [1100, .15, 160]],                     // operación completada
+    delivered:[[880, .08, 0], [1320, .12, 100]],                      // mensaje en cola entregado al avión
     error:    [[300, .25, 0], [220, .3, 260]],                       // error
   };
-  const RX_KINDS = new Set(['rx', 'cpdlc', 'logon', 'error']);
+  const RX_KINDS = new Set(['rx', 'cpdlc', 'logon', 'error', 'delivered']);
   function mode() { return NBV.cfg.loadShared().sndMode || 'all'; }
   function muted() {
     if (typeof soundOn === 'boolean') return !soundOn;
@@ -2048,6 +2056,20 @@ NBV.hoppie = (() => {
     };
   }
   return { online, history, check };
+})();
+
+// ── v4.7.1 — Callsign ACARS distinto del de IVAO (p. ej. IVAO NBV11WT → ACARS NBV011) ──
+NBV.acars = (() => {
+  const KEY = 'nbv_acars_map';
+  const norm = s => String(s || '').trim().toUpperCase();
+  function map() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+  function save(m) { try { localStorage.setItem(KEY, JSON.stringify(m)); } catch (e) {} try { NBV.bus.emitRemote('acars'); } catch (e) {} }
+  // Callsign al que hay que enviar por Hoppie para un vuelo de IVAO
+  const to = cs => map()[norm(cs)] || norm(cs);
+  // Callsign de IVAO que corresponde a un callsign ACARS (inverso)
+  const fromAcars = cs => { const c = norm(cs); return Object.keys(map()).find(k => map()[k] === c) || c; };
+  function set(ivao, acars) { const m = map(), i = norm(ivao), a = norm(acars); if (!i) return; if (a && a !== i) m[i] = a; else delete m[i]; save(m); }
+  return { map, to, fromAcars, set, KEY };
 })();
 
 

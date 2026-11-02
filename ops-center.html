@@ -245,7 +245,7 @@
       </table>
       <div class="aoc-empty" id="aocEmpty">Ningún vuelo NBV detectado — inicia el monitor</div>
     </div>
-    <div class="aoc-footer">AirNubeiro OPS Center v4.7.0</div>
+    <div class="aoc-footer">AirNubeiro OPS Center v4.7.1</div>
   </div>
 
   <div class="ftr">
@@ -368,8 +368,10 @@ document.querySelectorAll('.uc').forEach(e => e.addEventListener('input', () => 
 // Hoppie only supports ASCII — strip accents/ñ before sending
 
 async function sendTelex(to, body, { auto = true } = {}) {
+  to = NBV.acars.to(to); // callsign ACARS si el piloto usa uno distinto al de IVAO
   try {
     await hoppieSendTelex(to, body);
+    try { NBV.bus.emitRemote('sent', { to }); } catch (e) {}
     discordNotifyTelex(to, body, auto, true);
   } catch (e) {
     discordNotifyTelex(to, body, auto, false);
@@ -933,6 +935,7 @@ function updateDashboard() {
     }).join('');
     const src = f.srcSim ? ['src-sim', 'SIM'] : f.srcPhpvms ? ['src-phpvms', 'phpVMS'] : ['src-ivao', 'IVAO'];
     const meta = [esc(f.aircraft || ''), f.registration ? esc(f.registration) : '', [f.pilotIdent, f.pilotName].filter(Boolean).map(esc).join(' · ')].filter(Boolean);
+    { const ac = NBV.acars.to(f.callsign); if (ac !== String(f.callsign).toUpperCase()) meta.push(`ACARS ${esc(ac)}`); }
     const cs = esc(f.callsign);
     const click = NBV.ui.embed ? ` data-cs="${cs}" tabindex="0" role="button" aria-label="${cs}: escribir un mensaje" onclick="opsCompose('${cs}')" onkeydown="if(event.key==='Enter')opsCompose('${cs}')"` : '';
     return `<article class="flt-card ph-${esc(ph)}"${click}>
@@ -1424,6 +1427,7 @@ function opsUiState() {
 function opsCompose(cs) { if (NBV.ui.embed) NBV.bus.emitRemote('compose', { to: cs }); }
 
 function opsUiInit() {
+  NBV.bus.on('acars', () => updateDashboard());
   opsMonBtn();
   // Tiempo de servicio de hoy (latido compartido; varias ventanas no suman doble)
   setInterval(() => { if (monitorInterval) NBV.ui.stats.svc(30); }, 30000);

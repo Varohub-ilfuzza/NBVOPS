@@ -75,7 +75,7 @@
   <header class="top">
     <div class="top-t">
       <h1 id="viewTitle">Flota en vivo</h1>
-      <div class="sub" id="viewSub">AirNubeiro ACARS · v4.7.0</div>
+      <div class="sub" id="viewSub">AirNubeiro ACARS · v4.7.1</div>
     </div>
     <div class="sb idle" id="sBar" role="status" aria-live="polite"><div class="d"></div><span id="sTxt">Configura logon y callsign</span></div>
     <div class="top-r">
@@ -359,6 +359,13 @@
           </div>
 
           <div class="cd span">
+            <div class="ct"><svg class="ic"><use href="#i-plane"/></svg>Callsign ACARS de los pilotos<small>si no coincide con el de IVAO</small></div>
+            <div class="cd-d">Hoppie entrega por callsign exacto. Si un piloto vuela en IVAO como NBV11WT pero en su avión tiene NBV011 como número de vuelo, añádelo aquí: los mensajes manuales y los automáticos del OPS Center irán al callsign ACARS.</div>
+            <div id="acMap"></div>
+            <button type="button" class="roster-add" onclick="uiAcAdd()">+ Añadir piloto</button>
+          </div>
+
+          <div class="cd span">
             <div class="ct"><svg class="ic"><use href="#i-sliders"/></svg>Operaciones de flota</div>
             <div class="cd-d">Prefijo de aerolínea, intervalo de escaneo, Route Info, envío automático, roster SimBrief y plantillas de mensajes.</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -367,7 +374,7 @@
             </div>
           </div>
         </div>
-        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v4.7.0</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
+        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v4.7.1</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
       </div>
     </section>
   </main>
@@ -411,6 +418,7 @@
       <div class="cmp-lbl" style="margin-top:12px">Plantillas</div>
       <div class="tpls" id="tplCpdlc"></div>
       <button class="bp cpc" id="cpB" onclick="sendCp()" disabled>Enviar CPDLC</button>
+      <div class="cp-log" id="cpLog"></div>
       <div id="connBox" style="display:none">
         <div class="cmp-lbl" style="margin-bottom:8px">Estaciones CPDLC conectadas</div>
         <div class="conn-list" id="connList"></div>
@@ -445,7 +453,7 @@
 <script src="nbv-core.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════
-//  ACARS DISPATCH v4.7.0 — AirNubeiro
+//  ACARS DISPATCH v4.7.1 — AirNubeiro
 //  Creado por Varo para AirNubeiro · Todos los derechos reservados
 // ══════════════════════════════════════════════════════════════════
 
@@ -683,14 +691,15 @@ async function sendCp() {
   if (busy) return;
   const to = $('cpD').value.trim().toUpperCase(), mid = $('cpId').value, resp = $('cpR').value, msg = $('cpM').value.trim().toUpperCase();
   if (!to || !msg) return;
-  const pkt = `/data2/${mid}//${resp}/${msg}`;
+  const cpRef = uiCpdlcRef(to);
+  const pkt = `/data2/${mid}/${cpRef}/${resp}/${msg}`;
   busy = true; const b = $('cpB'); b.disabled = true; b.className = 'bp cpc snd'; b.textContent = 'ENVIANDO...';
   ss('snd', `CPDLC → ${to}...`);
   try {
     const raw = await hReq(to, 'cpdlc', pkt);
     const ok = raw.toLowerCase().startsWith('ok');
     addMsg('tx', { cls: ok?'cpm':'erm', type: 'CPDLC', badge: 'b-cp', route: `${$('cS').value.toUpperCase()} → ${to}`, body: `[${resp}] ${msg}`, time: ts(), st: ok?'✓ OK':`✗ ${raw}`, ok });
-    if (ok) { ss('ok', `✓ CPDLC → ${to}`); b.className = 'bp cpc ok'; b.textContent = '✓ ENVIADO'; $('cpId').value = parseInt(mid) + 1; $('cpM').value = ''; }
+    if (ok) { uiCpdlcSent(to, mid, resp, msg, cpRef); ss('ok', `✓ CPDLC → ${to}`); b.className = 'bp cpc ok'; b.textContent = '✓ ENVIADO'; $('cpId').value = parseInt(mid) + 1; $('cpM').value = ''; }
     else { ss('err', `✗ ${raw}`); b.className = 'bp cpc er'; b.textContent = '✗ ERROR'; errorSound(); }
   } catch(e) {
     addMsg('tx', { cls: 'erm', type: 'CPDLC', badge: 'b-cp', route: `→ ${to}`, body: `[${resp}] ${msg}`, time: ts(), st: `✗ ${e.message}`, ok: false });
@@ -779,6 +788,7 @@ async function doPoll() {
               actions: sender
             });
           } else {
+            if (isCpdlc) content = uiCpdlcReply(sender, content);
             addMsg('rx', {
               cls: isCpdlc ? 'cpm' : 'in',
               type: mtype, badge: isCpdlc ? 'b-cp' : 'b-tx',
@@ -845,7 +855,7 @@ function addMsg(list, { cls, type, badge, route, body, time, st, ok, actions }) 
 
   saveList(list);
   NBV.ui.stats.msg(list, ok);
-  if (list === 'tx' && typeof uiHoppieCheck === 'function') uiHoppieCheck(6000);
+  if (list === 'tx' && typeof uiHoppieCheck === 'function') { uiHoppieCheck(6000); if (ok) uiDeliveryWatch(String(route).split('→').pop()); }
 
   // Discord: notificar mensajes RX siempre; TX solo manuales (los auto-OPS se notifican en sendOpsTx)
   if (typeof discordNotifyMsg === 'function') {
@@ -1859,6 +1869,7 @@ function uiGo(v) {
   $('viewTitle').textContent = UI_VIEWS[v][0];
   $('viewSub').textContent = UI_VIEWS[v][1];
   if (v === 'msgs' && $('p-rx').classList.contains('on')) { rxCount = 0; updBdg(); }
+  if (v === 'cfg' && typeof uiAcRender === 'function') uiAcRender();
   try { $('main').scrollTop = 0; } catch (e) {}
 }
 
@@ -1880,9 +1891,10 @@ function uiComposer(open = true) {
 }
 
 function uiPickCs(cs) {
+  cs = NBV.acars.to(cs); // callsign ACARS si difiere del de IVAO
   for (const id of ['txD', 'cpD']) { $(id).value = cs; $(id).dispatchEvent(new Event('input')); }
   uiHoppieCheck(100);
-  document.querySelectorAll('#cmpFlights .chip').forEach(c => c.classList.toggle('on', c.dataset.cs === cs));
+  document.querySelectorAll('#cmpFlights .chip').forEach(c => c.classList.toggle('on', NBV.acars.to(c.dataset.cs) === cs));
   try { ($('p-cpdlc').classList.contains('on') ? $('cpM') : $('txM')).focus(); } catch (e) {}
 }
 
@@ -1930,7 +1942,7 @@ function uiTick() {
     if (uiLast.list !== key) {
       uiLast.list = key;
       const cur = $('txD').value.trim().toUpperCase();
-      $('cmpFlights').innerHTML = st.list.map(f => `<button type="button" class="chip ph-${esc(f.phase.toLowerCase())}${f.cs === cur ? ' on' : ''}" data-cs="${esc(f.cs)}" onclick="uiPickCs('${esc(f.cs)}')" title="${esc(f.dep)} → ${esc(f.arr)}"><i></i>${esc(f.cs)}</button>`).join('');
+      $('cmpFlights').innerHTML = st.list.map(f => `<button type="button" class="chip ph-${esc(f.phase.toLowerCase())}${f.cs === cur ? ' on' : ''}" data-cs="${esc(f.cs)}" onclick="uiPickCs('${esc(f.cs)}')" title="${esc(f.dep)} → ${esc(f.arr)}${NBV.acars.to(f.cs) !== f.cs ? ' · ACARS ' + esc(NBV.acars.to(f.cs)) : ''}"><i></i>${esc(f.cs)}</button>`).join('');
     }
   }
   const t = NBV.ui.stats.get();
@@ -1984,11 +1996,11 @@ function uiInit() {
   NBV.bus.on('ops', () => setTimeout(uiTick, 30));
   $('sndMode').addEventListener('change', () => uiOnboard());
   ['cL', 'cS'].forEach(id => $(id).addEventListener('input', () => uiOnboard()));
-  $('txD').addEventListener('input', () => { const v = $('txD').value.trim().toUpperCase(); document.querySelectorAll('#cmpFlights .chip').forEach(c => c.classList.toggle('on', c.dataset.cs === v)); });
+  $('txD').addEventListener('input', () => { const v = $('txD').value.trim().toUpperCase(); document.querySelectorAll('#cmpFlights .chip').forEach(c => c.classList.toggle('on', NBV.acars.to(c.dataset.cs) === v)); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('cmp-open')) uiComposer(false); });
   $('occFrame').addEventListener('load', () => setTimeout(uiTick, 300));
   try { if (localStorage.getItem('nbv_autopoll') === '1' && $('cL').value.trim() && $('cS').value.trim()) toggleAutoPoll(); } catch (e) {}
-  uiHoppieInit();
+  uiHoppieInit(); uiV471Init();
   uiTick(); setInterval(uiTick, 1500);
 }
 
@@ -2025,6 +2037,134 @@ function uiHoppieInit() {
 }
 
 function uiAgo(t) { return String(t || '').replace(/\bdys?\b/g, 'd').replace(/\bhrs?\b/g, 'h').replace(/\bmns?\b/g, 'min').replace(/,/g, ''); }
+
+function uiAcRender() {
+  const m = NBV.acars.map(), box = $('acMap'); if (!box) return;
+  const rows = Object.entries(m);
+  box.innerHTML = rows.length ? rows.map(([i, a]) => `<div class="ac-row"><input class="uc" value="${esc(i)}" data-old="${esc(i)}" aria-label="Callsign IVAO" onchange="uiAcEdit(this)"><span aria-hidden="true">→</span><input class="uc" value="${esc(a)}" aria-label="Callsign ACARS" onchange="uiAcEdit(this)"><button type="button" class="ib" title="Quitar" aria-label="Quitar" onclick="NBV.acars.set('${esc(i)}','');uiAcRender()">${NBV.ui.icon('x')}</button></div>`).join('')
+    : '<div class="cd-d" style="margin:0">Ningún piloto con callsign ACARS distinto.</div>';
+}
+
+function uiAcEdit(el) {
+  const row = el.closest('.ac-row'), [ivao, acars] = row.querySelectorAll('input'), old = ivao.dataset.old;
+  ivao.value = ivao.value.toUpperCase(); acars.value = acars.value.toUpperCase();
+  if (old && old !== ivao.value) NBV.acars.set(old, '');
+  if (ivao.value) NBV.acars.set(ivao.value, acars.value);
+  ivao.dataset.old = ivao.value; uiLast.list = '';
+}
+
+function uiAcAdd() {
+  const box = $('acMap'); if (!box.querySelector('.ac-row')) box.innerHTML = '';
+  box.insertAdjacentHTML('beforeend', `<div class="ac-row"><input class="uc" placeholder="IVAO (NBV11WT)" data-old="" aria-label="Callsign IVAO" onchange="uiAcEdit(this)"><span aria-hidden="true">→</span><input class="uc" placeholder="ACARS (NBV011)" aria-label="Callsign ACARS" onchange="uiAcEdit(this)"><button type="button" class="ib" title="Quitar" aria-label="Quitar" onclick="this.closest('.ac-row').remove()">${NBV.ui.icon('x')}</button></div>`);
+  box.querySelector('.ac-row:last-child input').focus();
+}
+
+const CPK = 'nbv_cpdlc';
+
+const CP_OK = ['WILCO', 'ROGER', 'AFFIRM'], CP_NO = ['UNABLE', 'NEGATIVE'];
+
+function uiCpLoad() { try { return JSON.parse(localStorage.getItem(CPK)) || []; } catch (e) { return []; } }
+
+function uiCpSave(l) { l = l.filter(x => Date.now() - x.t < 864e5).slice(-40); try { localStorage.setItem(CPK, JSON.stringify(l)); } catch (e) {} uiCpRender(); }
+
+function uiCpdlcRef(to) {
+  const r = uiCpLoad().filter(x => x.dir === 'down' && x.from === String(to).toUpperCase() && x.st === 'PENDIENTE').pop();
+  return r ? String(r.mid) : '';
+}
+
+function uiCpdlcSent(to, mid, resp, msg, ref) {
+  const l = uiCpLoad(); to = String(to).toUpperCase();
+  l.push({ dir: 'up', to, mid: +mid, resp, msg, ref: ref ? +ref : null, t: Date.now(), st: resp === 'NE' || resp === 'N' ? 'INFO' : 'ABIERTO' });
+  if (ref) l.forEach(x => { if (x.dir === 'down' && x.from === to && x.mid === +ref) x.st = 'RESPONDIDA'; });
+  uiCpSave(l);
+}
+
+function uiCpdlcReply(sender, content) {
+  const m = String(content || '').match(/^\/data2\/(\d+)\/(\d*)\/([A-Z]{1,2})\/([\s\S]*)$/);
+  if (!m) return content;
+  const [, mid, ref, rt, text] = m, from = String(sender).toUpperCase(), l = uiCpLoad();
+  const up = ref ? [...l].reverse().find(x => x.dir === 'up' && x.to === from && x.mid === +ref) : null;
+  if (up) {
+    const w = (text.match(/\b(WILCO|UNABLE|STANDBY|ROGER|AFFIRM|NEGATIVE)\b/) || [])[1];
+    if (w && !(w === 'STANDBY' && up.st !== 'ABIERTO')) up.st = w;
+    uiCpSave(l);
+    return `${text}\n↳ respuesta a #${ref}: ${up.msg}`;
+  }
+  l.push({ dir: 'down', from, mid: +mid, msg: text.trim(), t: Date.now(), st: /^(N|NE)$/.test(rt) || /^(WILCO|UNABLE|STANDBY|ROGER|AFFIRM|NEGATIVE)\b/.test(text) ? 'INFO' : 'PENDIENTE' });
+  uiCpSave(l);
+  return `${text}${ref ? '' : `\n(petición #${mid} — tu próximo CPDLC a ${from} la responderá)`}`;
+}
+
+function uiCpRender() {
+  const box = $('cpLog'); if (!box) return;
+  const l = uiCpLoad().slice(-12).reverse();
+  const cls = st => CP_OK.includes(st) ? 'ok' : CP_NO.includes(st) ? 'err' : st === 'ABIERTO' || st === 'PENDIENTE' ? 'wrn' : st === 'STANDBY' ? 'inf' : '';
+  const hh = t => new Date(t).toISOString().slice(11, 16) + 'z';
+  box.innerHTML = l.length ? `<div class="cmp-lbl">Diálogo CPDLC <button type="button" class="sm" onclick="localStorage.removeItem('${CPK}');uiCpRender()">Vaciar</button></div>` + l.map(x => x.dir === 'up'
+    ? `<div class="cp-row"><span class="cp-d" title="Enviado">↑</span><div><b>${esc(x.to)}</b> <small>#${x.mid} · ${hh(x.t)}</small><div class="cp-m">${esc(x.msg)}</div></div><span class="cp-st ${cls(x.st)}">${esc(x.st)}</span></div>`
+    : `<div class="cp-row${x.st === 'PENDIENTE' ? ' act' : ''}"${x.st === 'PENDIENTE' ? ` role="button" tabindex="0" title="Responder" onclick="uiPickCs('${esc(x.from)}');sw('cpdlc');$('cpM').focus()"` : ''}><span class="cp-d" title="Recibido">↓</span><div><b>${esc(x.from)}</b> <small>#${x.mid} · ${hh(x.t)}</small><div class="cp-m">${esc(x.msg)}</div></div><span class="cp-st ${cls(x.st)}">${esc(x.st)}</span></div>`).join('') : '';
+}
+
+const uiDel = new Map();
+
+let uiDelT = null;
+
+const uiNorm = s => String(s || '').replace(/\s+/g, ' ').trim().toUpperCase();
+
+function uiDeliveryWatch(dest) {
+  dest = String(dest || '').trim().toUpperCase(); if (dest.length < 3) return;
+  const e = uiDel.get(dest) || { since: Date.now(), notified: new Set(), init: false };
+  e.until = Date.now() + 2 * 3600e3; uiDel.set(dest, e);
+  clearTimeout(uiDelT); uiDelT = setTimeout(uiDeliveryRun, 8000);
+}
+
+function uiRxTime(s) { // "02-16:38Z" → ms UTC
+  const m = String(s).match(/(\d{2})-(\d{2}):(\d{2})/); if (!m) return 0;
+  const n = new Date(); let t = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), +m[1], +m[2], +m[3]);
+  if (t > Date.now() + 864e5) t = Date.UTC(n.getUTCFullYear(), n.getUTCMonth() - 1, +m[1], +m[2], +m[3]);
+  return t;
+}
+
+async function uiDeliveryRun() {
+  clearTimeout(uiDelT);
+  const st = $('cS').value.trim().toUpperCase(); if (!st || !uiDel.size) return;
+  let net = 'IVAO'; try { net = ((await NBV.hoppie.online()).get(st) || [])[0]?.net || net; } catch (e) {}
+  let waiting = false;
+  for (const [dest, e] of uiDel) {
+    if (Date.now() > e.until) { uiDel.delete(dest); continue; }
+    let h; try { h = await NBV.hoppie.history(dest, net); } catch (err) { waiting = true; continue; }
+    const mine = h.filter(x => x.from === st && x.to === dest && uiRxTime(x.rx) >= e.since - 180000);
+    const fresh = mine.filter(x => x.relayed && !e.notified.has(x.id));
+    fresh.forEach(x => { e.notified.add(x.id); uiMarkDelivered(dest, x); });
+    if (fresh.length && e.init) { NBV.sound.play('delivered'); ss('ok', `✓ ${dest} ha recibido ${fresh.length} mensaje${fresh.length > 1 ? 's' : ''} (${fresh.at(-1).relayed})`); }
+    else if (fresh.length) { e.init = true; } // entregados antes de la primera comprobación: se marcan sin aviso
+    e.init = true;
+    if (mine.some(x => !x.relayed)) waiting = true; else if (Date.now() - e.since > 600000) uiDel.delete(dest);
+  }
+  if (!$('hpStatus').hidden) uiHoppieRun();
+  if (waiting || uiDel.size) uiDelT = setTimeout(uiDeliveryRun, waiting ? 45000 : 90000);
+}
+
+function uiMarkDelivered(dest, x) {
+  let key = x.type === 'cpdlc' ? x.text.split('/').slice(4).join('/') : x.text;
+  key = uiNorm(key).slice(0, 20);
+  for (const el of $('txL').querySelectorAll('.me')) {
+    if (el.dataset.dlv) continue;
+    if (!(el.querySelector('.mr')?.textContent || '').trim().endsWith(dest)) continue;
+    const b = uiNorm(el.querySelector('.mb')?.textContent || '').replace(/^\[[A-Z]{1,2}\] /, '');
+    if (key && !b.includes(key.slice(0, 14))) continue;
+    el.dataset.dlv = '1';
+    const ms = el.querySelector('.ms'); if (ms) ms.textContent += ` · Entregado ${x.relayed}`;
+    saveList('tx'); return true;
+  }
+  return false;
+}
+
+function uiV471Init() {
+  uiAcRender(); uiCpRender();
+  NBV.bus.on('acars', () => { if (!$('acMap')?.contains(document.activeElement)) uiAcRender(); uiLast.list = ''; });
+  NBV.bus.on('sent', d => uiDeliveryWatch(d && d.to));
+}
 
 function occFrameReload() {
   const f = $('occFrame');

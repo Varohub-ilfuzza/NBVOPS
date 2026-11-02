@@ -4,6 +4,15 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v4.7.1] — 2026-11-02
+
+- **Proxy personalizado tolerante**: se acepta pegado tal cual (dominio, con o sin `https://`, sin `?url=`); antes una URL sin `?url=` rompía la consulta de Hoppie y la meteo por proxy.
+- **Diálogo CPDLC**: lista con el estado de cada autorización enviada (ABIERTO, WILCO, UNABLE, STANDBY, ROGER…) enlazando la respuesta del piloto con su mensaje. Las peticiones del piloto quedan PENDIENTES y el siguiente CPDLC a ese avión se envía como respuesta (referencia MIN/MRN, como en el CPDLC real). Clic en una petición pendiente para responder.
+- **Callsign ACARS distinto del de IVAO** (Ajustes): p. ej. IVAO NBV11WT → ACARS NBV011. Lo usan Redactar, los chips de vuelos y los envíos automáticos del OPS Center; la tarjeta del vuelo muestra el callsign ACARS.
+- **Aviso de entrega**: tras enviar, la app vigila en Hoppie los mensajes en cola; cuando el avión los recoge suena un aviso, la barra indica «NBV011 ha recibido N mensajes» y en Enviados se añade «Entregado HH:MMZ». También para los mensajes automáticos del OPS Center.
+
+---
+
 ## [v4.7.0] — 2026-11-02
 
 - **Estado Hoppie del destino en Redactar**: al escribir o elegir un callsign, la app consulta Hoppie y muestra si el avión está conectado (y en qué red), si está en otra red distinta a tu estación (no recibiría), o si no está conectado (los mensajes quedan en cola 24 h hasta que el avión haga su primera petición). Avisa también si tu propia estación no aparece conectada.

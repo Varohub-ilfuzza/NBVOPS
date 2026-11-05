@@ -61,11 +61,11 @@
       </div>
     </div>
     <div class="hdr-r">
-      <button class="btn-pri" id="btnMonitor" onclick="toggleMonitor()"><span id="monIco"><svg class="ic"><use href="#i-play"/></svg></span><span id="monTxt">Iniciar monitor</span></button>
+      <button class="btn-pri" id="btnMonitor" data-click="toggleMonitor"><span id="monIco"><svg class="ic"><use href="#i-play"/></svg></span><span id="monTxt">Iniciar monitor</span></button>
       <span class="fsuipc-badge src-ivao" id="fsuipcBadge" title="Fuente: IVAO Whazzup"><span class="fd"></span>IVAO</span>
-      <button class="ib" id="btnAoc" onclick="toggleAoc()" title="Pantalla AOC"><svg class="ic"><use href="#i-monitor"/></svg></button>
-      <button class="ib" id="btnTheme" data-theme-ico onclick="NBV.ui.theme.cycle()" title="Tema"><svg class="ic"><use href="#i-sun"/></svg></button>
-      <button class="ib" id="btnCfg" onclick="toggleCfg()" title="Ajustes"><svg class="ic"><use href="#i-settings"/></svg></button>
+      <button class="ib" id="btnAoc" data-click="toggleAoc" title="Pantalla AOC"><svg class="ic"><use href="#i-monitor"/></svg></button>
+      <button class="ib" id="btnTheme" data-theme-ico data-click="NBV.ui.theme.cycle" title="Tema"><svg class="ic"><use href="#i-sun"/></svg></button>
+      <button class="ib" id="btnCfg" data-click="toggleCfg" title="Ajustes"><svg class="ic"><use href="#i-settings"/></svg></button>
     </div>
   </header>
 
@@ -110,13 +110,13 @@
           <option value="never">No arrancar</option>
         </select>
       </div>
-      <div class="f"><label>Plantillas</label><button type="button" class="btn" style="width:100%;min-height:40px" onclick="NBV.tpl.edit('welcome')"><svg class="ic"><use href="#i-pen"/></svg>Bienvenidas y plantillas</button></div>
+      <div class="f"><label>Plantillas</label><button type="button" class="btn" style="width:100%;min-height:40px" data-click="NBV.tpl.edit|welcome"><svg class="ic"><use href="#i-pen"/></svg>Bienvenidas y plantillas</button></div>
     </div>
 
     <div class="cfg-module">
       <div class="cfg-mod-hdr">
         <span class="cfg-mod-ttl"><svg class="ic"><use href="#i-database"/></svg><span>phpVMS<small>Pilotos y PIREPs de AirNubeiro</small></span></span>
-        <label class="mod-toggle"><input type="checkbox" id="phpvmsEn" onchange="phpvmsOnToggle()"><span class="sw"></span><span>Activar</span></label>
+        <label class="mod-toggle"><input type="checkbox" id="phpvmsEn" data-change="phpvmsOnToggle"><span class="sw"></span><span>Activar</span></label>
       </div>
       <div class="cfg-mod-fields cfg-g" id="phpvmsCfgFields">
         <div class="f"><label for="phpvmsUrl">URL phpVMS</label><input type="text" id="phpvmsUrl" value="https://operaciones.airnubeiro.es" spellcheck="false" autocomplete="off"></div>
@@ -125,9 +125,9 @@
         </label>
           <div id="apikeyDisplay"></div>
           <div class="apikey-wrap" id="apikeyInputWrap" style="display:none">
-            <input type="password" id="phpvmsKeyRaw" placeholder="Pega tu API Key aquí" autocomplete="off" spellcheck="false" oninput="apikeyOnInput()">
+            <input type="password" id="phpvmsKeyRaw" placeholder="Pega tu API Key aquí" autocomplete="off" spellcheck="false" data-input="apikeyOnInput">
             <div class="apikey-actions">
-              <button class="apikey-btn validate" id="apikeyValidateBtn" onclick="apikeyValidateAndSave()" style="display:none">Validar</button>
+              <button class="apikey-btn validate" id="apikeyValidateBtn" data-click="apikeyValidateAndSave" style="display:none">Validar</button>
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@
     <div class="cfg-module">
       <div class="cfg-mod-hdr">
         <span class="cfg-mod-ttl"><svg class="ic"><use href="#i-zap"/></svg><span>FSUIPC WebSocket<small>Datos del simulador local</small></span></span>
-        <label class="mod-toggle"><input type="checkbox" id="fsuipcEn" onchange="fsuipcOnToggle()"><span class="sw"></span><span>Activar</span></label>
+        <label class="mod-toggle"><input type="checkbox" id="fsuipcEn" data-change="fsuipcOnToggle"><span class="sw"></span><span>Activar</span></label>
       </div>
       <div class="cfg-mod-fields cfg-g" id="fsuipcCfgFields">
         <div class="f"><label for="fsuipcUrl">URL WebSocket</label><input type="text" id="fsuipcUrl" value="ws://localhost:2048/fsuipc/" spellcheck="false" autocomplete="off"></div>
@@ -154,7 +154,7 @@
     <div class="cfg-module">
       <div class="cfg-mod-hdr">
         <span class="cfg-mod-ttl"><svg class="ic"><use href="#i-chat"/></svg><span>Discord<small>Notificaciones al canal de la aerolínea</small></span></span>
-        <label class="mod-toggle"><input type="checkbox" id="discordEn" onchange="discordOnToggle()"><span class="sw"></span><span>Activar</span></label>
+        <label class="mod-toggle"><input type="checkbox" id="discordEn" data-change="discordOnToggle"><span class="sw"></span><span>Activar</span></label>
       </div>
       <div class="cfg-mod-fields" id="discordCfgFields">
         <div class="f"><label for="discordUrl">URL del webhook</label><input type="text" id="discordUrl" placeholder="https://discord.com/api/webhooks/..." spellcheck="false" autocomplete="off"></div>
@@ -166,7 +166,7 @@
             <label><input type="checkbox" id="dcEvAlert" checked> Alertas OPS</label>
           </div>
         </div>
-        <button class="dc-test-btn" onclick="discordTest()"><svg class="ic"><use href="#i-send"/></svg>Probar webhook</button>
+        <button class="dc-test-btn" data-click="discordTest"><svg class="ic"><use href="#i-send"/></svg>Probar webhook</button>
       </div>
       <div class="cfg-mod-status" id="discordStatus">Desactivado</div>
     </div>
@@ -177,7 +177,7 @@
     <h3><svg class="ic"><use href="#i-users"/></svg>Roster SimBrief</h3>
     <div class="roster-help">Asocia cada callsign NBV a su usuario de SimBrief para enviar el loadsheet automáticamente. Sin asociación, el piloto recibe solo meteo y tráfico.</div>
     <div id="rosterList"></div>
-    <button class="roster-add" onclick="addRosterRow()">+ Añadir piloto</button>
+    <button class="roster-add" data-click="addRosterRow">+ Añadir piloto</button>
   </div>
 
   <!-- ═══ ESTADO ═══ -->
@@ -201,13 +201,13 @@
 
   <div class="ops-cols">
     <div class="log" id="logBox">
-      <div class="log-h"><span>Actividad</span><button onclick="clearLog()">Limpiar</button></div>
+      <div class="log-h"><span>Actividad</span><button data-click="clearLog">Limpiar</button></div>
       <div class="log-empty" id="logEmpty">Sin actividad todavía</div>
     </div>
     <div class="mh" id="msgHistory">
-      <div class="mh-h" onclick="toggleMsgHistory()">
+      <div class="mh-h" data-click="toggleMsgHistory">
         <span>Historial de mensajes <span class="mh-cnt" id="mhCount">0</span></span>
-        <button onclick="event.stopPropagation();clearMsgHistory()">Limpiar</button>
+        <button data-click="clearMsgHistory">Limpiar</button>
       </div>
       <div class="mh-body" id="mhBody">
         <table class="mh-tbl">
@@ -234,7 +234,7 @@
         <div class="aoc-st"><span id="aocDsc">0</span>DSC</div>
         <div class="aoc-st"><span id="aocLnd">0</span>LND</div>
       </div>
-      <button class="aoc-close" onclick="toggleAoc()"><svg class="ic"><use href="#i-x"/></svg>Cerrar</button>
+      <button class="aoc-close" data-click="toggleAoc"><svg class="ic"><use href="#i-x"/></svg>Cerrar</button>
     </div>
     <div class="aoc-board" id="aocBoard">
       <table class="aoc-tbl">
@@ -245,7 +245,7 @@
       </table>
       <div class="aoc-empty" id="aocEmpty">Ningún vuelo NBV detectado — inicia el monitor</div>
     </div>
-    <div class="aoc-footer">AirNubeiro OPS Center v4.9.0</div>
+    <div class="aoc-footer">AirNubeiro OPS Center v5.0.0-rc.1</div>
   </div>
 
   <div class="ftr">
@@ -326,9 +326,9 @@ function renderRoster() {
     const row = document.createElement('div');
     row.className = 'roster-row';
     row.innerHTML = `
-      <input type="text" class="uc" value="${esc(cs)}" placeholder="NBV123" maxlength="10" onchange="updateRoster(this)" data-old="${esc(cs)}">
-      <input type="text" value="${esc(sb)}" placeholder="SimBrief user" onchange="updateRoster(this)">
-      <button class="rm" onclick="removeRoster('${esc(cs)}')" title="Eliminar">✕</button>`;
+      <input type="text" class="uc" value="${esc(cs)}" placeholder="NBV123" maxlength="10" data-change="updateRoster|$el" data-old="${esc(cs)}">
+      <input type="text" value="${esc(sb)}" placeholder="SimBrief user" data-change="updateRoster|$el">
+      <button class="rm" data-click="removeRoster|${esc(cs)}" title="Eliminar">✕</button>`;
     list.appendChild(row);
   });
 }
@@ -493,7 +493,7 @@ function renderMsgHistory() {
     const hasBody = m.body && m.body.trim().length > 0;
     const expandIcon = hasBody ? '<span class="mh-expand" title="Ver contenido">▸</span>' : '';
     const bodyRow = hasBody ? `<tr id="mh-body-${i}" class="mh-body-row"><td colspan="5"><pre class="mh-body-pre">${esc(m.body)}</pre></td></tr>` : '';
-    return `<tr class="${hasBody ? 'mh-clickable' : ''}" ${hasBody ? `onclick="toggleMsgBody(${i})"` : ''}><td>${expandIcon}${esc(t)}</td><td>${esc(m.cs)}</td><td>${esc(m.phase)}</td><td>${esc(m.label)}</td><td><span class="mh-st ${stCls}">${stLabel}</span></td></tr>${bodyRow}`;
+    return `<tr class="${hasBody ? 'mh-clickable' : ''}" ${hasBody ? `data-click="toggleMsgBody|#${i}"` : ''}><td>${expandIcon}${esc(t)}</td><td>${esc(m.cs)}</td><td>${esc(m.phase)}</td><td>${esc(m.label)}</td><td><span class="mh-st ${stCls}">${stLabel}</span></td></tr>${bodyRow}`;
   }).join('');
 }
 
@@ -696,24 +696,7 @@ async function genRouteInfo(flt) {
   return [{ id: 'route_info', label: 'ROUTE INFO', body, significant: ri.nSig > 0 || ri.nPirep > 0 || ri.atcCount >= 4 }];
 }
 
-// ══════════════════════════════════════════════════════════════════
-//  EET ESTIMATION
-// ══════════════════════════════════════════════════════════════════
-
-function estimateEnrouteMin(pilot, flt) {
-  const eet = safeNum(pilot.flightPlan?.eet);
-  if (eet > 0) return Math.round(eet / 60);
-  if (flt._sbEet) return flt._sbEet;
-  const lt = pilot.lastTrack || {};
-  const total = safeNum(lt.departureDistance) + safeNum(lt.arrivalDistance);
-  if (total > 20) return Math.round(total / (flt.gs > 300 ? flt.gs : 440) * 60);
-  if (flt.dep !== '????' && flt.arr !== '????') {
-    if (flt.dep.substring(0, 2) === flt.arr.substring(0, 2)) return 75;
-    if (flt.dep[0] === flt.arr[0]) return 150;
-    return 300;
-  }
-  return 0;
-}
+// EET: estimateEnrouteMin pasa a NBV.opsLogic (src/core/10-ops-logica.js, v5)
 
 // ══════════════════════════════════════════════════════════════════
 //  MONITOR LOOP
@@ -735,93 +718,27 @@ async function scan() {
     }
 
     const onlineCs = new Set(nbvPilots.map(p => p.callsign.toUpperCase()));
-    for (const cs of Object.keys(flights)) {
-      if (onlineCs.has(cs) || flights[cs].srcPhpvms) continue;
-      if (!flights[cs].offlineSince) { flights[cs].offlineSince = Date.now(); log(`${cs} desconectado de IVAO`, 'wrn'); }
-      else if (Date.now() - flights[cs].offlineSince > 300000) delete flights[cs];
-    }
+    for (const ev of NBV.opsLogic.offline(flights, onlineCs, Date.now())) log(`${ev.cs} desconectado de IVAO`, 'wrn');
 
-    const autoSend = $('cAuto').value === '1';
+    // v5: la decisión (estado, fase, qué enviar) está en NBV.opsLogic, sin DOM ni red; aquí solo se ejecuta
+    const autoSend = $('cAuto').value === '1', riMode = $('cRI').value;
+    const decideOpts = { riMode, hasGen: ph => !!PHASE_GEN[ph], wasSentRecently };
     for (const pilot of nbvPilots) {
       const cs = pilot.callsign.toUpperCase();
-      const fp = pilot.flightPlan, track = pilot.lastTrack || {};
-      const curDep = safeStr(fp?.departureId).toUpperCase(), curArr = safeStr(fp?.arrivalId).toUpperCase();
-      let prev = flights[cs] || null;
-      if (prev?.srcPhpvms) prev = { ...prev, srcPhpvms: false }; // pasa a IVAO como fuente principal
-
-      const pvData = phpvmsActive[cs];
-      if (pvData?.phpvmsPhase) pilot._phpvmsPhase = pvData.phpvmsPhase;
-      let newPhase = detectPhase(pilot, prev);
-
-      // Nueva pierna con el mismo callsign → reiniciar estado de mensajes
-      if (prev && prev.phase === 'LANDED' && newPhase === 'PREFLIGHT') {
-        log(`${cs}: nueva pierna ${curDep}→${curArr}`, 'ops');
-        prev = { ...prev, phase: 'PREFLIGHT', sent: newSent(), msgStatus: {}, msgBodies: {}, enrouteStart: 0, estEnrouteMin: 0,
-          riSent1: false, riSent2: false, assignedParking: null, lastRouteInfo: 0, routeInfoCount: 0, firstSeen: Date.now(), plannedDepTime: null, dep: curDep, arr: curArr };
-      }
-      const phaseChanged = prev && prev.phase !== newPhase;
-
-      flights[cs] = {
-        callsign: cs, phase: newPhase, prevPhase: prev?.phase || null,
-        dep: curDep || prev?.dep || pvData?.dep || '????',
-        arr: curArr || prev?.arr || pvData?.arr || '????',
-        alt: safeNum(track.altitude), prevAlt: prev?.alt ?? safeNum(track.altitude),
-        gs: safeNum(track.groundSpeed), heading: safeNum(track.heading) || prev?.heading || 0,
-        onGround: track.onGround === true || track.onGround === 1,
-        lat: safeNum(track.latitude), lng: safeNum(track.longitude),
-        aircraft: safeStr(fp?.aircraftId) || prev?.aircraft || pvData?.aircraft || '????',
-        ivaoState: safeStr(track.state),
-        arrivalDist: typeof track.arrivalDistance === 'number' ? track.arrivalDistance : null,
-        pilotName: prev?.pilotName || pvData?.pilotName || '', pilotIdent: prev?.pilotIdent || pvData?.pilotIdent || '',
-        registration: prev?.registration || pvData?.registration || '', acName: prev?.acName || pvData?.acName || '',
-        phpvmsRoute: prev?.phpvmsRoute || pvData?.route || '', planFL: prev?.planFL || pvData?.planFL || 0,
-        progressPct: pvData?.progressPct || prev?.progressPct || 0,
-        arrLat: prev?.arrLat ?? pvData?.arrLat ?? null, arrLon: prev?.arrLon ?? pvData?.arrLon ?? null,
-        pirepId: prev?.pirepId || pvData?.pirepId || null, _phpvmsPhase: pvData?.phpvmsPhase || '',
-        plannedDepTime: prev?.plannedDepTime ?? fp?.departureTime ?? null,
-        firstSeen: prev?.firstSeen || Date.now(), lastSeen: Date.now(),
-        enrouteStart: prev?.enrouteStart || 0, estEnrouteMin: prev?.estEnrouteMin || 0, _sbEet: prev?._sbEet || 0,
-        riSent1: prev?.riSent1 || false, riSent2: prev?.riSent2 || false,
-        assignedParking: prev?.assignedParking || null, lastRouteInfo: prev?.lastRouteInfo || 0, routeInfoCount: prev?.routeInfoCount || 0,
-        offlineSince: null, srcSim: false, srcPhpvms: false,
-        sent: prev?.sent || newSent(), msgStatus: prev?.msgStatus || {}, msgBodies: prev?.msgBodies || {},
-      };
-      const flt = flights[cs];
+      const { flt, events } = NBV.opsLogic.update(pilot, flights[cs] || null, { now: Date.now(), pv: phpvmsActive[cs] });
+      for (const ev of events) if (ev.type === 'newLeg') log(`${cs}: nueva pierna ${ev.dep}→${ev.arr}`, 'ops');
+      flights[cs] = flt;
       fsuipcInjectIntoFlight(flt);
-
-      if (!prev) { log(`✈ ${cs} detectado: ${flt.dep}→${flt.arr} (${flt.aircraft})`, 'ops'); NBV.sound.play('detected'); discordNotifyDetected(flt); }
-      if (phaseChanged) { log(`${cs}: ${prev.phase} → ${newPhase}`, 'ops'); NBV.sound.play('phase'); discordNotifyPhase(flt, prev.phase, newPhase); }
-
-      if (newPhase === 'ENROUTE' && !flt.enrouteStart) {
-        flt.enrouteStart = Date.now();
-        flt.estEnrouteMin = estimateEnrouteMin(pilot, flt);
-        if (flt.estEnrouteMin > 0) log(`${cs}: EET estimado ${Math.floor(flt.estEnrouteMin / 60)}h${String(flt.estEnrouteMin % 60).padStart(2, '0')}m`, '');
+      for (const ev of events) {
+        if (ev.type === 'detected') { log(`✈ ${cs} detectado: ${flt.dep}→${flt.arr} (${flt.aircraft})`, 'ops'); NBV.sound.play('detected'); discordNotifyDetected(flt); }
+        if (ev.type === 'phase') { log(`${cs}: ${ev.from} → ${ev.to}`, 'ops'); NBV.sound.play('phase'); discordNotifyPhase(flt, ev.from, ev.to); }
       }
-
-      // Mensajes por fase (dedup en memoria + registro persistente)
-      const ph = newPhase.toLowerCase();
-      if (PHASE_GEN[ph] && !flt.sent[ph]) {
-        flt.sent[ph] = true;
-        if (wasSentRecently(cs, flt.dep, flt.arr, ph, PHASE_DEDUP[ph] * 60000)) log(`${cs}: ${ph} ya enviado (sesión anterior), omitido`, '');
-        else processMessages(flt, ph, PHASE_GEN[ph], autoSend);
-      }
-
-      // ROUTE INFO
-      if ((newPhase === 'ENROUTE' || newPhase === 'DESCENT') && flt.lat && flt.lng) {
-        const riMode = $('cRI').value;
-        const minEnr = flt.enrouteStart ? (Date.now() - flt.enrouteStart) / 60000 : 0;
-        const riDedupMs = riMode === 'smart' ? 12 * 60000 : Math.max(5, parseInt(riMode) || 10) * 60000;
-        if (!flt.riSent1 && wasSentRecently(cs, flt.dep, flt.arr, 'routeinfo', riDedupMs)) { flt.riSent1 = true; log(`${cs}: route info reciente (sesión anterior), restaurado`, ''); }
-        const fire = significant => { flt.routeInfoCount++; processMessages(flt, `routeinfo_${flt.routeInfoCount}`, genRouteInfo, autoSend, significant); };
-        if (riMode === 'smart') {
-          if (!flt.riSent1 && minEnr >= 15) { flt.riSent1 = true; fire(true); }
-          const mid = flt.estEnrouteMin / 2;
-          if (!flt.riSent2 && flt.estEnrouteMin > 0 && mid >= 25 && minEnr >= mid) { flt.riSent2 = true; fire(false); }
-          if (!flt.riSent2 && flt.estEnrouteMin === 0 && minEnr >= 30 && flt.riSent1) { flt.riSent2 = true; fire(false); }
-        } else {
-          const riMin = Math.max(5, parseInt(riMode) || 10);
-          if ((Date.now() - flt.lastRouteInfo) / 60000 >= riMin) { flt.lastRouteInfo = Date.now(); fire(false); }
-        }
+      for (const a of NBV.opsLogic.decide(flt, pilot, { ...decideOpts, now: Date.now() })) {
+        if (a.type === 'eet') { if (a.min > 0) log(`${cs}: EET estimado ${Math.floor(a.min / 60)}h${String(a.min % 60).padStart(2, '0')}m`, ''); }
+        else if (a.type === 'phaseSkip') log(`${cs}: ${a.ph} ya enviado (sesión anterior), omitido`, '');
+        else if (a.type === 'phase') processMessages(flt, a.ph, PHASE_GEN[a.ph], autoSend);
+        else if (a.type === 'riRestored') log(`${cs}: route info reciente (sesión anterior), restaurado`, '');
+        else if (a.type === 'routeinfo') processMessages(flt, a.key, genRouteInfo, autoSend, a.significant);
       }
     }
 
@@ -904,7 +821,7 @@ function updateDashboard() {
     dash.innerHTML = `<div class="dash-empty" id="dashEmpty">${NBV.ui.icon('radar', 'big')}
       <b>${run ? 'Escuchando la frecuencia' : 'La torre está en silencio'}</b>
       <p>${run ? `Aún no hay vuelos ${esc(($('cA')?.value || 'NBV').toUpperCase())} conectados a IVAO. En cuanto un piloto conecte aparecerá aquí y recibirá su bienvenida automáticamente.` : 'Inicia el monitor para detectar los vuelos de AirNubeiro en IVAO y enviarles meteo, tráfico y loadsheet en cada fase.'}</p>
-      ${run ? '' : `<button type="button" class="btn-pri" onclick="toggleMonitor()">${NBV.ui.icon('play')}Iniciar monitor</button>`}</div>`;
+      ${run ? '' : `<button type="button" class="btn-pri" data-click="toggleMonitor">${NBV.ui.icon('play')}Iniciar monitor</button>`}</div>`;
     return;
   }
   const order = { PREFLIGHT: 0, ENROUTE: 1, DESCENT: 2, LANDED: 3 };
@@ -930,14 +847,14 @@ function updateDashboard() {
       const label = esc(key.replace(/_/g, ' ').toUpperCase());
       const ic = s === 'sent' ? NBV.ui.icon('check') : s === 'error' ? NBV.ui.icon('refresh') : s === 'pending' ? NBV.ui.icon('send') : '';
       return (s === 'pending' || s === 'error')
-        ? `<button type="button" class="flt-msg ${s}" title="${label}: ${ST[s]}" onclick="event.stopPropagation();manualSend('${esc(f.callsign)}','${esc(key)}')">${ic}${label}</button>`
+        ? `<button type="button" class="flt-msg ${s}" title="${label}: ${ST[s]}" data-click="manualSend|${esc(f.callsign)}|${esc(key)}">${ic}${label}</button>`
         : `<span class="flt-msg ${esc(s)}" title="${label}: ${ST[s] || esc(s)}">${ic}${label}</span>`;
     }).join('');
     const src = f.srcSim ? ['src-sim', 'SIM'] : f.srcPhpvms ? ['src-phpvms', 'phpVMS'] : ['src-ivao', 'IVAO'];
     const meta = [esc(f.aircraft || ''), f.registration ? esc(f.registration) : '', [f.pilotIdent, f.pilotName].filter(Boolean).map(esc).join(' · ')].filter(Boolean);
     { const ac = NBV.acars.to(f.callsign); if (ac !== String(f.callsign).toUpperCase()) meta.push(`ACARS ${esc(ac)}`); }
     const cs = esc(f.callsign);
-    const click = NBV.ui.embed ? ` data-cs="${cs}" tabindex="0" role="button" aria-label="${cs}: escribir un mensaje" onclick="opsCompose('${cs}')" onkeydown="if(event.key==='Enter')opsCompose('${cs}')"` : '';
+    const click = NBV.ui.embed ? ` data-cs="${cs}" tabindex="0" role="button" aria-label="${cs}: escribir un mensaje" data-click="opsCompose|${esc(cs)}" data-keydown="opsCompose|${esc(cs)}" data-key="Enter"` : '';
     return `<article class="flt-card ph-${esc(ph)}"${click}>
       <div class="fc-top"><div class="flt-cs">${cs}</div>${NBV.ui.embed ? `<span class="fc-cmp">${NBV.ui.icon('pen')}Escribir</span>` : ''}<span class="flt-phase ${esc(ph)}">${PH[f.phase] || esc(f.phase)}</span></div>
       <div class="fc-route"><span class="ap">${esc(f.dep || '----')}</span><div class="fc-bar"><i style="width:${pct}%"></i><svg class="ic" style="left:${pct}%" aria-hidden="true"><use href="#i-plane"/></svg></div><span class="ap">${esc(f.arr || '----')}</span></div>
@@ -1351,11 +1268,12 @@ async function atisText(icao) {
   return '';
 }
 
-const PHASE_DEDUP = { preflight: 90, enroute: 90, descent: 60, landed: 60 };
+const PHASE_DEDUP = NBV.opsLogic.PHASE_DEDUP; // v5: definido en src/core/10-ops-logica.js
 
 const PHASE_GEN = { preflight: genPreflight, enroute: genEnroute, descent: genDescent, landed: genLanded };
 
-const newSent = () => ({ preflight: false, enroute: false, descent: false, landed: false });
+const newSent = NBV.opsLogic.newSent;
+function estimateEnrouteMin(pilot, flt) { return NBV.opsLogic.estimateEnrouteMin(pilot, flt); } // nombre global conservado (window.estimateEnrouteMin)
 
 let scanBusy = false;
 

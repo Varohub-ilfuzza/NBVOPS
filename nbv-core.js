@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-//  NBV CORE v4.9.0 — AirNubeiro ACARS / OPS Center
+//  NBV CORE v5.0.0-rc.1 — AirNubeiro ACARS / OPS Center
 //  Módulo común cargado por index.html y ops-center.html.
 //  Red (proxy local), IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC,
 //  cifrado de API key, generadores OPS y utilidades.
@@ -7,8 +7,9 @@
 // ══════════════════════════════════════════════════════════════════
 'use strict';
 
+/** Espacio de nombres de la app (módulos NBV.net, NBV.ivao, NBV.hoppie…). @type {any} */
 const NBV = window.NBV = window.NBV || {};
-NBV.VERSION = '4.9.0';
+NBV.VERSION = '5.0.0-rc.1';
 
 // ── Endpoints ──
 const HURL         = 'https://www.hoppie.nl/acars/system/connect.html'; // HTTPS + CORS: funciona sin proxy
@@ -23,9 +24,99 @@ const VATSIM_METAR = 'https://metar.vatsim.net/';                              /
 const NOAA_METAR   = 'https://tgftp.nws.noaa.gov/data/observations/metar/stations/';
 const NOAA_TAF     = 'https://tgftp.nws.noaa.gov/data/forecasts/taf/stations/';
 
+
+// ══════════════════════════════════════════════════════════════════
+//  ACCIONES — delegación de eventos (v5). Sustituye a onclick/onchange/oninput/onkeydown inline.
+//    <button data-click="uiGo|msgs">            → uiGo('msgs')
+//    <input  data-change="uiAcEdit|$el">          → uiAcEdit(elemento)   ($value = su valor)
+//    <div data-keydown="uiGo|msgs" data-key="Enter">  → solo con esa tecla
+//  Argumentos separados por «|»: $el, $value, $true, $false y #n (número) se convierten; el resto es texto.
+//  Solo actúa el elemento con acción más cercano al pulsado (equivale al stopPropagation de antes).
+//  El nombre se busca en NBV.act.register({...}) y, si no está, como función global o ruta (NBV.ui.theme.cycle).
+// ══════════════════════════════════════════════════════════════════
+NBV.act = (() => {
+  const reg = {};
+  const TYPES = ['click', 'change', 'input', 'keydown'];
+  function resolve(name) {
+    if (reg[name]) return { fn: reg[name], self: null };
+    let o = window, self = null;
+    for (const p of name.split('.')) { self = o; o = o == null ? undefined : o[p]; }
+    return typeof o === 'function' ? { fn: o, self: self === window ? null : self } : null;
+  }
+  function arg(a, el) {
+    if (a === '$el') return el;
+    if (a === '$value') return el.value;
+    if (a === '$true') return true;
+    if (a === '$false') return false;
+    if (/^#-?\d+(\.\d+)?$/.test(a)) return Number(a.slice(1)); // número solo si se pide (revisión F2 #3)
+    return a;
+  }
+  function run(ev) {
+    const el = ev.target && ev.target.closest ? ev.target.closest(`[data-${ev.type}]`) : null;
+    if (!el) return;
+    if (ev.type === 'keydown' && el.dataset.key && ev.key !== el.dataset.key) return;
+    const [name, ...args] = el.getAttribute(`data-${ev.type}`).split('|');
+    const r = resolve(name);
+    if (!r) { console.error(`[NBV.act] acción desconocida: ${name}`); return; }
+    return r.fn.apply(r.self, args.map(a => arg(a, el)));
+  }
+  for (const t of TYPES) document.addEventListener(t, run);
+  return { register: m => Object.assign(reg, m), run, TYPES };
+})();
+
+// ══════════════════════════════════════════════════════════════════
+//  ALMACENAMIENTO — registro de claves de localStorage y versión de esquema (v5)
+//  No mueve ni reescribe datos: documenta qué guarda cada clave, quién la usa y su
+//  formato, y fija la versión del esquema para futuras migraciones (con copia previa).
+//  tests/store-check.js comprueba que el código no usa claves fuera de este registro.
+// ══════════════════════════════════════════════════════════════════
+NBV.store = (() => {
+  const SCHEMA = 1, SCHEMA_KEY = 'nbv_schema';
+  // app: quién escribe la clave · fmt: json | texto | cifrado (AES-GCM en base64)
+  const KEYS = {
+    nbv_shared:           { app: 'ambas', fmt: 'json',    desc: 'Configuración común ACARS ↔ OPS (logon, estación, proxy, FSUIPC, phpVMS, Discord, sonido)' },
+    an3:                  { app: 'ACARS', fmt: 'json',    desc: 'Configuración propia del ACARS (intervalo, sonido, usuario SimBrief); heredada de 4.3.x' },
+    an3_rx:               { app: 'ACARS', fmt: 'json',    desc: 'Mensajes recibidos (máx. 150)' },
+    an3_tx:               { app: 'ACARS', fmt: 'json',    desc: 'Mensajes enviados (máx. 150)' },
+    an_ops:               { app: 'OPS',   fmt: 'json',    desc: 'Configuración propia del OPS Center (prefijo, intervalo, route info, envío, autoarranque, roster)' },
+    an_ops_state:         { app: 'OPS',   fmt: 'json',    desc: 'Tarjetas de vuelo y estado del monitor (20 min)' },
+    an_ops_sent_registry: { app: 'OPS',   fmt: 'json',    desc: 'Registro de mensajes de fase enviados (evita reenvíos tras recargar)' },
+    an_ops_msg_history:   { app: 'OPS',   fmt: 'json',    desc: 'Historial de mensajes del OPS Center' },
+    an_ak:                { app: 'ambas', fmt: 'cifrado', desc: 'API key de phpVMS' },
+    an_dc:                { app: 'ambas', fmt: 'cifrado', desc: 'Webhook de Discord' },
+    an_ks:                { app: 'ambas', fmt: 'texto',   desc: 'Sal del cifrado (hex); sin ella no se descifran an_ak ni an_dc' },
+    nbv_autopoll:         { app: 'ACARS', fmt: 'texto',   desc: 'Recepción automática activa ("1"/"0")' },
+    nbv_theme:            { app: 'ambas', fmt: 'texto',   desc: 'Tema: auto | light | dark' },
+    nbv_cpdlc:            { app: 'ACARS', fmt: 'json',    desc: 'Diálogo CPDLC de las últimas 24 h' },
+    nbv_acars_map:        { app: 'ambas', fmt: 'json',    desc: 'Callsign IVAO → callsign ACARS' },
+    nbv_apt:              { app: 'ambas', fmt: 'json',    desc: 'Caché de coordenadas de aeropuertos' },
+    nbv_today:            { app: 'ambas', fmt: 'json',    desc: 'Actividad del día (vuelos, mensajes, tiempo de servicio)' },
+    nbv_tpl:              { app: 'ambas', fmt: 'json',    desc: 'Plantillas TELEX, PDC, CPDLC y bienvenidas' },
+    nbv_schema:           { app: 'ambas', fmt: 'texto',   desc: 'Versión del esquema de almacenamiento' },
+  };
+  function raw(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function json(k, def = null) { const v = raw(k); if (v == null) return def; try { return JSON.parse(v); } catch (e) { return def; } }
+  // Claves JSON que no se pueden leer (no se borran: solo se informa)
+  function check() { return Object.keys(KEYS).filter(k => KEYS[k].fmt === 'json' && raw(k) != null && json(k, undefined) === undefined); }
+  // Copia de todas las claves registradas (antes de cualquier migración futura)
+  function backup() { const o = { schema: +(raw(SCHEMA_KEY) || 0), t: Date.now() }; for (const k of Object.keys(KEYS)) { const v = raw(k); if (v != null) o[k] = v; } return o; }
+  // Esquema 1 = la disposición de claves de la 4.x, sin cambios. Futuras migraciones: MIGRATIONS[n] pasa de n a n+1
+  const MIGRATIONS = {};
+  function init() {
+    let v = +(raw(SCHEMA_KEY) || 0);
+    if (v >= SCHEMA) return v;
+    if (v > 0 && Object.keys(MIGRATIONS).length) try { localStorage.setItem(`nbv_backup_v${v}`, JSON.stringify(backup())); } catch (e) {}
+    for (; v < SCHEMA; v++) if (v > 0 && MIGRATIONS[v]) MIGRATIONS[v]();
+    try { localStorage.setItem(SCHEMA_KEY, String(SCHEMA)); } catch (e) {}
+    return SCHEMA;
+  }
+  init();
+  return { SCHEMA, KEYS, raw, json, check, backup, init };
+})();
 // ══════════════════════════════════════════════════════════════════
 //  UTILIDADES
 // ══════════════════════════════════════════════════════════════════
+/** Elemento por id. Tipado amplio: la app lo usa con inputs, selects, iframes… @type {(id: string) => any} */
 const $ = id => document.getElementById(id);
 function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
 function ts() { return new Date().toISOString().replace('T', ' ').substring(0, 19) + 'Z'; }
@@ -653,13 +744,16 @@ function apikeyOnInput() {
   const btn = $('apikeyValidateBtn');
   if (btn) btn.style.display = val.length > 8 ? '' : 'none';
 }
+// v5: «Cancelar» del borrado (antes inline)
+function apikeyCancelConfirm() { delete $('apikeyDisplay').dataset.confirm; apikeyRenderState(); }
+
 function apikeyRenderState() {
   const display = $('apikeyDisplay'), wrap = $('apikeyInputWrap');
   if (!display) return;
   if (localStorage.getItem('an_ak')) {
-    display.innerHTML = `<div class="apikey-badge ok">API Key cifrada (AES-256) <button class="apikey-btn clear" onclick="apikeyClear()">Borrar</button></div>`;
+    display.innerHTML = `<div class="apikey-badge ok">API Key cifrada (AES-256) <button class="apikey-btn clear" data-click="apikeyClear">Borrar</button></div>`;
   } else {
-    display.innerHTML = `<div class="apikey-badge err" style="cursor:pointer" onclick="apikeyShowInput()">Sin API Key — haz clic para configurarla</div>`;
+    display.innerHTML = `<div class="apikey-badge err" style="cursor:pointer" data-click="apikeyShowInput">Sin API Key — haz clic para configurarla</div>`;
   }
   if (wrap) wrap.style.display = 'none';
 }
@@ -691,7 +785,7 @@ function apikeyClear() {
   // confirmación en línea (sin confirm(), bloqueado en algunos contextos)
   if (d && !d.dataset.confirm) {
     d.dataset.confirm = '1';
-    d.innerHTML = `<div class="apikey-badge err">¿Borrar la API Key? <button class="apikey-btn clear" onclick="apikeyClear()" style="margin-left:6px;position:static;transform:none">Sí, borrar</button> <button class="apikey-btn" onclick="delete $('apikeyDisplay').dataset.confirm;apikeyRenderState()" style="position:static;transform:none">Cancelar</button></div>`;
+    d.innerHTML = `<div class="apikey-badge err">¿Borrar la API Key? <button class="apikey-btn clear" data-click="apikeyClear" style="margin-left:6px;position:static;transform:none">Sí, borrar</button> <button class="apikey-btn" data-click="apikeyCancelConfirm" style="position:static;transform:none">Cancelar</button></div>`;
     return;
   }
   if (d) delete d.dataset.confirm;
@@ -844,6 +938,131 @@ function detectPhase(pilot, prev) {
 
 
 
+
+// ══════════════════════════════════════════════════════════════════
+//  LÓGICA DEL MONITOR OPS (v5) — sin DOM, sin red y sin almacenamiento
+//  Decide el estado de cada vuelo y qué hay que hacer con él; quien la usa ejecuta
+//  las acciones (registro, sonido, Discord, envío a Hoppie). Hoy la usa scan() del
+//  OPS Center; está pensada para que la reutilice el futuro monitor en la nube.
+//  El tiempo llega como parámetro (now) y las consultas externas como funciones.
+// ══════════════════════════════════════════════════════════════════
+NBV.opsLogic = (() => {
+  const PHASE_DEDUP = { preflight: 90, enroute: 90, descent: 60, landed: 60 }; // minutos sin reenviar tras recargar
+  const newSent = () => ({ preflight: false, enroute: false, descent: false, landed: false });
+
+  // Minutos estimados en ruta: plan IVAO → SimBrief → distancia → regla por región
+  function estimateEnrouteMin(pilot, flt) {
+    const eet = safeNum(pilot.flightPlan?.eet);
+    if (eet > 0) return Math.round(eet / 60);
+    if (flt._sbEet) return flt._sbEet;
+    const lt = pilot.lastTrack || {};
+    const total = safeNum(lt.departureDistance) + safeNum(lt.arrivalDistance);
+    if (total > 20) return Math.round(total / (flt.gs > 300 ? flt.gs : 440) * 60);
+    if (flt.dep !== '????' && flt.arr !== '????') {
+      if (flt.dep.substring(0, 2) === flt.arr.substring(0, 2)) return 75;
+      if (flt.dep[0] === flt.arr[0]) return 150;
+      return 300;
+    }
+    return 0;
+  }
+
+  // Vuelos que ya no están en IVAO: se marcan y a los 5 min se eliminan. Devuelve los recién desconectados.
+  function offline(flights, onlineCs, now) {
+    const gone = [];
+    for (const cs of Object.keys(flights)) {
+      if (onlineCs.has(cs) || flights[cs].srcPhpvms) continue;
+      if (!flights[cs].offlineSince) { flights[cs].offlineSince = now; gone.push({ type: 'offline', cs }); }
+      else if (now - flights[cs].offlineSince > 300000) delete flights[cs];
+    }
+    return gone;
+  }
+
+  // Estado nuevo de un vuelo a partir del piloto IVAO, el estado anterior y los datos de phpVMS (pv).
+  // Eventos, en orden: newLeg (misma matrícula, nueva pierna), detected (primera vez), phase (cambio de fase).
+  function update(pilot, prevIn, { now, pv }) {
+    const cs = pilot.callsign.toUpperCase();
+    const fp = pilot.flightPlan, track = pilot.lastTrack || {};
+    const curDep = safeStr(fp?.departureId).toUpperCase(), curArr = safeStr(fp?.arrivalId).toUpperCase();
+    const events = [];
+    let prev = prevIn || null;
+    if (prev?.srcPhpvms) prev = { ...prev, srcPhpvms: false }; // pasa a IVAO como fuente principal
+    if (pv?.phpvmsPhase) pilot._phpvmsPhase = pv.phpvmsPhase;
+    const newPhase = detectPhase(pilot, prev);
+
+    // Nueva pierna con el mismo callsign → reiniciar estado de mensajes
+    if (prev && prev.phase === 'LANDED' && newPhase === 'PREFLIGHT') {
+      events.push({ type: 'newLeg', cs, dep: curDep, arr: curArr });
+      prev = { ...prev, phase: 'PREFLIGHT', sent: newSent(), msgStatus: {}, msgBodies: {}, enrouteStart: 0, estEnrouteMin: 0,
+        riSent1: false, riSent2: false, assignedParking: null, lastRouteInfo: 0, routeInfoCount: 0, firstSeen: now, plannedDepTime: null, dep: curDep, arr: curArr };
+    }
+    const flt = {
+      callsign: cs, phase: newPhase, prevPhase: prev?.phase || null,
+      dep: curDep || prev?.dep || pv?.dep || '????',
+      arr: curArr || prev?.arr || pv?.arr || '????',
+      alt: safeNum(track.altitude), prevAlt: prev?.alt ?? safeNum(track.altitude),
+      gs: safeNum(track.groundSpeed), heading: safeNum(track.heading) || prev?.heading || 0,
+      onGround: track.onGround === true || track.onGround === 1,
+      lat: safeNum(track.latitude), lng: safeNum(track.longitude),
+      aircraft: safeStr(fp?.aircraftId) || prev?.aircraft || pv?.aircraft || '????',
+      ivaoState: safeStr(track.state),
+      arrivalDist: typeof track.arrivalDistance === 'number' ? track.arrivalDistance : null,
+      pilotName: prev?.pilotName || pv?.pilotName || '', pilotIdent: prev?.pilotIdent || pv?.pilotIdent || '',
+      registration: prev?.registration || pv?.registration || '', acName: prev?.acName || pv?.acName || '',
+      phpvmsRoute: prev?.phpvmsRoute || pv?.route || '', planFL: prev?.planFL || pv?.planFL || 0,
+      progressPct: pv?.progressPct || prev?.progressPct || 0,
+      arrLat: prev?.arrLat ?? pv?.arrLat ?? null, arrLon: prev?.arrLon ?? pv?.arrLon ?? null,
+      pirepId: prev?.pirepId || pv?.pirepId || null, _phpvmsPhase: pv?.phpvmsPhase || '',
+      plannedDepTime: prev?.plannedDepTime ?? fp?.departureTime ?? null,
+      firstSeen: prev?.firstSeen || now, lastSeen: now,
+      enrouteStart: prev?.enrouteStart || 0, estEnrouteMin: prev?.estEnrouteMin || 0, _sbEet: prev?._sbEet || 0,
+      riSent1: prev?.riSent1 || false, riSent2: prev?.riSent2 || false,
+      assignedParking: prev?.assignedParking || null, lastRouteInfo: prev?.lastRouteInfo || 0, routeInfoCount: prev?.routeInfoCount || 0,
+      offlineSince: null, srcSim: false, srcPhpvms: false,
+      sent: prev?.sent || newSent(), msgStatus: prev?.msgStatus || {}, msgBodies: prev?.msgBodies || {},
+    };
+    if (!prev) events.push({ type: 'detected', cs });
+    else if (prev.phase !== newPhase) events.push({ type: 'phase', cs, from: prev.phase, to: newPhase });
+    return { flt, events };
+  }
+
+  // Qué hacer con el vuelo ya actualizado (y con los datos del simulador inyectados). Modifica sus marcas
+  // (sent, riSent, routeInfoCount…) y devuelve las acciones en orden:
+  //   eet {min} · phaseSkip {ph} · phase {ph} · riRestored · routeinfo {key, significant}
+  // opts: now, riMode ('smart' | minutos), hasGen(ph), wasSentRecently(cs, dep, arr, clave, ms)
+  function decide(flt, pilot, { now, riMode, hasGen, wasSentRecently }) {
+    const acts = [], cs = flt.callsign, phase = flt.phase;
+    if (phase === 'ENROUTE' && !flt.enrouteStart) {
+      flt.enrouteStart = now;
+      flt.estEnrouteMin = estimateEnrouteMin(pilot, flt);
+      acts.push({ type: 'eet', min: flt.estEnrouteMin });
+    }
+    // Mensajes por fase (dedup en memoria + registro persistente)
+    const ph = phase.toLowerCase();
+    if (hasGen(ph) && !flt.sent[ph]) {
+      flt.sent[ph] = true;
+      acts.push({ type: wasSentRecently(cs, flt.dep, flt.arr, ph, PHASE_DEDUP[ph] * 60000) ? 'phaseSkip' : 'phase', ph });
+    }
+    // ROUTE INFO: «smart» = a los 15 min de crucero (solo si hay algo significativo) y a mitad de ruta; o cada N min
+    if ((phase === 'ENROUTE' || phase === 'DESCENT') && flt.lat && flt.lng) {
+      const minEnr = flt.enrouteStart ? (now - flt.enrouteStart) / 60000 : 0;
+      const riDedupMs = riMode === 'smart' ? 12 * 60000 : Math.max(5, parseInt(riMode) || 10) * 60000;
+      if (!flt.riSent1 && wasSentRecently(cs, flt.dep, flt.arr, 'routeinfo', riDedupMs)) { flt.riSent1 = true; acts.push({ type: 'riRestored' }); }
+      const fire = significant => { flt.routeInfoCount++; acts.push({ type: 'routeinfo', key: `routeinfo_${flt.routeInfoCount}`, significant }); };
+      if (riMode === 'smart') {
+        if (!flt.riSent1 && minEnr >= 15) { flt.riSent1 = true; fire(true); }
+        const mid = flt.estEnrouteMin / 2;
+        if (!flt.riSent2 && flt.estEnrouteMin > 0 && mid >= 25 && minEnr >= mid) { flt.riSent2 = true; fire(false); }
+        if (!flt.riSent2 && flt.estEnrouteMin === 0 && minEnr >= 30 && flt.riSent1) { flt.riSent2 = true; fire(false); }
+      } else {
+        const riMin = Math.max(5, parseInt(riMode) || 10);
+        if ((now - flt.lastRouteInfo) / 60000 >= riMin) { flt.lastRouteInfo = now; fire(false); }
+      }
+    }
+    return acts;
+  }
+
+  return { PHASE_DEDUP, newSent, estimateEnrouteMin, offline, update, decide };
+})();
 // ══════════════════════════════════════════════════════════════════
 //  GENERADORES OPS — aerolíneas, conexiones, tripulación, stands
 // ══════════════════════════════════════════════════════════════════

@@ -60,14 +60,14 @@
   <aside class="rail" aria-label="Navegación principal">
     <div class="brand" title="AirNubeiro ACARS"><img src="icons/nbv-mark.png" alt="AirNubeiro" width="40" height="40"></div>
     <nav class="nav">
-      <button class="nav-i on" data-v="occ" onclick="uiGo('occ')" aria-label="Flota en vivo"><svg class="ic"><use href="#i-plane"/></svg><span>Flota</span></button>
-      <button class="nav-i" data-v="msgs" onclick="uiGo('msgs')" aria-label="Mensajes"><svg class="ic"><use href="#i-inbox"/></svg><span>Mensajes</span><span class="tb" id="rxTab">0</span></button>
-      <button class="nav-i" data-v="info" onclick="uiGo('info')" aria-label="Meteorología"><svg class="ic"><use href="#i-cloud-sun"/></svg><span>Meteo</span></button>
-      <button class="nav-i" data-v="dsp" onclick="uiGo('dsp')" aria-label="Dispatch"><svg class="ic"><use href="#i-clipboard"/></svg><span>Dispatch</span></button>
+      <button class="nav-i on" data-v="occ" data-click="uiGo|occ" aria-label="Flota en vivo"><svg class="ic"><use href="#i-plane"/></svg><span>Flota</span></button>
+      <button class="nav-i" data-v="msgs" data-click="uiGo|msgs" aria-label="Mensajes"><svg class="ic"><use href="#i-inbox"/></svg><span>Mensajes</span><span class="tb" id="rxTab">0</span></button>
+      <button class="nav-i" data-v="info" data-click="uiGo|info" aria-label="Meteorología"><svg class="ic"><use href="#i-cloud-sun"/></svg><span>Meteo</span></button>
+      <button class="nav-i" data-v="dsp" data-click="uiGo|dsp" aria-label="Dispatch"><svg class="ic"><use href="#i-clipboard"/></svg><span>Dispatch</span></button>
     </nav>
     <div class="rail-foot">
-      <button class="nav-i nav-theme" id="btnTheme" data-theme-ico="label" onclick="NBV.ui.theme.cycle()" title="Tema"><svg class="ic"><use href="#i-sun"/></svg><span>Tema</span></button>
-      <button class="nav-i" data-v="cfg" id="btnCfg" onclick="toggleCfg()" aria-label="Ajustes"><svg class="ic"><use href="#i-settings"/></svg><span>Ajustes</span></button>
+      <button class="nav-i nav-theme" id="btnTheme" data-theme-ico="label" data-click="NBV.ui.theme.cycle" title="Tema"><svg class="ic"><use href="#i-sun"/></svg><span>Tema</span></button>
+      <button class="nav-i" data-v="cfg" id="btnCfg" data-click="toggleCfg" aria-label="Ajustes"><svg class="ic"><use href="#i-settings"/></svg><span>Ajustes</span></button>
     </div>
   </aside>
 
@@ -75,17 +75,17 @@
   <header class="top">
     <div class="top-t">
       <h1 id="viewTitle">Flota en vivo</h1>
-      <div class="sub" id="viewSub">AirNubeiro ACARS · v4.9.0</div>
+      <div class="sub" id="viewSub">AirNubeiro ACARS · v5.0.0-rc.1</div>
     </div>
     <div class="sb idle" id="sBar" role="status" aria-live="polite"><div class="d"></div><span id="sTxt">Configura logon y callsign</span></div>
     <div class="top-r">
-      <button class="pill" id="pillMon" onclick="uiFleetToggle()" title="Monitor de flota (OPS Center)"><span class="pd"></span><span class="pl-t" id="pillMonTxt">Monitor detenido</span></button>
-      <button class="pill" id="btnAuto" onclick="toggleAutoPoll()" title="Recepción automática de mensajes (auto-poll)"><span id="autoIco"><svg class="ic"><use href="#i-clock"/></svg></span><span class="pl-t">Recepción manual</span></button>
-      <button class="ib" id="btnPoll" onclick="doPoll()" title="Consultar mensajes ahora"><svg class="ic"><use href="#i-download"/></svg><span class="bdg" id="rxBdg">0</span></button>
-      <button class="ib" id="btnSnd" onclick="toggleSound()" title="Sonido"><svg class="ic"><use href="#i-bell"/></svg></button>
+      <button class="pill" id="pillMon" data-click="uiFleetToggle" title="Monitor de flota (OPS Center)"><span class="pd"></span><span class="pl-t" id="pillMonTxt">Monitor detenido</span></button>
+      <button class="pill" id="btnAuto" data-click="toggleAutoPoll" title="Recepción automática de mensajes (auto-poll)"><span id="autoIco"><svg class="ic"><use href="#i-clock"/></svg></span><span class="pl-t">Recepción manual</span></button>
+      <button class="ib" id="btnPoll" data-click="doPoll" title="Consultar mensajes ahora"><svg class="ic"><use href="#i-download"/></svg><span class="bdg" id="rxBdg">0</span></button>
+      <button class="ib" id="btnSnd" data-click="toggleSound" title="Sonido"><svg class="ic"><use href="#i-bell"/></svg></button>
       <span class="fsuipc-badge src-ivao" id="fsuipcBadge" title="Fuente de datos: IVAO Whazzup"><span class="fsuipc-dot"></span>IVAO</span>
-      <button class="ib" id="btnStream" onclick="openStream()" title="Modo Stream (F11)"><svg class="ic"><use href="#i-tv"/></svg></button>
-      <button class="btn-pri" id="btnCompose" onclick="uiComposer(true)"><svg class="ic"><use href="#i-pen"/></svg>Redactar</button>
+      <button class="ib" id="btnStream" data-click="openStream" title="Modo Stream (F11)"><svg class="ic"><use href="#i-tv"/></svg></button>
+      <button class="btn-pri" id="btnCompose" data-click="uiComposer|$true"><svg class="ic"><use href="#i-pen"/></svg>Redactar</button>
     </div>
   </header>
 
@@ -108,10 +108,10 @@
           <div class="kpi k-lnd"><b id="kLnd">0</b><span>En tierra</span></div>
         </div>
         <div class="fleet-acts">
-          <button class="btn-pri" id="btnMon" onclick="uiFleetToggle()"><svg class="ic"><use href="#i-play"/></svg><span>Iniciar monitor</span></button>
-          <button class="ib" onclick="uiFleet('aoc')" title="Pantalla AOC"><svg class="ic"><use href="#i-monitor"/></svg></button>
-          <button class="ib" onclick="uiFleet('cfg')" title="Ajustes de flota y roster SimBrief"><svg class="ic"><use href="#i-sliders"/></svg></button>
-          <button class="ib" onclick="occFrameReload()" title="Recargar OPS Center"><svg class="ic"><use href="#i-refresh"/></svg></button>
+          <button class="btn-pri" id="btnMon" data-click="uiFleetToggle"><svg class="ic"><use href="#i-play"/></svg><span>Iniciar monitor</span></button>
+          <button class="ib" data-click="uiFleet|aoc" title="Pantalla AOC"><svg class="ic"><use href="#i-monitor"/></svg></button>
+          <button class="ib" data-click="uiFleet|cfg" title="Ajustes de flota y roster SimBrief"><svg class="ic"><use href="#i-sliders"/></svg></button>
+          <button class="ib" data-click="occFrameReload" title="Recargar OPS Center"><svg class="ic"><use href="#i-refresh"/></svg></button>
           <a class="ib" href="ops-center.html" target="_blank" rel="noopener" title="Abrir OPS Center en otra ventana"><svg class="ic"><use href="#i-external"/></svg></a>
         </div>
       </div>
@@ -125,25 +125,25 @@
     <section class="view" id="p-msgs" aria-label="Mensajes">
       <div class="view-h">
         <div class="seg" role="tablist">
-          <button class="seg-i on" data-t="rx" onclick="sw('rx')" role="tab">Recibidos <span class="tb" id="rxTab2">0</span></button>
-          <button class="seg-i" data-t="tx" onclick="sw('tx')" role="tab">Enviados</button>
+          <button class="seg-i on" data-t="rx" data-click="sw|rx" role="tab">Recibidos <span class="tb" id="rxTab2">0</span></button>
+          <button class="seg-i" data-t="tx" data-click="sw|tx" role="tab">Enviados</button>
         </div>
         <div class="view-acts">
-          <button class="btn" onclick="doPoll()"><svg class="ic"><use href="#i-download"/></svg>Consultar ahora</button>
-          <button class="btn" onclick="uiComposer(true)"><svg class="ic"><use href="#i-pen"/></svg>Redactar</button>
+          <button class="btn" data-click="doPoll"><svg class="ic"><use href="#i-download"/></svg>Consultar ahora</button>
+          <button class="btn" data-click="uiComposer|$true"><svg class="ic"><use href="#i-pen"/></svg>Redactar</button>
         </div>
       </div>
       <div class="pnl on" id="p-rx">
         <div class="lh">
           <h3>Bandeja de entrada</h3>
-          <div class="lh-btns"><button class="sm" onclick="clr('rx')">Vaciar</button></div>
+          <div class="lh-btns"><button class="sm" data-click="clr|rx">Vaciar</button></div>
         </div>
         <div class="ml" id="rxL"><div class="me-empty" id="rxE"><b>Bandeja vacía</b>Activa la recepción automática y los TELEX y CPDLC de los pilotos llegarán aquí con aviso sonoro.</div></div>
       </div>
       <div class="pnl" id="p-tx">
         <div class="lh">
           <h3>Mensajes enviados</h3>
-          <div class="lh-btns"><button class="sm" onclick="clr('tx')">Vaciar</button></div>
+          <div class="lh-btns"><button class="sm" data-click="clr|tx">Vaciar</button></div>
         </div>
         <div class="ml" id="txL"><div class="me-empty" id="txE"><b>Aún no has enviado nada hoy</b>Pulsa en un vuelo de la flota para escribirle un TELEX.</div></div>
       </div>
@@ -166,7 +166,7 @@
               </select>
             </div>
           </div>
-          <button class="bp ifc" id="inB" onclick="sendInfo()" disabled>Consultar</button>
+          <button class="bp ifc" id="inB" data-click="sendInfo" disabled>Consultar</button>
         </div>
         <div class="col">
           <div class="res-empty" id="inEmpty"><svg class="ic"><use href="#i-cloud-sun"/></svg><b>Sin consulta</b>Introduce un ICAO para ver el METAR, TAF o ATIS y reenviarlo a un piloto.</div>
@@ -175,7 +175,7 @@
             <div class="mb" id="inRT"></div>
             <div class="fwd">
               <div class="f"><label for="fwdTo">Reenviar a</label><input type="text" id="fwdTo" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
-              <button class="btn" onclick="fwdInfo()" style="min-height:40px"><svg class="ic"><use href="#i-send"/></svg>Enviar TELEX</button>
+              <button class="btn" data-click="fwdInfo" style="min-height:40px"><svg class="ic"><use href="#i-send"/></svg>Enviar TELEX</button>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@
               </label><input type="text" id="dspSb" placeholder="usuario o ID" autocomplete="off" spellcheck="false"></div>
               <div class="f"><label for="dspTo">Enviar a</label><input type="text" id="dspTo" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
             </div>
-            <button class="bp dsp-btn" id="dspFetch" onclick="fetchDispatch()">Generar dispatch</button>
+            <button class="bp dsp-btn" id="dspFetch" data-click="fetchDispatch">Generar dispatch</button>
           </div>
 
           <div class="cd">
@@ -204,11 +204,11 @@
               <div class="f"><label for="qdTo">Enviar a</label><input type="text" id="qdTo" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
             </div>
             <div class="tpls" style="margin:14px 0 0">
-              <button class="tp" onclick="qdFetch('traffic')">Tráfico</button>
-              <button class="tp" onclick="qdFetch('metar')">METAR</button>
-              <button class="tp" onclick="qdFetch('taf')">TAF</button>
-              <button class="tp" onclick="qdFetch('atis-ivao')">ATIS IVAO</button>
-              <button class="tp" onclick="qdFetch('atis-vatsim')">ATIS VATSIM</button>
+              <button class="tp" data-click="qdFetch|traffic">Tráfico</button>
+              <button class="tp" data-click="qdFetch|metar">METAR</button>
+              <button class="tp" data-click="qdFetch|taf">TAF</button>
+              <button class="tp" data-click="qdFetch|atis-ivao">ATIS IVAO</button>
+              <button class="tp" data-click="qdFetch|atis-vatsim">ATIS VATSIM</button>
             </div>
           </div>
 
@@ -220,7 +220,7 @@
               </label><input type="text" id="riCs" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
               <div class="f"><label for="riTo">Enviar a</label><input type="text" id="riTo" class="uc" placeholder="(el mismo)" maxlength="12" autocomplete="off" spellcheck="false"></div>
             </div>
-            <button class="bp dsp-btn" id="riBtn" onclick="fetchRouteInfo()">Generar Route Info</button>
+            <button class="bp dsp-btn" id="riBtn" data-click="fetchRouteInfo">Generar Route Info</button>
           </div>
 
           <div class="cd">
@@ -232,8 +232,8 @@
               <div class="f"><label for="cxTo">Enviar a</label><input type="text" id="cxTo" class="uc" placeholder="NBV101" maxlength="12" autocomplete="off" spellcheck="false"></div>
             </div>
             <div class="tpls" style="margin:14px 0 0">
-              <button class="tp" onclick="manualPaxConn()">Conexiones PAX</button>
-              <button class="tp" onclick="manualCrewInfo()">Info tripulación</button>
+              <button class="tp" data-click="manualPaxConn">Conexiones PAX</button>
+              <button class="tp" data-click="manualCrewInfo">Info tripulación</button>
             </div>
           </div>
         </div>
@@ -243,17 +243,17 @@
           <div class="dsp-card" id="riResult" style="display:none">
             <h4 id="riTitle">—</h4>
             <pre id="riBody"></pre>
-            <button class="dsp-send" id="riSend" onclick="riSendTelex()">Enviar TELEX</button>
+            <button class="dsp-send" id="riSend" data-click="riSendTelex">Enviar TELEX</button>
           </div>
           <div class="dsp-card" id="cxResult" style="display:none">
             <h4 id="cxTitle">—</h4>
             <pre id="cxBody"></pre>
-            <button class="dsp-send" id="cxSend" onclick="cxSendTelex()">Enviar TELEX</button>
+            <button class="dsp-send" id="cxSend" data-click="cxSendTelex">Enviar TELEX</button>
           </div>
           <div class="dsp-card" id="qdResult" style="display:none">
             <h4 id="qdTitle">—</h4>
             <pre id="qdBody"></pre>
-            <button class="dsp-send" id="qdSend" onclick="qdSendTelex()">Enviar TELEX</button>
+            <button class="dsp-send" id="qdSend" data-click="qdSendTelex">Enviar TELEX</button>
           </div>
           <div class="dsp-loading" id="dspLoad" style="display:none"><span class="spin"><svg class="ic"><use href="#i-refresh"/></svg></span> Obteniendo OFP de SimBrief y tráfico IVAO…</div>
           <div class="dsp-summary" id="dspSum" style="display:none">
@@ -261,7 +261,7 @@
             <div id="dspSumRows"></div>
           </div>
           <div class="dsp-cards" id="dspCards" style="display:none"></div>
-          <button class="bp dsp-btn" id="dspAll" onclick="sendAllDispatch()" style="display:none">Enviar todos los TELEX</button>
+          <button class="bp dsp-btn" id="dspAll" data-click="sendAllDispatch" style="display:none">Enviar todos los TELEX</button>
         </div>
       </div>
     </section>
@@ -293,7 +293,7 @@
               <div class="f"><label for="sndMode">Avisos sonoros
                 <span class="hi" tabindex="0">?<span class="tt">Tono distinto para TELEX, CPDLC y LOGON recibidos, vuelo detectado, cambio de fase y errores. Suenan aunque la ventana esté en segundo plano (tras el primer clic en la app).</span></span>
               </label><select id="sndMode"><option value="all">Todos los eventos</option><option value="rx">Solo recibidos y errores</option><option value="off">Ninguno</option></select></div>
-              <div class="f"><label for="themeSel">Tema</label><select id="themeSel" onchange="NBV.ui.theme.set(this.value)"><option value="auto">Automático (sistema)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></div>
+              <div class="f"><label for="themeSel">Tema</label><select id="themeSel" data-change="NBV.ui.theme.set|$value"><option value="auto">Automático (sistema)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></div>
             </div>
           </div>
 
@@ -302,7 +302,7 @@
             <div class="cfg-module">
               <div class="cfg-mod-hdr">
                 <span class="cfg-mod-ttl"><svg class="ic"><use href="#i-zap"/></svg><span>FSUIPC WebSocket<small>Datos del simulador local</small></span></span>
-                <label class="mod-toggle"><input type="checkbox" id="fsuipcEn" onchange="fsuipcOnToggle()"><span class="sw"></span><span>Activar</span></label>
+                <label class="mod-toggle"><input type="checkbox" id="fsuipcEn" data-change="fsuipcOnToggle"><span class="sw"></span><span>Activar</span></label>
               </div>
               <div class="cfg-mod-fields cfg-g" id="fsuipcCfgFields">
                 <div class="f"><label for="fsuipcUrl">URL WebSocket</label><input type="text" id="fsuipcUrl" value="ws://localhost:2048/fsuipc/" spellcheck="false" autocomplete="off"></div>
@@ -316,7 +316,7 @@
             <div class="cfg-module">
               <div class="cfg-mod-hdr">
                 <span class="cfg-mod-ttl"><svg class="ic"><use href="#i-database"/></svg><span>phpVMS<small>Pilotos y PIREPs de AirNubeiro</small></span></span>
-                <label class="mod-toggle"><input type="checkbox" id="phpvmsEn" onchange="phpvmsOnToggle()"><span class="sw"></span><span>Activar</span></label>
+                <label class="mod-toggle"><input type="checkbox" id="phpvmsEn" data-change="phpvmsOnToggle"><span class="sw"></span><span>Activar</span></label>
               </div>
               <div class="cfg-mod-fields cfg-g" id="phpvmsCfgFields">
                 <div class="f"><label for="phpvmsUrl">URL phpVMS</label><input type="text" id="phpvmsUrl" value="https://operaciones.airnubeiro.es" spellcheck="false" autocomplete="off"></div>
@@ -325,9 +325,9 @@
                 </label>
                   <div id="apikeyDisplay"></div>
                   <div class="apikey-wrap" id="apikeyInputWrap" style="display:none">
-                    <input type="password" id="phpvmsKeyRaw" placeholder="Pega tu API Key aquí" autocomplete="off" spellcheck="false" oninput="apikeyOnInput()">
+                    <input type="password" id="phpvmsKeyRaw" placeholder="Pega tu API Key aquí" autocomplete="off" spellcheck="false" data-input="apikeyOnInput">
                     <div class="apikey-actions">
-                      <button class="apikey-btn validate" id="apikeyValidateBtn" onclick="apikeyValidateAndSave()" style="display:none">Validar</button>
+                      <button class="apikey-btn validate" id="apikeyValidateBtn" data-click="apikeyValidateAndSave" style="display:none">Validar</button>
                     </div>
                   </div>
                 </div>
@@ -338,7 +338,7 @@
             <div class="cfg-module">
               <div class="cfg-mod-hdr">
                 <span class="cfg-mod-ttl"><svg class="ic"><use href="#i-chat"/></svg><span>Discord<small>Notificaciones al canal de la aerolínea</small></span></span>
-                <label class="mod-toggle"><input type="checkbox" id="discordEn" onchange="discordOnToggle()"><span class="sw"></span><span>Activar</span></label>
+                <label class="mod-toggle"><input type="checkbox" id="discordEn" data-change="discordOnToggle"><span class="sw"></span><span>Activar</span></label>
               </div>
               <div class="cfg-mod-fields" id="discordCfgFields">
                 <div class="f"><label for="discordUrl">URL del webhook
@@ -352,7 +352,7 @@
                     <label><input type="checkbox" id="dcEvAlert" checked> Alertas OPS</label>
                   </div>
                 </div>
-                <button class="dc-test-btn" onclick="discordTest()"><svg class="ic"><use href="#i-send"/></svg>Enviar mensaje de prueba</button>
+                <button class="dc-test-btn" data-click="discordTest"><svg class="ic"><use href="#i-send"/></svg>Enviar mensaje de prueba</button>
               </div>
               <div class="cfg-mod-status" id="discordStatus">Desactivado — configura la URL del webhook y actívalo</div>
             </div>
@@ -362,19 +362,19 @@
             <div class="ct"><svg class="ic"><use href="#i-plane"/></svg>Callsign ACARS de los pilotos<small>si no coincide con el de IVAO</small></div>
             <div class="cd-d">Hoppie entrega por callsign exacto. Si un piloto vuela en IVAO como NBV11WT pero en su avión tiene NBV011 como número de vuelo, añádelo aquí: los mensajes manuales y los automáticos del OPS Center irán al callsign ACARS.</div>
             <div id="acMap"></div>
-            <button type="button" class="roster-add" onclick="uiAcAdd()">+ Añadir piloto</button>
+            <button type="button" class="roster-add" data-click="uiAcAdd">+ Añadir piloto</button>
           </div>
 
           <div class="cd span">
             <div class="ct"><svg class="ic"><use href="#i-sliders"/></svg>Operaciones de flota</div>
             <div class="cd-d">Prefijo de aerolínea, intervalo de escaneo, Route Info, envío automático, roster SimBrief y plantillas de mensajes.</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn" onclick="uiFleet('cfg')"><svg class="ic"><use href="#i-sliders"/></svg>Ajustes de flota y roster</button>
-              <button class="btn" onclick="NBV.tpl.edit('telex')"><svg class="ic"><use href="#i-pen"/></svg>Editar plantillas</button>
+              <button class="btn" data-click="uiFleet|cfg"><svg class="ic"><use href="#i-sliders"/></svg>Ajustes de flota y roster</button>
+              <button class="btn" data-click="NBV.tpl.edit|telex"><svg class="ic"><use href="#i-pen"/></svg>Editar plantillas</button>
             </div>
           </div>
         </div>
-        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v4.9.0</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
+        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v5.0.0-rc.1</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
       </div>
     </section>
   </main>
@@ -383,10 +383,10 @@
   <aside class="composer" id="composer" aria-label="Redactar mensaje">
     <div class="cmp-h">
       <div class="seg" role="tablist">
-        <button class="tab on" data-t="telex" onclick="sw('telex')" role="tab">TELEX</button>
-        <button class="tab" data-t="cpdlc" onclick="sw('cpdlc')" role="tab">CPDLC</button>
+        <button class="tab on" data-t="telex" data-click="sw|telex" role="tab">TELEX</button>
+        <button class="tab" data-t="cpdlc" data-click="sw|cpdlc" role="tab">CPDLC</button>
       </div>
-      <button class="ib cmp-x" onclick="uiComposer(false)" title="Cerrar" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
+      <button class="ib cmp-x" data-click="uiComposer|$false" title="Cerrar" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
     </div>
     <div class="hp" id="hpStatus" role="status" aria-live="polite" hidden></div>
 
@@ -396,7 +396,7 @@
       <div class="f"><label for="txM">Mensaje</label><textarea id="txM" placeholder="Escribe el TELEX…" rows="5" maxlength="500"></textarea><div class="chc" id="txC">0 / 500</div></div>
       <div class="cmp-lbl">Plantillas</div>
       <div class="tpls" id="tplTelex"></div>
-      <button class="bp" id="txB" onclick="sendTx()" disabled>Enviar TELEX</button>
+      <button class="bp" id="txB" data-click="sendTx" disabled>Enviar TELEX</button>
     </div>
 
     <div class="pnl" id="p-cpdlc">
@@ -417,7 +417,7 @@
       <div class="f"><label for="cpM">Mensaje</label><input type="text" id="cpM" class="uc" placeholder="CLIMB TO FL350" autocomplete="off" spellcheck="false"></div>
       <div class="cmp-lbl" style="margin-top:12px">Plantillas</div>
       <div class="tpls" id="tplCpdlc"></div>
-      <button class="bp cpc" id="cpB" onclick="sendCp()" disabled>Enviar CPDLC</button>
+      <button class="bp cpc" id="cpB" data-click="sendCp" disabled>Enviar CPDLC</button>
       <div class="cp-log" id="cpLog"></div>
       <div id="connBox" style="display:none">
         <div class="cmp-lbl" style="margin-bottom:8px">Estaciones CPDLC conectadas</div>
@@ -426,8 +426,8 @@
     </div>
     <div class="cmp-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> para enviar</div>
   </aside>
-  <div class="scrim" id="scrim" onclick="uiComposer(false)"></div>
-  <button class="fab" id="fab" onclick="uiComposer(true)"><svg class="ic"><use href="#i-pen"/></svg>Redactar</button>
+  <div class="scrim" id="scrim" data-click="uiComposer|$false"></div>
+  <button class="fab" id="fab" data-click="uiComposer|$true"><svg class="ic"><use href="#i-pen"/></svg>Redactar</button>
 </div>
 
 <!-- ═══ STREAM MODE OVERLAY ═══ -->
@@ -437,7 +437,7 @@
       <div class="str-icao" id="strIcao">----</div>
       <div class="str-sub" id="strSub">AirNubeiro OPS — Stream Mode</div>
     </div>
-    <button class="str-close" onclick="closeStream()" title="Cerrar (Esc)" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
+    <button class="str-close" data-click="closeStream" title="Cerrar (Esc)" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button>
   </div>
   <div class="str-atis" id="strAtisBox" style="display:none">
     <div class="str-atis-h">ATIS</div>
@@ -453,7 +453,7 @@
 <script src="nbv-core.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════
-//  ACARS DISPATCH v4.9.0 — AirNubeiro
+//  ACARS DISPATCH v5.0.0-rc.1 — AirNubeiro
 //  Creado por Varo para AirNubeiro · Todos los derechos reservados
 // ══════════════════════════════════════════════════════════════════
 
@@ -564,7 +564,7 @@ function updConn() {
   connStations.forEach(cs => {
     const tag = document.createElement('span');
     tag.className = 'conn-tag';
-    tag.innerHTML = `${esc(cs)} <span class="cx" onclick="disconnectStation('${esc(cs)}')" title="Desconectar">✕</span>`;
+    tag.innerHTML = `${esc(cs)} <span class="cx" data-click="disconnectStation|${esc(cs)}" title="Desconectar">✕</span>`;
     list.appendChild(tag);
   });
 }
@@ -600,7 +600,7 @@ async function sendTx() {
     const raw = await hReq(to, 'telex', msg);
     const ok = raw.toLowerCase().startsWith('ok');
     addMsg('tx', { cls: ok?'out':'erm', type: 'TELEX', badge: 'b-tx', route: `${$('cS').value.toUpperCase()} → ${to}`, body: msg, time: ts(), st: ok ? '✓ OK' : `✗ ${raw}`, ok });
-    if (ok) { ss('ok', `✓ TELEX → ${to}`); b.className = 'bp ok'; b.textContent = '✓ ENVIADO'; $('txM').value = ''; $('txM').dispatchEvent(new Event('input')); }
+    if (ok) { ss('ok', `✓ TELEX → ${to}`); b.className = 'bp ok'; b.textContent = '✓ ENVIADO'; $('txM').value = ''; $('txM').dispatchEvent(new Event('input', { bubbles: true })); }
     else { ss('err', `✗ ${raw}`); b.className = 'bp er'; b.textContent = '✗ ERROR'; errorSound(); }
   } catch(e) {
     addMsg('tx', { cls: 'erm', type: 'TELEX', badge: 'b-tx', route: `→ ${to}`, body: msg, time: ts(), st: `✗ ${e.message}`, ok: false });
@@ -836,11 +836,10 @@ function addMsg(list, { cls, type, badge, route, body, time, st, ok, actions }) 
 
   let actionsHtml = '';
   if (actions) {
-    const safe = actions.replace(/'/g, "\\'");
     actionsHtml = `<div class="logon-actions la-${esc(actions)}">
-      <button class="la-accept" onclick="acceptLogon('${safe}')">✓ ACCEPT</button>
-      <button class="la-standby" onclick="standbyLogon('${safe}')">STANDBY</button>
-      <button class="la-reject" onclick="rejectLogon('${safe}')">✗ UNABLE</button>
+      <button class="la-accept" data-click="acceptLogon|${esc(actions)}">✓ ACCEPT</button>
+      <button class="la-standby" data-click="standbyLogon|${esc(actions)}">STANDBY</button>
+      <button class="la-reject" data-click="rejectLogon|${esc(actions)}">✗ UNABLE</button>
     </div>`;
   }
 
@@ -1231,7 +1230,7 @@ function renderDispatchCards() {
     card.innerHTML = `
       <h4><span class="ico">${m.icon}</span> ${esc(m.label)}</h4>
       <pre>${esc(m.body)}</pre>
-      <button class="dsp-send" id="dsb-${m.id}" onclick="sendDispatchMsg('${m.id}')">Enviar TELEX</button>`;
+      <button class="dsp-send" id="dsb-${m.id}" data-click="sendDispatchMsg|${m.id}">Enviar TELEX</button>`;
     c.appendChild(card);
   }
 }
@@ -1837,7 +1836,7 @@ function renderTemplates() {
 
 async function tplPickTelex(text) {
   $('txM').value = (await NBV.tpl.fill(text, { cs: $('txD').value.trim() })).substring(0, 500);
-  $('txM').focus(); $('txM').dispatchEvent(new Event('input'));
+  $('txM').focus(); $('txM').dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 async function tplPickCpdlc(text) {
@@ -1892,7 +1891,7 @@ function uiComposer(open = true) {
 
 function uiPickCs(cs) {
   cs = NBV.acars.to(cs); // callsign ACARS si difiere del de IVAO
-  for (const id of ['txD', 'cpD']) { $(id).value = cs; $(id).dispatchEvent(new Event('input')); }
+  for (const id of ['txD', 'cpD']) { $(id).value = cs; $(id).dispatchEvent(new Event('input', { bubbles: true })); }
   uiHoppieCheck(100);
   document.querySelectorAll('#cmpFlights .chip').forEach(c => c.classList.toggle('on', NBV.acars.to(c.dataset.cs) === cs));
   try { ($('p-cpdlc').classList.contains('on') ? $('cpM') : $('txM')).focus(); } catch (e) {}
@@ -1942,7 +1941,7 @@ function uiTick() {
     if (uiLast.list !== key) {
       uiLast.list = key;
       const cur = $('txD').value.trim().toUpperCase();
-      $('cmpFlights').innerHTML = st.list.map(f => `<button type="button" class="chip ph-${esc(f.phase.toLowerCase())}${f.cs === cur ? ' on' : ''}" data-cs="${esc(f.cs)}" onclick="uiPickCs('${esc(f.cs)}')" title="${esc(f.dep)} → ${esc(f.arr)}${NBV.acars.to(f.cs) !== f.cs ? ' · ACARS ' + esc(NBV.acars.to(f.cs)) : ''}"><i></i>${esc(f.cs)}</button>`).join('');
+      $('cmpFlights').innerHTML = st.list.map(f => `<button type="button" class="chip ph-${esc(f.phase.toLowerCase())}${f.cs === cur ? ' on' : ''}" data-cs="${esc(f.cs)}" data-click="uiPickCs|${esc(f.cs)}" title="${esc(f.dep)} → ${esc(f.arr)}${NBV.acars.to(f.cs) !== f.cs ? ' · ACARS ' + esc(NBV.acars.to(f.cs)) : ''}"><i></i>${esc(f.cs)}</button>`).join('');
     }
   }
   const t = NBV.ui.stats.get();
@@ -1953,10 +1952,10 @@ function uiTick() {
 function uiOnboard(st) {
   if (st === undefined) { try { st = uiOps()?.opsUiState(); } catch (e) { st = null; } }
   const steps = [
-    { done: !!($('cL').value.trim() && $('cS').value.trim()), t: 'Conecta tu estación Hoppie', a: 'Configurar', f: "uiGo('cfg');setTimeout(()=>$('cL').focus(),60)" },
-    { done: !!st?.running, t: 'Inicia el monitor de flota', a: 'Iniciar', f: 'uiFleetToggle()' },
-    { done: !!autoPoll, t: 'Activa la recepción automática', a: 'Activar', f: 'toggleAutoPoll()' },
-    { done: !!soundOn && $('sndMode').value !== 'off', t: 'Mantén los avisos sonoros', a: 'Activar', f: 'uiSoundOn()' },
+    { done: !!($('cL').value.trim() && $('cS').value.trim()), t: 'Conecta tu estación Hoppie', a: 'Configurar', f: 'uiOnbCfg' },
+    { done: !!st?.running, t: 'Inicia el monitor de flota', a: 'Iniciar', f: 'uiFleetToggle' },
+    { done: !!autoPoll, t: 'Activa la recepción automática', a: 'Activar', f: 'toggleAutoPoll' },
+    { done: !!soundOn && $('sndMode').value !== 'off', t: 'Mantén los avisos sonoros', a: 'Activar', f: 'uiSoundOn' },
   ];
   const n = steps.filter(s => s.done).length, key = steps.map(s => +s.done).join('');
   if (uiLast.onb === key) return;
@@ -1964,7 +1963,7 @@ function uiOnboard(st) {
   $('onb').hidden = n === steps.length;
   $('onbProg').textContent = `${n} de ${steps.length}`;
   $('onbBar').style.width = (n / steps.length * 100) + '%';
-  $('onbList').innerHTML = steps.map(s => `<li class="${s.done ? 'done' : ''}"><span class="ck">${NBV.ui.icon('check')}</span><span>${s.t}</span><button type="button" class="btn" onclick="${s.f}">${s.a}</button></li>`).join('');
+  $('onbList').innerHTML = steps.map(s => `<li class="${s.done ? 'done' : ''}"><span class="ck">${NBV.ui.icon('check')}</span><span>${s.t}</span><button type="button" class="btn" data-click="${s.f}">${s.a}</button></li>`).join('');
 }
 
 function uiSoundOn() {
@@ -2027,7 +2026,7 @@ async function uiHoppieRun() {
   if (r.pending.length) L.push(`<b>${r.pending.length}</b> pendiente${r.pending.length > 1 ? 's' : ''} de entregar · ${r.delivered} entregado${r.delivered === 1 ? '' : 's'} (24 h)`);
   else if (r.delivered) L.push(`Todo entregado: ${r.delivered} mensaje${r.delivered === 1 ? '' : 's'} en 24 h`);
   box.className = 'hp ' + cls;
-  box.innerHTML = `<i></i><div>${L.map(l => `<span>${l}</span>`).join('')}</div><button type="button" class="ib" onclick="uiHoppieCheck(0,true)" title="Volver a comprobar" aria-label="Volver a comprobar">${NBV.ui.icon('refresh')}</button>`;
+  box.innerHTML = `<i></i><div>${L.map(l => `<span>${l}</span>`).join('')}</div><button type="button" class="ib" data-click="uiHoppieCheck|#0|$true" title="Volver a comprobar" aria-label="Volver a comprobar">${NBV.ui.icon('refresh')}</button>`;
 }
 
 function uiHoppieInit() {
@@ -2041,7 +2040,7 @@ function uiAgo(t) { return String(t || '').replace(/\bdys?\b/g, 'd').replace(/\b
 function uiAcRender() {
   const m = NBV.acars.map(), box = $('acMap'); if (!box) return;
   const rows = Object.entries(m);
-  box.innerHTML = rows.length ? rows.map(([i, a]) => `<div class="ac-row"><input class="uc" value="${esc(i)}" data-old="${esc(i)}" aria-label="Callsign IVAO" onchange="uiAcEdit(this)"><span aria-hidden="true">→</span><input class="uc" value="${esc(a)}" aria-label="Callsign ACARS" onchange="uiAcEdit(this)"><button type="button" class="ib" title="Quitar" aria-label="Quitar" onclick="NBV.acars.set('${esc(i)}','');uiAcRender()">${NBV.ui.icon('x')}</button></div>`).join('')
+  box.innerHTML = rows.length ? rows.map(([i, a]) => `<div class="ac-row"><input class="uc" value="${esc(i)}" data-old="${esc(i)}" aria-label="Callsign IVAO" data-change="uiAcEdit|$el"><span aria-hidden="true">→</span><input class="uc" value="${esc(a)}" aria-label="Callsign ACARS" data-change="uiAcEdit|$el"><button type="button" class="ib" title="Quitar" aria-label="Quitar" data-click="uiAcDelete|${esc(i)}">${NBV.ui.icon('x')}</button></div>`).join('')
     : '<div class="cd-d" style="margin:0">Ningún piloto con callsign ACARS distinto.</div>';
 }
 
@@ -2055,7 +2054,7 @@ function uiAcEdit(el) {
 
 function uiAcAdd() {
   const box = $('acMap'); if (!box.querySelector('.ac-row')) box.innerHTML = '';
-  box.insertAdjacentHTML('beforeend', `<div class="ac-row"><input class="uc" placeholder="IVAO (NBV11WT)" data-old="" aria-label="Callsign IVAO" onchange="uiAcEdit(this)"><span aria-hidden="true">→</span><input class="uc" placeholder="ACARS (NBV011)" aria-label="Callsign ACARS" onchange="uiAcEdit(this)"><button type="button" class="ib" title="Quitar" aria-label="Quitar" onclick="this.closest('.ac-row').remove()">${NBV.ui.icon('x')}</button></div>`);
+  box.insertAdjacentHTML('beforeend', `<div class="ac-row"><input class="uc" placeholder="IVAO (NBV11WT)" data-old="" aria-label="Callsign IVAO" data-change="uiAcEdit|$el"><span aria-hidden="true">→</span><input class="uc" placeholder="ACARS (NBV011)" aria-label="Callsign ACARS" data-change="uiAcEdit|$el"><button type="button" class="ib" title="Quitar" aria-label="Quitar" data-click="uiAcRemoveRow|$el">${NBV.ui.icon('x')}</button></div>`);
   box.querySelector('.ac-row:last-child input').focus();
 }
 
@@ -2095,14 +2094,21 @@ function uiCpdlcReply(sender, content) {
   return `${text}${ref ? '' : `\n(petición #${mid} — tu próximo CPDLC a ${from} la responderá)`}`;
 }
 
+// v5: acciones antes inline (delegación de eventos, NBV.act)
+function uiOnbCfg() { uiGo('cfg'); setTimeout(() => $('cL').focus(), 60); }
+function uiCpReply(cs) { uiPickCs(cs); sw('cpdlc'); $('cpM').focus(); }
+function uiCpClear() { localStorage.removeItem(CPK); uiCpRender(); }
+function uiAcDelete(cs) { NBV.acars.set(cs, ''); uiAcRender(); }
+function uiAcRemoveRow(el) { el.closest('.ac-row').remove(); }
+
 function uiCpRender() {
   const box = $('cpLog'); if (!box) return;
   const l = uiCpLoad().slice(-12).reverse();
   const cls = st => CP_OK.includes(st) ? 'ok' : CP_NO.includes(st) ? 'err' : st === 'ABIERTO' || st === 'PENDIENTE' ? 'wrn' : st === 'STANDBY' ? 'inf' : '';
   const hh = t => new Date(t).toISOString().slice(11, 16) + 'z';
-  box.innerHTML = l.length ? `<div class="cmp-lbl">Diálogo CPDLC <button type="button" class="sm" onclick="localStorage.removeItem('${CPK}');uiCpRender()">Vaciar</button></div>` + l.map(x => x.dir === 'up'
+  box.innerHTML = l.length ? `<div class="cmp-lbl">Diálogo CPDLC <button type="button" class="sm" data-click="uiCpClear">Vaciar</button></div>` + l.map(x => x.dir === 'up'
     ? `<div class="cp-row"><span class="cp-d" title="Enviado">↑</span><div><b>${esc(x.to)}</b> <small>#${x.mid} · ${hh(x.t)}</small><div class="cp-m">${esc(x.msg)}</div></div><span class="cp-st ${cls(x.st)}">${esc(x.st)}</span></div>`
-    : `<div class="cp-row${x.st === 'PENDIENTE' ? ' act' : ''}"${x.st === 'PENDIENTE' ? ` role="button" tabindex="0" title="Responder" onclick="uiPickCs('${esc(x.from)}');sw('cpdlc');$('cpM').focus()"` : ''}><span class="cp-d" title="Recibido">↓</span><div><b>${esc(x.from)}</b> <small>#${x.mid} · ${hh(x.t)}</small><div class="cp-m">${esc(x.msg)}</div></div><span class="cp-st ${cls(x.st)}">${esc(x.st)}</span></div>`).join('') : '';
+    : `<div class="cp-row${x.st === 'PENDIENTE' ? ' act' : ''}"${x.st === 'PENDIENTE' ? ` role="button" tabindex="0" title="Responder" data-click="uiCpReply|${esc(x.from)}"` : ''}><span class="cp-d" title="Recibido">↓</span><div><b>${esc(x.from)}</b> <small>#${x.mid} · ${hh(x.t)}</small><div class="cp-m">${esc(x.msg)}</div></div><span class="cp-st ${cls(x.st)}">${esc(x.st)}</span></div>`).join('') : '';
 }
 
 const uiDel = new Map();

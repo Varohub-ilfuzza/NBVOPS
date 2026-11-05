@@ -4,6 +4,34 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.0.0-rc.1] — 2026-11-05
+
+Candidata de la 5.0 con la F2 («modularización») completa, publicada para el vuelo de validación. No cambia el funcionamiento ni la interfaz. La 5.0.0 definitiva llegará con la F3.
+
+### Código fuente
+- **Módulos por fichero**: el núcleo se divide en 19 ficheros (`src/core/NN-nombre.js`: red, configuración, IVAO, meteo, Hoppie, FSUIPC, plantillas, interfaz…), el ACARS en 11 (`src/app/acars/`) y el OPS en 10 (`src/app/ops/`). El build los concatena en orden; la salida era idéntica byte a byte antes de los cambios siguientes. El aislamiento real en módulos (esbuild) queda para una 5.x.
+- **Offsets FSUIPC en un solo sitio** (`src/core/fsuipc-offsets.json`): el build los inserta en el núcleo y `nbv-diag.py` los lee, de modo que el diagnóstico declara exactamente los mismos 10 offsets que la app.
+- **Registro del almacenamiento** (`NBV.store`): documenta las 18 claves de localStorage (quién las usa, formato y para qué sirven) y fija la versión de esquema 1 (`nbv_schema`), con un mecanismo de migración con copia previa para el futuro. No mueve ni reescribe datos.
+- **Lógica del monitor OPS separada** (`NBV.opsLogic`, `src/core/10-ops-logica.js`): estado de cada vuelo, cambio de fase, nueva pierna, desconexión, EET y decisión de qué mensajes y route info enviar, sin DOM, red ni almacenamiento (el tiempo llega como parámetro). `scan()` queda como orquestador: registro, sonido, Discord, FSUIPC y envío. Lista para reutilizarla en el futuro monitor en la nube. El vuelo de referencia LEST→LEMD produce exactamente los mismos mensajes.
+- Se conservan como globales los nombres que existían (`estimateEnrouteMin`, `PHASE_DEDUP`, `newSent`) para no cambiar la superficie pública: ninguna función global de la 4.9.0 desaparece.
+- **Tipado JSDoc de `NBV` y `$()`**: los avisos de tipo bajan de 465 a 49 (ninguno es un fallo real), y el linter ya puede señalar errores nuevos sin que queden ocultos entre el ruido.
+- **Sin manejadores inline**: los 99 `onclick`/`onchange`/`oninput`/`onkeydown` pasan a ser acciones delegadas (`data-click="uiGo|msgs"`, `NBV.act`). Siete manejadores compuestos se convierten en funciones con nombre (`uiCpReply`, `uiOnbCfg`, `uiCpClear`, `uiAcDelete`, `uiAcRemoveRow`, `apikeyCancelConfirm`; los de `manualSend` y `clearMsgHistory` pierden el `stopPropagation`, que la delegación ya cubre).
+
+### Revisión de código (aplicada)
+- El build se detiene si un fichero de módulo no sigue el patrón `NN-nombre.js`; antes lo omitía sin avisar.
+- Los argumentos de las acciones solo se convierten a número si se indica con `#` (`toggleMsgBody|#3`); así un texto como `0012` llega intacto.
+- Los eventos internos `input` se lanzan con `bubbles: true` y llegan también a las acciones delegadas.
+- Callsign escapado en las acciones de las tarjetas del OPS.
+- La prueba de clics cubre todos los botones: una segunda pasada para los que aparecen tras pulsar otros y secuencias explícitas para el borrado del mapa ACARS y la cancelación del borrado de la API key.
+
+### Pruebas
+- **Prueba de clics**: pulsa los 84 controles de las dos páginas y registra las funciones de la app que ejecuta cada uno. Comparada antes y después de la migración, solo aparecen las dos funciones envoltorio nuevas, con las mismas llamadas internas.
+- `tests/store-check.js`: falla si el código usa una clave de localStorage que no está en el registro, o si hay claves registradas que ya nadie usa.
+- `check` reconoce las acciones `data-*` (manejador inexistente, código muerto). Regresiones nuevas: X6 (botón mal cableado) y X7 (lógica OPS: route info fuera de tiempo); el verificador admite mutaciones repartidas en varios ficheros (11 en total, todas detectadas).
+- Pruebas unitarias directas de `NBV.opsLogic`: desconexión, nueva pierna, omisión por registro, route info en modo inteligente y por intervalo, y EET.
+
+---
+
 ## [v4.9.0] — 2026-11-05
 
 Fase F1 de la 5.0 («consolidación»). No cambia el funcionamiento ni la interfaz: la app generada es idéntica byte a byte a la 4.8.0, salvo el número de versión y los iconos, que vuelven a ser los publicados.

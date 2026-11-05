@@ -1,5 +1,5 @@
-# AirNubeiro ACARS — v4.7.2
+# AirNubeiro ACARS — v4.9.0
 
-Estación de dispatch TELEX/CPDLC y OPS Center de AirNubeiro (IVAO). Versión web: requiere el proxy de Cloudflare configurado en Ajustes → Proxy personalizado. En el PC, lo recomendable es START-ACARS.bat.
+Estación de dispatch TELEX/CPDLC y OPS Center de AirNubeiro (IVAO). Versión web: usa por defecto el proxy de Cloudflare (nbv-proxy). En el PC, lo recomendable es START-ACARS.bat.
 
 Creado por Varo para AirNubeiro.

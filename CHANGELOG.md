@@ -4,6 +4,49 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v4.9.0] — 2026-11-05
+
+Fase F1 de la 5.0 («consolidación»). No cambia el funcionamiento ni la interfaz: la app generada es idéntica byte a byte a la 4.8.0, salvo el número de versión y los iconos, que vuelven a ser los publicados.
+
+### Código fuente
+- **Se acaba el build por parches**: la salida de la 4.8.0 pasa a ser el código fuente (`src/`). Desaparecen la base 4.3.3, los 56 reemplazos textuales y el análisis con acorn. `build.js` pasa de 245 a 50 líneas: solo inserta la versión y el proxy y vuelve a incrustar el script de cada página.
+- Estructura: `src/core/nbv-core.js` (núcleo), `src/app/` (ACARS `index.html` + `acars.js`, OPS `ops-center.html` + `ops.js`, `nbv-ui.css`), `src/pwa/` (service worker y manifiesto), `src/local/` (servidor y lanzador del PC), `src/icons/`.
+- **Versión en un solo sitio**: `package.json` → `version`. Desaparece el `replaceAll('4.3.3')`.
+- **Proxy por defecto en `build.config.json`**: ya no depende de acordarse de `NBV_PROXY` al compilar.
+- El build se detiene si queda algún marcador sin sustituir o hay metadatos C2PA en la salida.
+
+### Publicación
+- **Worker con una sola copia** (`deploy/`): la carpeta de publicación del repo se genera desde ahí, sin copias a mano.
+- **`npm run release`**: build + pruebas → paquete para M: + zip → raíz del repo GitHub (`out/publish/`) con hashes. Opciones `--copy-to` (M:), `--repo` (clon local; no hace commit ni push) y `--e2e`.
+
+### Limpieza
+- Iconos PNG: las copias de M: llevaban metadatos C2PA (6–7 KB por icono, mismos píxeles); se usan los publicados en GitHub.
+- Las dependencias pasan a ser solo de desarrollo (la app no tiene dependencias).
+
+---
+
+## [v4.8.0] — 2026-11-03
+
+Fase F0 de la 5.0 («red de seguridad»): sin cambios de funcionamiento ni de interfaz. Solo cambia el número de versión en la app.
+
+### Pruebas
+- **Caracterización hermética** (`tests/characterization.js`, 79 pruebas): la app generada se ejecuta contra un mundo simulado sin Internet (IVAO, Hoppie, aviationweather, NOAA, VATSIM, SimBrief, Discord y el Worker) con datos reales capturados. Fija con ficheros de referencia (`tests/golden/`) los mensajes del OPS Center en un vuelo completo LEST→LEMD, el diálogo CPDLC y la tabla de fases.
+- **Simulador FSUIPC estricto** (`tests/sim/fsuipc-strict.js`): rechaza como el servidor real `127.0.0.1` (400 Invalid Hostname), la ruta raíz, la falta del subprotocolo `fsuipc` y las direcciones de offset como texto. Cada regla indica si es real, documentada o supuesta.
+- **Hoppie con CORS real**: `connect.html` admite CORS y `online.html`/`callsign.html` no; un enrutado erróneo falla en la prueba igual que en el navegador.
+- **Regresiones** (`tests/regressions.js`): reintroduce los fallos de 4.6.1, 4.7.1, 4.7.2 y 4.7.3 y cinco más (subprotocolo, CORS de Hoppie, duplicados del OPS, reenvío tras recarga, referencia CPDLC). La batería detecta los nueve.
+- **Linter y tipos** (`npm run lint`): ESLint y `tsc --checkJs` sobre el código generado, con la línea base de la 4.7.3 como tope. Si aparece un aviso nuevo, la prueba falla.
+- `npm run check` falla de verdad si detecta choques de nombres, identificadores sin declarar, manejadores inexistentes, código muerto o metadatos incrustados. Antes solo informaba.
+- **E2E**: arranca su propio servidor desde `dist/` en un puerto libre. Otra versión abierta en el 8433 ya no da un falso fallo.
+- `npm test` ejecuta en un solo paso las pruebas que no necesitan red.
+
+### Herramientas
+- `nbv-diag.py --capture DIR`: guarda las respuestas en bruto de FSUIPC (handshake, datos y tres sondas de rechazo) y de Hoppie para usarlas como fixtures.
+
+### Limpieza
+- `src/ui/sprite.svg` llevaba ~7,7 KB de metadatos C2PA incrustados al copiarlo; se eliminan. La versión publicada no los tenía.
+
+---
+
 ## [v4.7.3] — 2026-11-02
 
 - **FSUIPC: direcciones de offset numéricas**: el servidor WebSocket de FSUIPC espera la dirección como número (`0x0560`), y la app la enviaba como texto (`"0x0560"`). Ahora se envía en el formato documentado.

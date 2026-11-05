@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════
-//  NBV CORE v5.0.0-rc.1 — AirNubeiro ACARS / OPS Center
+//  NBV CORE v5.0.0-rc.2 — AirNubeiro ACARS / OPS Center
 //  Módulo común cargado por index.html y ops-center.html.
 //  Red (proxy local), IVAO, meteo, Hoppie, phpVMS, Discord, FSUIPC,
 //  cifrado de API key, generadores OPS y utilidades.
@@ -9,7 +9,7 @@
 
 /** Espacio de nombres de la app (módulos NBV.net, NBV.ivao, NBV.hoppie…). @type {any} */
 const NBV = window.NBV = window.NBV || {};
-NBV.VERSION = '5.0.0-rc.1';
+NBV.VERSION = '5.0.0-rc.2';
 
 // ── Endpoints ──
 const HURL         = 'https://www.hoppie.nl/acars/system/connect.html'; // HTTPS + CORS: funciona sin proxy
@@ -213,8 +213,11 @@ NBV.net = (() => {
     return !DIRECT_CORS.has(u.hostname);
   }
   // Devuelve la URL real a pedir (síncrono, compatible con fetch(proxy(url)))
+  // 5.0 rc2: el autoATIS de IVAO exige API key, que solo tiene el Worker (secreto IVAO_API_KEY)
+  const isAutoAtis = u => u.hostname === 'api.ivao.aero' && u.pathname.startsWith('/v2/auto-atis/');
   function route(url) {
     let u; try { u = new URL(url, location.href); } catch (e) { return url; }
+    if (isAutoAtis(u)) { const p = normProxy($('cP')?.value) || DEFAULT_PROXY; return p && !isLegacyProxy(p) ? viaCustom(p, u.href) : url; }
     if (u.origin === location.origin || !needsProxy(u)) return url;
     if (onLocalServer() && localProxy !== false) return '/proxy?url=' + encodeURIComponent(u.href);
     const p = customProxy();
@@ -436,7 +439,27 @@ NBV.ivao = (() => {
       return (t === 'CTR' || t === 'FSS') && cs.startsWith(p2);
     });
   }
-  const api = { get, last, pilots, atcs, depOf, arrOf, posOf, atisFor, traffic, atcFor, TTL };
+  // 5.0 rc2: autoATIS de IVAO (el que muestra Webeye). Endpoint autenticado: GET /v2/auto-atis/{ICAO} vía Worker.
+  // Respuesta (según Webeye): { createdAt, digitalAtis: "EDDM …", data }. Se descarta si no es del ICAO o tiene más de 35 min.
+  async function autoAtis(icao) {
+    icao = String(icao || '').toUpperCase(); if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
+    try {
+      const r = await NBV.net.req(`https://api.ivao.aero/v2/auto-atis/${icao}`, { timeout: 10000, retries: 0 });
+      if (!r.ok) return null; // 401 sin API key en el Worker, 404 sin autoATIS
+      const o = await r.json();
+      const txt = typeof o?.digitalAtis === 'string' ? o.digitalAtis.replace(/\s+/g, ' ').trim() : '';
+      if (!txt || txt.split(' ')[0].toUpperCase() !== icao) return null;
+      const age = Date.now() - Date.parse(o.createdAt);
+      if (!Number.isFinite(age) || age < -300000 || age > 2100000) return null;
+      return { station: `${icao} AUTO`, letter: '', text: txt, auto: true };
+    } catch (e) { return null; }
+  }
+  // Mejor ATIS para un aeropuerto: controlador humano (whazzup) → autoATIS → null
+  async function atisBest(icao) {
+    try { const l = atisFor(await get(), icao); if (l.length) return l[0]; } catch (e) {}
+    return autoAtis(icao);
+  }
+  const api = { get, last, pilots, atcs, depOf, arrOf, posOf, atisFor, autoAtis, atisBest, traffic, atcFor, TTL };
   return api;
 })();
 
@@ -992,7 +1015,7 @@ NBV.opsLogic = (() => {
     // Nueva pierna con el mismo callsign → reiniciar estado de mensajes
     if (prev && prev.phase === 'LANDED' && newPhase === 'PREFLIGHT') {
       events.push({ type: 'newLeg', cs, dep: curDep, arr: curArr });
-      prev = { ...prev, phase: 'PREFLIGHT', sent: newSent(), msgStatus: {}, msgBodies: {}, enrouteStart: 0, estEnrouteMin: 0,
+      prev = { ...prev, phase: 'PREFLIGHT', sent: newSent(), msgStatus: {}, msgBodies: {}, msgDelivered: {}, msgSentAt: {}, enrouteStart: 0, estEnrouteMin: 0,
         riSent1: false, riSent2: false, assignedParking: null, lastRouteInfo: 0, routeInfoCount: 0, firstSeen: now, plannedDepTime: null, dep: curDep, arr: curArr };
     }
     const flt = {
@@ -1019,6 +1042,7 @@ NBV.opsLogic = (() => {
       assignedParking: prev?.assignedParking || null, lastRouteInfo: prev?.lastRouteInfo || 0, routeInfoCount: prev?.routeInfoCount || 0,
       offlineSince: null, srcSim: false, srcPhpvms: false,
       sent: prev?.sent || newSent(), msgStatus: prev?.msgStatus || {}, msgBodies: prev?.msgBodies || {},
+      msgDelivered: prev?.msgDelivered || {}, msgSentAt: prev?.msgSentAt || {},
     };
     if (!prev) events.push({ type: 'detected', cs });
     else if (prev.phase !== newPhase) events.push({ type: 'phase', cs, from: prev.phase, to: newPhase });

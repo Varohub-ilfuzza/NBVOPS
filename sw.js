@@ -1,7 +1,7 @@
-// Service Worker — AirNubeiro ACARS PWA v5.0.0-rc.1
+// Service Worker — AirNubeiro ACARS PWA v5.0.0-rc.2
 // Red primero para la app (las actualizaciones se ven al instante) y
 // caché solo como respaldo offline. Nunca cachea APIs ni el proxy local.
-const CACHE_NAME = 'an-acars-v5.0.0-rc.1';
+const CACHE_NAME = 'an-acars-v5.0.0-rc.2';
 const APP_SHELL = ['./', './index.html', './ops-center.html', './nbv-core.js', './nbv-ui.css', './manifest.json', './icons/nbv-mark.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {

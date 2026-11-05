@@ -245,7 +245,7 @@
       </table>
       <div class="aoc-empty" id="aocEmpty">Ningún vuelo NBV detectado — inicia el monitor</div>
     </div>
-    <div class="aoc-footer">AirNubeiro OPS Center v5.0.0-rc.1</div>
+    <div class="aoc-footer">AirNubeiro OPS Center v5.0.0-rc.2</div>
   </div>
 
   <div class="ftr">
@@ -551,8 +551,8 @@ async function genPreflight(flt) {
   try {
     const icaos = [dep, arr].filter(x => x !== '????');
     if (icaos.length) {
-      const [m, t] = await Promise.all([NBV.wx.metar(icaos, 2), NBV.wx.taf(icaos).catch(() => '')]);
-      msgs.push({ id: 'wx_brief', label: 'WX BRIEF', body: `=== WX BRIEFING ${flt.callsign} ===\n${dep}→${arr}\nMETAR:\n${m || 'N/A'}\nTAF:\n${(t || 'N/A').substring(0, 400)}` });
+      const [m, t, atis] = await Promise.all([NBV.wx.metar(icaos, 2), NBV.wx.taf(icaos).catch(() => ''), dep !== '????' ? atisText(dep) : '']);
+      msgs.push({ id: 'wx_brief', label: 'WX BRIEF', body: `=== WX BRIEFING ${flt.callsign} ===\n${dep}→${arr}\n${atis ? atis + '\n' : ''}METAR:\n${m || 'N/A'}\nTAF:\n${(t || 'N/A').substring(0, 400)}` });
     }
   } catch (e) { log(`WX ${flt.callsign}: ${e.message}`, 'wrn'); }
   return msgs;
@@ -742,6 +742,7 @@ async function scan() {
       }
     }
 
+    await opsTrackDelivery().catch(() => {}); // 5.0 rc2: «esperando al avión» → «entregado HH:MMZ»
     if ($('phpvmsEn')?.checked) phpvmsMergeWithFlights();
     updateDashboard(); updateStats(); updateAoc(); renderRosterChips();
     opsSaveState();
@@ -756,6 +757,9 @@ async function scan() {
 async function processMessages(flt, phase, generatorFn, autoSend, requireSignificant = false) {
   try {
     const msgs = await generatorFn(flt);
+    // 5.0 rc2 (vuelo 1): tras aterrizar el Fenix deja de consultar Hoppie en pocos minutos. Si ya no está
+    // conectado, no se envía: se quedaría 24 h en cola y le llegaría en el siguiente vuelo. Queda «retenido».
+    const hold = autoSend && phase === 'landed' && !(await opsAircraftOnline(flt.callsign));
     for (const m of msgs) {
       if (requireSignificant && m.significant === false) {
         log(`${m.label} ${flt.callsign}: sin info significativa, omitido`, '');
@@ -763,13 +767,14 @@ async function processMessages(flt, phase, generatorFn, autoSend, requireSignifi
         continue;
       }
       const key = `${phase}_${m.id}`;
-      flt.msgStatus[key] = autoSend ? 'sending' : 'pending';
+      flt.msgStatus[key] = hold ? 'held' : autoSend ? 'sending' : 'pending';
       flt.msgBodies[key] = m.body;
       updateDashboard();
+      if (hold) { log(`${m.label} ${flt.callsign}: retenido, el avión ya no está conectado a Hoppie (clic en la tarjeta para enviarlo)`, 'wrn'); recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'held', m.body); continue; }
       if (!autoSend) { log(`${m.label} generado para ${flt.callsign} (envío manual)`, ''); continue; }
       try {
         await sendTelex(flt.callsign, m.body, { auto: true });
-        flt.msgStatus[key] = 'sent';
+        flt.msgStatus[key] = 'sent'; (flt.msgSentAt ||= {})[key] = Date.now();
         log(`✓ ${m.label} → ${flt.callsign}`, 'ok');
         recordSent(flt.callsign, flt.dep, flt.arr, phase, m.label, 'sent', m.body);
         await sleep(800);
@@ -790,6 +795,33 @@ async function processMessages(flt, phase, generatorFn, autoSend, requireSignifi
 // (SIGMETs, PIREPs, or notable ATC changes). Used for 15min post-departure check.
 
 
+// ── 5.0 rc2: estado real de entrega (Hoppie: hora de recepción y de recogida por el avión) ──
+async function opsAircraftOnline(cs) {
+  try { return (await NBV.hoppie.online(true)).has(NBV.acars.to(cs).toUpperCase()); }
+  catch (e) { return true; } // sin datos de Hoppie: se envía como antes
+}
+let deliveryAt = 0;
+async function opsTrackDelivery() {
+  if (Date.now() - deliveryAt < 55000) return;
+  const station = ($('cS')?.value || '').trim().toUpperCase(); if (!station) return;
+  const pend = Object.values(flights).filter(f => Object.values(f.msgStatus || {}).includes('sent'));
+  if (!pend.length) return;
+  deliveryAt = Date.now();
+  const net = ((await NBV.hoppie.online()).get(station) || [])[0]?.net || 'IVAO';
+  const norm = s => String(s || '').replace(/^\[\d+\/\d+\]\s*/, '').replace(/\s+/g, ' ').trim().toUpperCase().slice(0, 40);
+  for (const f of pend) {
+    const dest = NBV.acars.to(f.callsign).toUpperCase();
+    let h; try { h = await NBV.hoppie.history(dest, net); } catch (e) { continue; }
+    const mine = h.filter(x => x.from === station && x.to === dest && x.relayed);
+    for (const [k, st] of Object.entries(f.msgStatus)) {
+      if (st !== 'sent') continue;
+      const want = norm(sanitizeForHoppie(f.msgBodies?.[k] || ''));
+      const hit = want && mine.find(x => norm(x.text) === want);
+      if (hit) { f.msgStatus[k] = 'delivered'; (f.msgDelivered ||= {})[k] = hit.relayed; }
+    }
+  }
+}
+
 // Manual send from dashboard
 async function manualSend(cs, key) {
   const flt = flights[cs];
@@ -799,7 +831,7 @@ async function manualSend(cs, key) {
   updateDashboard();
   try {
     await sendTelex(cs, body, { auto: false });
-    flt.msgStatus[key] = 'sent';
+    flt.msgStatus[key] = 'sent'; (flt.msgSentAt ||= {})[key] = Date.now();
     log(`✓ ${key} → ${cs} (manual)`, 'ok');
     recordSent(cs, flt.dep, flt.arr, key.split('_')[0], key, 'sent', body);
   } catch (e) {
@@ -827,7 +859,7 @@ function updateDashboard() {
   const order = { PREFLIGHT: 0, ENROUTE: 1, DESCENT: 2, LANDED: 3 };
   activeFlights.sort((a, b) => (order[a.phase] ?? 9) - (order[b.phase] ?? 9));
   const PH = { PREFLIGHT: 'Preflight', ENROUTE: 'En ruta', DESCENT: 'Descenso', LANDED: 'En tierra' };
-  const ST = { sent: 'enviado', sending: 'enviando', pending: 'pendiente — clic para enviar', error: 'error — clic para reintentar' };
+  const ST = { sent: 'enviado — esperando a que el avión lo recoja', delivered: 'entregado al avión', held: 'retenido: el avión no está conectado a Hoppie — clic para enviar', sending: 'enviando', pending: 'pendiente — clic para enviar', error: 'error — clic para reintentar' };
 
   dash.innerHTML = activeFlights.map(f => {
     NBV.ui.stats.seen(f.callsign);
@@ -845,10 +877,11 @@ function updateDashboard() {
     if (f.routeInfoCount > 0) d.push(['RI', '×' + f.routeInfoCount]);
     const msgs = Object.entries(f.msgStatus || {}).map(([key, s]) => {
       const label = esc(key.replace(/_/g, ' ').toUpperCase());
-      const ic = s === 'sent' ? NBV.ui.icon('check') : s === 'error' ? NBV.ui.icon('refresh') : s === 'pending' ? NBV.ui.icon('send') : '';
-      return (s === 'pending' || s === 'error')
-        ? `<button type="button" class="flt-msg ${s}" title="${label}: ${ST[s]}" data-click="manualSend|${esc(f.callsign)}|${esc(key)}">${ic}${label}</button>`
-        : `<span class="flt-msg ${esc(s)}" title="${label}: ${ST[s] || esc(s)}">${ic}${label}</span>`;
+      const ic = s === 'delivered' ? NBV.ui.icon('check') : s === 'sent' ? NBV.ui.icon('clock') : s === 'error' ? NBV.ui.icon('refresh') : (s === 'pending' || s === 'held') ? NBV.ui.icon('send') : '';
+      const tip = s === 'delivered' && f.msgDelivered?.[key] ? `entregado al avión ${f.msgDelivered[key]}` : ST[s] || s;
+      return (s === 'pending' || s === 'error' || s === 'held')
+        ? `<button type="button" class="flt-msg ${s}" title="${label}: ${esc(tip)}" data-click="manualSend|${esc(f.callsign)}|${esc(key)}">${ic}${label}</button>`
+        : `<span class="flt-msg ${esc(s)}" title="${label}: ${esc(tip)}">${ic}${label}</span>`;
     }).join('');
     const src = f.srcSim ? ['src-sim', 'SIM'] : f.srcPhpvms ? ['src-phpvms', 'phpVMS'] : ['src-ivao', 'IVAO'];
     const meta = [esc(f.aircraft || ''), f.registration ? esc(f.registration) : '', [f.pilotIdent, f.pilotName].filter(Boolean).map(esc).join(' · ')].filter(Boolean);
@@ -1184,7 +1217,7 @@ function phpvmsMergeWithFlights() {
       pilotName: pv.pilotName, pilotIdent: pv.pilotIdent, arrLat: pv.arrLat, arrLon: pv.arrLon, _phpvmsPhase: pv.phpvmsPhase,
       pirepId: pv.pirepId, srcPhpvms: true, srcSim: false, ivaoState: '', arrivalDist: null,
       firstSeen: f?.firstSeen || Date.now(), lastSeen: Date.now(), offlineSince: null,
-      sent: f?.sent || newSent(), msgStatus: f?.msgStatus || {}, msgBodies: f?.msgBodies || {},
+      sent: f?.sent || newSent(), msgStatus: f?.msgStatus || {}, msgBodies: f?.msgBodies || {}, msgDelivered: f?.msgDelivered || {}, msgSentAt: f?.msgSentAt || {},
       estEnrouteMin: f?.estEnrouteMin || 0, enrouteStart: f?.enrouteStart || 0, routeInfoCount: f?.routeInfoCount || 0 };
   }
   // Vuelos solo-phpVMS que ya no están activos
@@ -1259,12 +1292,12 @@ async function simbriefOfp(user) {
   return o;
 }
 
+// ATIS: controlador humano de IVAO → autoATIS de IVAO → Hoppie. «Not available» no cuenta como ATIS (vuelo 1, EDDM)
+const NO_ATIS = /no atis|not available|unavailable|no data/i;
 async function atisText(icao) {
-  try {
-    const list = NBV.ivao.atisFor(await NBV.ivao.get(), icao);
-    if (list.length) return `ATIS ${list[0].station}${list[0].letter ? ' INFO ' + list[0].letter : ''}: ${list[0].text}`;
-  } catch (e) {}
-  try { const t = await hoppieInfo('IVAOATIS', icao); if (t && !/no atis/i.test(t)) return `ATIS ${icao}: ${t}`; } catch (e) {}
+  const a = await NBV.ivao.atisBest(icao);
+  if (a) return `ATIS ${a.station}${a.letter ? ' INFO ' + a.letter : ''}: ${a.text}`;
+  try { const t = await hoppieInfo('IVAOATIS', icao); if (t && !NO_ATIS.test(t)) return `ATIS ${icao}: ${t}`; } catch (e) {}
   return '';
 }
 

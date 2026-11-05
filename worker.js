@@ -46,6 +46,10 @@ export default {
 
     const headers = new Headers({ 'User-Agent': 'AirNubeiro-ACARS-Proxy/1.0' });
     for (const h of FWD_REQ_HEADERS) { const v = request.headers.get(h); if (v) headers.set(h, v); }
+    // 5.0 rc2: autoATIS de IVAO. La API key vive solo aquí (secreto IVAO_API_KEY: npx wrangler secret put IVAO_API_KEY)
+    // y se añade únicamente a GET /v2/auto-atis/{ICAO}; nunca a otras rutas ni hosts.
+    if (host === 'api.ivao.aero' && /^\/v2\/auto-atis\/[A-Za-z0-9]{4}$/.test(u.pathname) && request.method === 'GET' && env && env.IVAO_API_KEY)
+      headers.set('apiKey', env.IVAO_API_KEY);
     let body;
     if (!['GET', 'HEAD'].includes(request.method)) {
       body = await request.arrayBuffer();

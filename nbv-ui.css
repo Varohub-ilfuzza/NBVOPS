@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════
-   AirNubeiro ACARS — Sistema visual v5.0.0-rc.1 «Torre de control»
+   AirNubeiro ACARS — Sistema visual v5.0.0-rc.2 «Torre de control»
    Tokens claro/oscuro · componentes compartidos ACARS + OPS Center
    ══════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -322,6 +322,7 @@ body .nbv-tpl .msg { font: 500 .78rem var(--sans); }
 .aoc-msg { display: inline-block; padding: 1px 7px; margin: 1px; border-radius: 999px; font: 600 .62rem var(--sans); background: var(--bg2); color: var(--tx3); }
 .aoc-msg.sent { background: var(--ok-g); color: var(--ok); } .aoc-msg.sending { background: var(--inf-g); color: var(--inf); }
 .aoc-msg.error { background: var(--err-g); color: var(--err); }
+.aoc-msg.delivered { background: var(--ok-g); color: var(--ok); } .aoc-msg.held { background: var(--wrn-g); color: var(--wrn); }
 .aoc-empty { text-align: center; padding: 90px 20px; color: var(--tx3); font-size: .95rem; }
 .aoc-footer { text-align: center; padding: 10px; border-top: 1px solid var(--brd); color: var(--tx3); font: 500 .7rem var(--brand); letter-spacing: 1px; flex-shrink: 0; opacity: .7; }
 
@@ -548,7 +549,9 @@ body .nbv-tpl .msg { font: 500 .78rem var(--sans); }
 .flt-msg { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 999px; border: 0; font: 600 .66rem var(--sans); letter-spacing: .3px;
   background: var(--bg2); color: var(--tx3); }
 .flt-msg .ic { width: 12px; height: 12px; stroke-width: 2.4; }
-.flt-msg.sent { background: var(--ok-g); color: var(--ok); }
+.flt-msg.sent { background: var(--inf-g); color: var(--inf); } /* 5.0 rc2: enviado, esperando al avión */
+.flt-msg.delivered { background: var(--ok-g); color: var(--ok); }
+.flt-msg.held { background: var(--wrn-g); color: var(--wrn); }
 .flt-msg.sending { background: var(--inf-g); color: var(--inf); }
 .flt-msg.error { background: var(--err-g); color: var(--err); }
 button.flt-msg:hover { outline: 1px solid currentColor; }

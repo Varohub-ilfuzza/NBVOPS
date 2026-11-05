@@ -4,6 +4,29 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.0.0-rc.2] — 2026-11-06
+
+Correcciones y mejoras a partir del vuelo de validación 1 (NBV011 LIPX→EDDM, `docs/VUELO-1-INFORME.md`).
+
+### Mensajes
+- **Estado real de entrega en el OPS**: cada mensaje pasa por «enviado — esperando a que el avión lo recoja» (reloj) y luego «entregado al avión HH:MMZ» (check), con la hora de Hoppie. En el vuelo 1, la app entregó a Hoppie al instante y el Fenix recogió los mensajes en 0–1 min.
+- **Mensajes de llegada retenidos si el avión ya no consulta Hoppie**: en el vuelo 1, el Fenix dejó de consultar unos 3 min después de tomar tierra y BIENVENIDO y CREW se quedaron en cola 24 h, de modo que habrían llegado en el siguiente vuelo. Ahora no se envían, quedan «retenidos» en la tarjeta y se pueden enviar con un clic.
+
+### ATIS
+- **ATIS de salida** en el WX BRIEFING (OPS y dispatch de SimBrief del ACARS) y de llegada en el ARRIVAL INFO, en este orden: controlador humano de IVAO (whazzup), **autoATIS de IVAO** (el que muestra Webeye) y, por último, Hoppie.
+- **autoATIS**: `api.ivao.aero/v2/auto-atis/{ICAO}` exige una API key de IVAO. La key vive solo en el Worker (secreto `IVAO_API_KEY`), que la añade únicamente a esa ruta. Sin key, la app sigue funcionando sin autoATIS. Se descartan los autoATIS de más de 35 min, el mismo criterio que usa Webeye.
+- Corregido: «EDDM ATIS IS NOT AVAILABLE» de Hoppie ya no se envía como si fuera un ATIS.
+
+### Herramientas y pruebas
+- Simulador FSUIPC igualado al servidor real con las capturas del vuelo 1: tipos desconocidos aceptados y códigos `BadMessage` y `UnknownName`. Las capturas quedan como fixtures y se comparan en cada ejecución.
+- `nbv-diag.py`: UTF-8 forzado; con la salida redirigida se cerraba al escribir «→».
+- Pruebas nuevas: orden de fuentes del ATIS, antigüedad del autoATIS, API key solo en el endpoint del autoATIS (Worker, 7 casos), retención tras aterrizar, estado «entregado». Regresiones nuevas: X8 (retención) y X9 («NOT AVAILABLE»).
+
+### Pendiente (5.0.1)
+- Offset de combustible: `0x0AF8` da valores no plausibles. Sin confirmar en la documentación de FSUIPC; se verificará con una captura en vuelo antes del PIREP automático. Hoy no se usa.
+
+---
+
 ## [v5.0.0-rc.1] — 2026-11-05
 
 Candidata de la 5.0 con la F2 («modularización») completa, publicada para el vuelo de validación. No cambia el funcionamiento ni la interfaz. La 5.0.0 definitiva llegará con la F3.

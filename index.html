@@ -75,7 +75,7 @@
   <header class="top">
     <div class="top-t">
       <h1 id="viewTitle">Flota en vivo</h1>
-      <div class="sub" id="viewSub">AirNubeiro ACARS · v5.0.0-rc.1</div>
+      <div class="sub" id="viewSub">AirNubeiro ACARS · v5.0.0-rc.2</div>
     </div>
     <div class="sb idle" id="sBar" role="status" aria-live="polite"><div class="d"></div><span id="sTxt">Configura logon y callsign</span></div>
     <div class="top-r">
@@ -374,7 +374,7 @@
             </div>
           </div>
         </div>
-        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v5.0.0-rc.1</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
+        <div class="set-foot"><span><b>AirNubeiro</b> ACARS Dispatch v5.0.0-rc.2</span><span>Creado por Varo para AirNubeiro — Todos los derechos reservados © 2026</span></div>
       </div>
     </section>
   </main>
@@ -453,7 +453,7 @@
 <script src="nbv-core.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════
-//  ACARS DISPATCH v5.0.0-rc.1 — AirNubeiro
+//  ACARS DISPATCH v5.0.0-rc.2 — AirNubeiro
 //  Creado por Varo para AirNubeiro · Todos los derechos reservados
 // ══════════════════════════════════════════════════════════════════
 
@@ -1065,8 +1065,10 @@ async function fetchDispatch() {
     const altnMetar = o.weather?.altn_metar || 'N/A';
     const origTaf = o.weather?.orig_taf || '';
     const destTaf = o.weather?.dest_taf || '';
+    const depAtis = await NBV.ivao.atisBest(orig).catch(() => null); // 5.0 rc2: ATIS de salida (humano o autoATIS)
     const wxBrief = [
       `=== WX BRIEFING ${fltNum} ===`,
+      depAtis ? `ATIS ${depAtis.station}${depAtis.letter ? ' INFO ' + depAtis.letter : ''}: ${depAtis.text}` : '',
       `DEP ${orig} METAR:`,
       origMetar,
       origTaf ? `TAF: ${origTaf.substring(0,200)}` : '',
@@ -1803,7 +1805,8 @@ async function ivaoAtis(icao) {
     const list = NBV.ivao.atisFor(await NBV.ivao.get(), icao);
     if (list.length) return list.map(a => `[${a.station}${a.letter ? ' INFO ' + a.letter : ''}]\n${a.text}`).join('\n\n');
   } catch (e) {}
-  return '';
+  const au = await NBV.ivao.autoAtis(icao); // 5.0 rc2: autoATIS de IVAO
+  return au ? `[${au.station}]\n${au.text}` : '';
 }
 
 async function sendChunked(to, body, tag, btn) {

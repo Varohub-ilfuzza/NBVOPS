@@ -4,6 +4,33 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.2.0-rc.1] — 2026-11-06
+
+Primera candidata de la 5.2: **saneado de la arquitectura**, la fase 2 del ADR-003 en la versión que eligió Álvaro tras medir el código. No cambia nada visible: el vuelo de referencia, los clics y el E2E dan lo mismo. Prepara el terreno para TechLog y la comprobación de PIREP (rc.2) y deja los módulos reales a un paso.
+
+### Medido antes de empezar
+48 ficheros y 348 nombres globales, con 12 variables modificadas desde otro fichero, 5 funciones declaradas dos veces y 9 sitios donde el núcleo llamaba a funciones de la app.
+
+### Saneado
+- **Contrato app → núcleo (`NBV.app`)**: el núcleo ya no llama a funciones de las apps por su nombre. Cada página registra lo que ofrece (`saveCfg`, `log` y el sonido del ACARS). Se eliminan los `typeof soundOn` y `typeof saveCfg` repartidos por el núcleo.
+- **Cada variable global solo la modifica su fichero**:
+  - `busy`, `autoPoll`, `scanBusy`, `lastIvaoData` y `monitorInterval` se declaran ahora donde se usan.
+  - Para el resto hay funciones del fichero dueño: `rxAdd` y `rxReset` (insignia de recibidos), `msgCountRestore`, `fsuipcReconnect`, `audioContext` y `soundMuted`.
+  - `phpvmsStop()` pasa a `06-phpvms.js`.
+- **Sin funciones duplicadas**: el `fsuipcOnToggle` del ACARS pisaba en silencio al del núcleo; ahora se llama `acarsFsuipcOnToggle`. Los otros cuatro duplicados (`saveCfg`, `loadCfg`, `toggleCfg` y `phpvmsOnToggle`) están en páginas distintas y no se pisan.
+
+### Nuevo verificador de arquitectura (`tests/arch-check.js`, en `npm test`)
+Analiza cada fichero con `eslint-scope` y hace fallar el build si:
+- R1: un nombre se declara dos veces en la misma página.
+- R2: un fichero modifica una variable de otro.
+- R3: el núcleo usa nombres de una app.
+- R4: el ACARS usa nombres del OPS o al revés.
+- R5: se usa un nombre que no declara nadie.
+
+`tests/arch-check.test.js` demuestra que cada regla detecta su incumplimiento. Estado actual: 48 ficheros, 355 nombres y 462 dependencias entre ficheros, sin ningún incumplimiento.
+
+---
+
 ## [v5.1.0-rc.2] — 2026-11-06
 
 Correcciones de la revisión de código de la 5.1 (`docs/REVISION-5.1.md`). Se han aplicado las 7.

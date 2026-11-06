@@ -4,6 +4,27 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.1.0-rc.1] — 2026-11-06
+
+Primera candidata de la 5.1: robustez y operación (`docs/PLAN-V5.1.md` §2). Incluye todo lo de la 5.0.0-rc.2.
+
+### Nuevo
+- **Registro de vuelos** (OPS Center): cada pierna detectada queda registrada con callsign, ruta, avión, horas de detección, despegue, descenso y aterrizaje, tiempo de vuelo, mensajes (enviados, entregados, retenidos y con error), route info y estado (en curso, completado o desconectado). Se puede filtrar y exportar a CSV (separador «;», listo para Excel). Guarda hasta 500 vuelos en `nbv_flightlog`.
+- **Aviso de versión nueva**: cuando se publica otra versión, aparece una barra «Nueva versión X — Recargar / Más tarde». Nunca recarga sola, para no cortar un vuelo. Comprueba `version.json` cada 15 min y al volver a la pestaña.
+- **Copia de ajustes** (Ajustes → Copia de ajustes): exporta e importa la configuración, el mapa ACARS, las plantillas y el roster. **No exporta credenciales**: ni la API key de phpVMS, ni el webhook de Discord, ni el logon de Hoppie. Al importar se valida el fichero entero antes de tocar nada, se guarda una copia previa y se puede deshacer.
+- **`PUBLICAR.bat`**: publicación guiada desde el PC. Hace la release con E2E, copia a M: y sincroniza el clon de NBVOPS; después enseña el `git diff --stat` y pide confirmación **S/N** antes del commit y el push. Al terminar espera al despliegue y lanza las pruebas sobre producción. Con `--dry-run` hace todo menos publicar.
+
+### Robustez
+- **Lista blanca de acciones** (revisión F2 #1): los botones solo pueden ejecutar las acciones registradas en cada página. Una ruta inyectada en un atributo, como `localStorage.clear`, ya no hace nada y queda avisada en la consola.
+- **esbuild, fase 1**: lo que se publica va minimizado (−32 % de tamaño) con mapas de código para depurar. La sintaxis se comprueba contra Safari 15, Chrome, Edge y Firefox 100. El ámbito no cambia: un control verifica que la minimización no añade ni quita nombres globales, y toda la batería de caracterización se ejecuta también sobre la versión minimizada. Los módulos reales (`import`/`export`) se dejan para la 5.2 (ADR-003).
+- **WebKit (Safari)**: `tests/live-check.py --browser webkit|all` ejecuta las pruebas de producción también con el motor de Safari, en escritorio y en iPhone. Hay que instalarlo una vez en el PC con `py -m playwright install webkit`.
+
+### Pruebas
+- Secciones nuevas: `ajustes` (17 casos), `version` (10) y registro de vuelos dentro de `ops` (golden del CSV), además de `tests/publicar.test.js` (8 casos, con un remoto git local).
+- Regresiones nuevas: X10 (acción no registrada), X11 (el registro no cierra la pierna) y X12 (logon de Hoppie en la exportación).
+
+---
+
 ## [v5.0.0-rc.2] — 2026-11-06
 
 Correcciones y mejoras a partir del vuelo de validación 1 (NBV011 LIPX→EDDM, `docs/VUELO-1-INFORME.md`).

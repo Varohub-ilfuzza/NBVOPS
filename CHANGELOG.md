@@ -4,6 +4,33 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.2.0-rc.2] — 2026-11-07
+
+Segunda candidata de la 5.2: **TechLog** y **comprobación de PIREP**, con las decisiones de Álvaro (integración completa con TechLog; PIREP con vmsACARS en modo «preparar y confirmar»).
+
+### TechLog (app de ersindevrim, antes Fenix TechLog)
+Estudiada en el PC de Álvaro con su permiso. TechLog sirve una API local en `http://127.0.0.1:7720/api/...` (state, plan, flights, defects/history, mel…) **sin CORS**. Las capturas reales están en `tests/fixtures/techlog/`.
+- **Acceso**: a través del servidor local (`nbv-server.py` → `/techlog/api/...`), **solo GET y solo a rutas de consulta**. El OPS nunca escribe en TechLog: ni diferir, ni reparar, ni ajustes. Funciona con el ACARS/OPS abierto con START-ACARS en el PC del simulador; desde GitHub Pages lo indica. Puerto configurable con `NBV_TECHLOG_PORT`.
+- **Módulo «TechLog»** en Ajustes (ACARS y OPS). Tu vuelo es el de «Mi callsign» de FSUIPC.
+- **Tarjeta de tu vuelo**: `TECH GO · CAUTION · 2 def.`, en naranja si hay NO-GO, NOT READY o librea distinta.
+- **TELEX «TECH STATUS»** en el preflight de tu vuelo, antes del WX BRIEFING: DISPATCH y PLANNER, diferidos con MEL, categoría, fecha límite y restricción, defectos abiertos, motivos, checks próximos y fuel factor.
+- **Matrícula**: TechLog elige el avión por la matrícula de la librea cargada y su API no permite seleccionarlo desde fuera. Por eso, en lugar de cambiarla, el OPS **avisa** si la librea cargada no es la matrícula asignada al vuelo (actividad, tarjeta y TELEX).
+- **Registro de vuelos**: al cerrar tu vuelo en TechLog se guardan la toma (fpm y pista) y los defectos aparecidos en ese vuelo (columna TOMA y CSV).
+
+### Comprobación de PIREP (phpVMS + vmsACARS)
+- La API de phpVMS solo deja presentar PIREP del dueño de la API key, y los pilotos ya los presentan con vmsACARS. Por eso el OPS **no presenta PIREP: los comprueba**.
+- Cada pierna completada se contrasta con su PIREP (`GET /api/pireps/{id}`, público): estado (pendiente, aceptado, rechazado…), origen y destino frente a IVAO, y tiempo de vuelo frente a IVAO (±15 min).
+- Avisos de **«PIREP sin presentar»** (30 min tras aterrizar) y **«Sin PIREP de ACARS»** (no se vio PIREP en vuelo).
+- En tu vuelo sin PIREP, el botón **«Preparar»** copia los datos (horas, tiempo de vuelo y toma) y abre el formulario de PIREP de phpVMS. Lo envías tú.
+- Columna PIREP en el registro y en el CSV. Un PIREP aceptado o rechazado no se vuelve a consultar.
+
+### Pruebas
+- Sección nueva `techlog` (29 casos, con las capturas reales), más `tests/techlog-server.test.js` (10 casos: solo lectura, rutas bloqueadas, POST rechazado, TechLog cerrada).
+- Regresiones nuevas: X17 (TECH STATUS a otros pilotos) y X18 (PIREP final consultado otra vez).
+- CSV: los números negativos (toma en fpm) ya no llevan el apóstrofo antifórmulas.
+
+---
+
 ## [v5.2.0-rc.1] — 2026-11-06
 
 Primera candidata de la 5.2: **saneado de la arquitectura**, la fase 2 del ADR-003 en la versión que eligió Álvaro tras medir el código. No cambia nada visible: el vuelo de referencia, los clics y el E2E dan lo mismo. Prepara el terreno para TechLog y la comprobación de PIREP (rc.2) y deja los módulos reales a un paso.

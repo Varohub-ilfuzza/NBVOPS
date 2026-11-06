@@ -4,6 +4,30 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.1.0-rc.2] — 2026-11-06
+
+Correcciones de la revisión de código de la 5.1 (`docs/REVISION-5.1.md`). Se han aplicado las 7.
+
+### Seguridad
+- **`esc()` escapa también las comillas** (`"` → `&quot;`, `'` → `&#39;`) y vale ya para texto y para atributos. Antes, un mapa ACARS o un roster con comillas, por ejemplo llegados en un fichero de ajustes manipulado, podía inyectar atributos HTML con código.
+- **Importar ajustes**:
+  - El mapa ACARS solo admite callsigns, y el roster, callsigns y usuarios de SimBrief.
+  - Las direcciones de red (proxy, phpVMS, FSUIPC) del fichero **no se aplican salvo que lo aceptes en una segunda confirmación** que las muestra: la API key de phpVMS se envía a esa URL y todo el tráfico pasa por el proxy. Por defecto se mantienen las de este equipo.
+  - Se rechazan las direcciones no seguras: phpVMS sin https, o un proxy con `javascript:`.
+
+### Registro de vuelos
+- Una pierna que reaparece (OPS recargado con el estado caducado, o caída de IVAO en mitad del vuelo) **sigue en su misma fila** durante 12 h, en lugar de duplicarse.
+- Las filas «En curso» que llevan 12 h sin datos (OPS cerrado en mitad del vuelo) se muestran **«Sin datos»**.
+- CSV: los campos que empiezan por `=`, `+`, `-` o `@` llevan un apóstrofo delante para que Excel no los ejecute como fórmula.
+- Con el OPS abierto en dos ventanas, al guardar **se fusionan** las filas en lugar de pisarse.
+
+### Otros
+- La copia previa a una migración de esquema ya no incluye el registro de vuelos ni la copia de la importación.
+- `PUBLICAR.bat`: funciona con rutas con espacios (node y git se lanzan sin shell), y `--dry-run` ya no pregunta S/N.
+- Pruebas: sección nueva `registro` (10 casos), 12 casos más en `ajustes` y 1 en `publicar`. Regresiones nuevas: X13 a X16.
+
+---
+
 ## [v5.1.0-rc.1] — 2026-11-06
 
 Primera candidata de la 5.1: robustez y operación (`docs/PLAN-V5.1.md` §2). Incluye todo lo de la 5.0.0-rc.2.

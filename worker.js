@@ -1,6 +1,8 @@
 // AirNubeiro ACARS — Worker «nbv-proxy» (Cloudflare Workers, plan gratuito): sirve la app y el proxy CORS (?url=)
 // Uso en la app: Ajustes → Proxy personalizado = https://<tu-worker>.workers.dev/?url=
 // Misma lista blanca que nbv-server.py. Solo atiende a los orígenes de ALLOWED_ORIGINS.
+// 5.4 (C2): CSP_MODE (variable del Worker, deploy/wrangler.jsonc) decide si connect-src se APLICA («enforce») o solo se informa
+// («report», valor publicado). Es el interruptor de vuelta atrás: cambiarlo y redesplegar solo el Worker, sin recompilar la app.
 // 5.3 (hardening, docs/HARDENING-ACARS.md): cabeceras de seguridad en la app (OWASP A02), redirecciones
 // revalidadas contra la lista blanca (A01/SSRF), solo GET/HEAD/POST, respuestas del proxy aisladas (nosniff +
 // CSP sandbox), errores sin detalles internos (A10) y registro estructurado sin datos sensibles (A09).
@@ -18,6 +20,7 @@ const MAX_BODY = 5 * 1024 * 1024, MAX_REDIRECTS = 3;
 
 // Cabeceras de seguridad de la app (las páginas añaden su propia CSP con los hashes de sus scripts en un <meta>;
 // esta CSP de cabecera cubre lo que un <meta> no puede: frame-ancestors). Todas las CSP se aplican a la vez.
+export const CSP_BASE = "frame-ancestors 'self'; object-src 'none'; base-uri 'none'; form-action 'none'";
 export const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Content-Type-Options': 'nosniff',
@@ -25,16 +28,16 @@ export const SECURITY_HEADERS = {
   'Referrer-Policy': 'no-referrer',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=()',
   'Cross-Origin-Opener-Policy': 'same-origin',
-  'Content-Security-Policy': "frame-ancestors 'self'; object-src 'none'; base-uri 'none'; form-action 'none'",
+  'Content-Security-Policy': CSP_BASE,
 };
 // 5.3.1 (P-03): lista cerrada de conexiones en modo INFORME (Report-Only): no bloquea nada; cada conexión fuera de
 // la lista llega al registro de seguridad de la app («Seguridad: csp-informe») y a los Workers Logs (/__csp-report).
-// Cuando pase un tiempo sin informes, se aplicará de verdad (5.4).
+// 5.4: con CSP_MODE=enforce se aplica de verdad (C1, tras el periodo de observación sin informes).
 export const CONNECT_ALLOW = ["'self'", 'https://nbv-proxy.ilfuzza.workers.dev', 'https://www.hoppie.nl', 'https://api.ivao.aero',
   'https://metar.vatsim.net', 'https://discord.com', 'https://discordapp.com', 'https://operaciones.airnubeiro.es', 'https://*.airnubeiro.es',
   'https://aviationweather.gov', 'https://www.simbrief.com', 'https://tgftp.nws.noaa.gov',
   'ws://localhost:2048', 'ws://127.0.0.1:2048', 'http://localhost:8433', 'http://127.0.0.1:8433'];
-export const CSP_REPORT_ONLY = `connect-src ${CONNECT_ALLOW.join(' ')}; report-uri /__csp-report`;
+export const CONNECT_POLICY = `connect-src ${CONNECT_ALLOW.join(' ')}; report-uri /__csp-report`;
 // 5.3.1 (P-02): límite de peticiones al proxy por IP (binding LIMITER de Cloudflare; sin él, no se limita)
 const RATE_KEY = request => request.headers.get('CF-Connecting-IP') || 'sin-ip';
 // Lo que devuelve el proxy es un dato, nunca una página: no se interpreta ni se ejecuta en el origen del Worker
@@ -59,10 +62,23 @@ const allowedTarget = u => ['http:', 'https:'].includes(u.protocol) && !u.userna
   && (ALLOW_HOSTS.has(u.hostname.toLowerCase()) || ALLOW_SUFFIXES.some(s => u.hostname.toLowerCase().endsWith(s)));
 const where = u => `${u.hostname}${u.pathname}`;
 
-function withSecurityHeaders(resp) {
+// Solo la cadena exacta «enforce» aplica connect-src; ausente o cualquier otro valor → «report» (cierre seguro para el servicio) y se registra
+// El valor viene de la configuración del despliegue, no de la petición: un aviso por valor y por isolate, sin ruido en cada página servida.
+const cspInvalidSeen = new Set();
+export function cspMode(env) {
+  const v = env ? env.CSP_MODE : undefined;
+  if (v === 'enforce' || v === 'report') return v;
+  const value = v === undefined || v === null ? null : String(v).slice(0, 20);
+  if (!cspInvalidSeen.has(value)) { cspInvalidSeen.add(value); audit('csp_mode_invalid', { value }); }
+  return 'report';
+}
+function withSecurityHeaders(resp, env) {
   const r = new Response(resp.body, resp);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) r.headers.set(k, v);
-  if ((r.headers.get('Content-Type') || '').includes('text/html')) r.headers.set('Content-Security-Policy-Report-Only', CSP_REPORT_ONLY);
+  if ((r.headers.get('Content-Type') || '').includes('text/html')) {
+    if (cspMode(env) === 'enforce') { r.headers.set('Content-Security-Policy', `${CSP_BASE}; ${CONNECT_POLICY}`); r.headers.delete('Content-Security-Policy-Report-Only'); }
+    else r.headers.set('Content-Security-Policy-Report-Only', CONNECT_POLICY);
+  }
   return r;
 }
 // Informes de la política Report-Only: solo directiva y host bloqueado (sin rutas ni consultas), máx. 8 KB
@@ -82,7 +98,7 @@ export default {
     if (reqUrl.pathname === '/__csp-report' && request.method === 'POST') return cspReport(request);
     // Sin ?url= → no es una petición de proxy: sirve la app (si el Worker tiene assets) con sus cabeceras de seguridad
     if (!reqUrl.searchParams.has('url')) {
-      if (env && env.ASSETS) return withSecurityHeaders(await env.ASSETS.fetch(request));
+      if (env && env.ASSETS) return withSecurityHeaders(await env.ASSETS.fetch(request), env);
       return new Response('AirNubeiro ACARS proxy: uso ?url=<destino>', { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...SECURITY_HEADERS } });
     }
     const self = new URL(request.url).origin;
@@ -109,6 +125,8 @@ export default {
       headers.set('apiKey', env.IVAO_API_KEY);
     let body;
     if (!['GET', 'HEAD'].includes(request.method)) {
+      // Content-Length declarado: se rechaza sin leer nada (el cuerpo sin cabecera, p. ej. troceado, se comprueba al leerlo)
+      if (Number(request.headers.get('content-length')) > MAX_BODY) return deny(413, 'Cuerpo demasiado grande', origin);
       body = await request.arrayBuffer();
       if (body.byteLength > MAX_BODY) return deny(413, 'Cuerpo demasiado grande', origin);
     }

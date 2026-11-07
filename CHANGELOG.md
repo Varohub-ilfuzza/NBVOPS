@@ -4,6 +4,39 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [Sin publicar — 5.4]
+
+### Corregido
+- **Aviso csp-bloqueo:** los intentos repetidos contra el mismo host (p. ej. reconectar FSUIPC) ya no gastan el cupo de 5 avisos por minuto; un host nuevo siempre aparece. Mutantes X31 y X35 (privacidad de `cspTarget`).
+- **Bloqueos de la CSP por origen** (esquema + host + puerto), no por host: bloquear `https://localhost:8433` ya no corta `http://localhost:8433`, ni `wss://` corta `ws://`. Mutantes X32 y X36 (guarda de `req()`).
+- **Worker:** `csp_mode_invalid` se registra una vez por valor y por isolate, no en cada página servida. Mutante X33.
+- **Barrido de secretos:** los ficheros UTF-16 con BOM (PowerShell 5.1 con `>`) se analizan; los binarios siguen sin analizarse. Mutante X34.
+- **`tests/live-check.py`** compara versiones como números (`5.10.0` ≥ `5.4`), con prueba en `tests/nbv_version_test.py` (`npm run test:py`).
+- **Revisión de código (hardening):** la regla S4 detecta también nombres camelCase (`accessToken`, `hoppieLogon`); el fail-closed del hook (si git no puede leer lo staged, el commit se detiene) tiene prueba (X40, X41). El proxy local responde 400 a un `Content-Length` no numérico o negativo en lugar de lanzar o quedarse esperando (X42), y el Worker rechaza con 413 por el `Content-Length` declarado antes de leer el cuerpo (X43). `phpvmsScan` ya no se solapa consigo mismo cuando un escaneo tarda más que el intervalo (X44), y la clave AES del dispositivo se crea una sola vez aunque varios cifrados coincidan en el primer arranque (X45: antes cada llamada generaba la suya y el secreto podía quedar ilegible). El aviso de bloqueo de la CSP llega a la red y a FSUIPC por el bus (`csp-block`) en lugar de llamadas opcionales por nombre a globales (X46, X47); `live-check.py --version v5.4.0-rc.2` ya no aborta con una traza. El arnés de mutantes puede ahora ejecutar pruebas que arrancan lo construido (`withDist`).
+
+---
+
+## [v5.4.0-rc.2] — 2026-11-07
+
+### Corregido
+- **Service Worker: «a redirected response was used for a request whose redirect mode is not "follow"»** (consola del navegador). Una respuesta con redirección (p. ej. `ops-center.html` → `/ops-center` que aplica Cloudflare, o una página guardada en caché con el indicador de redirección) no puede servirse a una navegación y la página fallaba. `sw.js` reconstruye ahora la respuesta sin el indicador, tanto la de red como la de caché y la de respaldo `index.html`.
+- **Pruebas:** `tests/sw.test.js` (carga `src/pwa/sw.js` con Cache API y `fetch` simulados) y mutantes X29–X30 en `tests/regressions.js` (los mutantes de repositorio copian ahora también `src/`). Sin cambios en el Worker ni en `CSP_MODE`.
+
+---
+
+## [v5.4.0-rc.1] — 2026-11-07
+
+Seguridad (C2–C4 de `docs/PLAN-PRUEBAS-5.4.md`). `connect-src` sigue sin aplicarse (C1, bloqueada hasta cumplir G0): esta versión publica con `CSP_MODE=report`.
+
+### Seguridad
+- **Interruptor `CSP_MODE` en el Worker** (C2 · P-03): `report` (publicado) mantiene `connect-src` en Report-Only; `enforce` lo aplica en una sola cabecera `Content-Security-Policy` que fusiona la base (`frame-ancestors`, `object-src`, `base-uri`, `form-action`). Ausente o no válido cae a `report` y registra `csp_mode_invalid`. Vuelta atrás: `deploy/DEPLOY.md`.
+- **Aviso «Seguridad: csp-bloqueo»** (C3 · A09): una violación de `connect-src` aplicada se registra con solo el host (con puerto), nunca ruta, consulta ni credenciales; como mucho 5 avisos por minuto y un resumen. `csp-informe` (modo informe) también pasa a guardar solo el host: antes podía incluir la consulta de la URL.
+- **Avisos concretos con la CSP aplicada** (C3): un proxy personalizado fuera de la lista muestra «Proxy no permitido por la política de seguridad: <host>» y deja de reintentarse; un FSUIPC en la LAN fuera de la lista muestra un mensaje claro en el indicador SIM, sin reintentos, y la app sigue con IVAO.
+- **Hook pre-commit de secretos y barrido en la release** (C4 · P-11 · A03/A07): `tools/hooks/pre-commit` analiza lo staged (no el disco) con las reglas S4, que pasan a `tools/secrets.js` y comparte `tests/security-check.js`; bloquea por nombre `.env`, `.dev.vars`, `*.pem` y `*.key` aunque se añadan con `git add -f`; indica fichero y línea, nunca el valor. Excepciones solo en `tools/secrets-allow.json` (fichero + regla + motivo). `tools/release.js` barre todo el árbol antes de construir. Instalación: `npm run hooks:install`.
+- **Pruebas:** `tests/secret-hook.test.js` (11 casos), Worker real en Chromium con `enforce` y `report`, y mutantes X25–X28 en `tests/regressions.js` (ahora también sobre ficheros del repositorio).
+
+---
+
 ## [v5.3.1] — 2026-11-07
 
 Seguridad (pendientes P-01, P-02 y P-03 de `docs/HARDENING-ACARS.md`) y los tres fallos del vuelo de prueba del 07-nov (NBV011 LECO→LEAS, Fenix A320).

@@ -4,6 +4,27 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.3.1] — 2026-11-07
+
+Seguridad (pendientes P-01, P-02 y P-03 de `docs/HARDENING-ACARS.md`) y los tres fallos del vuelo de prueba del 07-nov (NBV011 LECO→LEAS, Fenix A320).
+
+### Seguridad
+- **Logon de Hoppie cifrado** (P-01 · OWASP A04/A07): se guarda solo en `an_hl` con la clave v2 (AES-256-GCM, no extraíble). Ya no aparece en claro en `nbv_shared`, `an3` ni `an_ops`. Se migra solo la primera vez y deja un evento «Seguridad: logon-migrado». Si una configuración vieja o un ajuste importado lo trae en claro, no se vuelve a escribir.
+- **Conexiones en lista cerrada, en modo informe** (P-03 · A02): el Worker añade a las páginas `Content-Security-Policy-Report-Only` con `connect-src` limitado a los servicios que usa la app. No bloquea nada: cada conexión fuera de la lista queda en la actividad («Seguridad: csp-informe») y en Workers Logs (`/__csp-report`, solo directiva y host). Se aplicará de verdad en la 5.4 si no hay informes.
+- **Límite de peticiones al proxy** (P-02 · A06, CIS 13): 240 por minuto e IP con el binding de Cloudflare `LIMITER`. Al superarlo, 429 con CORS. Si el límite falla, el proxy sigue funcionando.
+
+### Corregido (vuelo de prueba)
+- **Falso DESCENSO en el ascenso**: la fase usaba `altitudeDifference` de IVAO, que no es una tendencia vertical sino la diferencia fija entre altitud real y barométrica (−268 ft en el vuelo). Ahora el descenso exige bajar en dos pasadas seguidas, estar 1.000 ft por debajo del máximo del tramo y cerca del destino (unos 4 NM por cada 1.000 ft más 30 NM), o la velocidad vertical de FSUIPC si es tu avión. Con los datos del vuelo: ENROUTE hasta las 14:33 y DESCENT a las 14:34 (inicio real del descenso: 14:33).
+- **Desconexión falsa al aterrizar**: el whazzup omitió NBV011 unos 2 minutos. Ahora un vuelo solo se da por desconectado si falta 3 pasadas seguidas y 3 minutos, y nunca mientras FSUIPC siga dando datos de ese avión.
+
+### Mejorado
+- **Recepción Hoppie según su guía**: por defecto cada 45 s (mínimo 20), con un reparto aleatorio de ±10 %. Tras un CPDLC enviado o recibido (o un LOGON aceptado), consulta cada 20 s durante 3 minutos.
+
+### Pruebas
+- Nueva sección de caracterización `fase` con la reproducción del vuelo real (17 pruebas) y pruebas de P-01 en `ajustes`. Worker: 53 casos (Report-Only, informes CSP y límite de peticiones). Regresiones X21–X24. `live-check.py` comprueba la cabecera Report-Only y que no haya informes.
+
+---
+
 ## [v5.3.0-rc.1] — 2026-11-07
 
 **Hardening** según OWASP Top 10:2025, CIS Controls v8.1 y NIST CSF 2.0/SSDF. Detalle, hallazgos y pendientes en `docs/HARDENING-ACARS.md`; la norma común a todos los proyectos está en el Claude Doc «Estándar de seguridad AirNubeiro». Preparada y probada; **sin publicar** hasta probarla en el PC.

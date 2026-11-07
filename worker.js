@@ -27,6 +27,16 @@ export const SECURITY_HEADERS = {
   'Cross-Origin-Opener-Policy': 'same-origin',
   'Content-Security-Policy': "frame-ancestors 'self'; object-src 'none'; base-uri 'none'; form-action 'none'",
 };
+// 5.3.1 (P-03): lista cerrada de conexiones en modo INFORME (Report-Only): no bloquea nada; cada conexión fuera de
+// la lista llega al registro de seguridad de la app («Seguridad: csp-informe») y a los Workers Logs (/__csp-report).
+// Cuando pase un tiempo sin informes, se aplicará de verdad (5.4).
+export const CONNECT_ALLOW = ["'self'", 'https://nbv-proxy.ilfuzza.workers.dev', 'https://www.hoppie.nl', 'https://api.ivao.aero',
+  'https://metar.vatsim.net', 'https://discord.com', 'https://discordapp.com', 'https://operaciones.airnubeiro.es', 'https://*.airnubeiro.es',
+  'https://aviationweather.gov', 'https://www.simbrief.com', 'https://tgftp.nws.noaa.gov',
+  'ws://localhost:2048', 'ws://127.0.0.1:2048', 'http://localhost:8433', 'http://127.0.0.1:8433'];
+export const CSP_REPORT_ONLY = `connect-src ${CONNECT_ALLOW.join(' ')}; report-uri /__csp-report`;
+// 5.3.1 (P-02): límite de peticiones al proxy por IP (binding LIMITER de Cloudflare; sin él, no se limita)
+const RATE_KEY = request => request.headers.get('CF-Connecting-IP') || 'sin-ip';
 // Lo que devuelve el proxy es un dato, nunca una página: no se interpreta ni se ejecuta en el origen del Worker
 const PROXY_HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "sandbox; default-src 'none'", 'Cache-Control': 'no-store' };
 
@@ -52,13 +62,26 @@ const where = u => `${u.hostname}${u.pathname}`;
 function withSecurityHeaders(resp) {
   const r = new Response(resp.body, resp);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) r.headers.set(k, v);
+  if ((r.headers.get('Content-Type') || '').includes('text/html')) r.headers.set('Content-Security-Policy-Report-Only', CSP_REPORT_ONLY);
   return r;
+}
+// Informes de la política Report-Only: solo directiva y host bloqueado (sin rutas ni consultas), máx. 8 KB
+async function cspReport(request) {
+  try {
+    const txt = (await request.text()).slice(0, 8192);
+    const r = JSON.parse(txt)['csp-report'] || {};
+    let host = ''; try { host = new URL(r['blocked-uri']).host; } catch { host = String(r['blocked-uri'] || '').slice(0, 40); }
+    audit('csp_report', { directive: String(r['violated-directive'] || r['effective-directive'] || '').slice(0, 40), host });
+  } catch (e) { audit('csp_report', { invalid: true }); }
+  return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
 }
 
 export default {
   async fetch(request, env) {
+    const reqUrl = new URL(request.url);
+    if (reqUrl.pathname === '/__csp-report' && request.method === 'POST') return cspReport(request);
     // Sin ?url= → no es una petición de proxy: sirve la app (si el Worker tiene assets) con sus cabeceras de seguridad
-    if (!new URL(request.url).searchParams.has('url')) {
+    if (!reqUrl.searchParams.has('url')) {
       if (env && env.ASSETS) return withSecurityHeaders(await env.ASSETS.fetch(request));
       return new Response('AirNubeiro ACARS proxy: uso ?url=<destino>', { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...SECURITY_HEADERS } });
     }
@@ -68,6 +91,11 @@ export default {
     if (!ALLOWED_ORIGINS.includes(origin) && origin !== self) return deny(403, 'Origen no permitido', '', { badOrigin: request.headers.get('Origin') || null });
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     if (!METHODS.includes(request.method)) return deny(405, 'Método no permitido', origin, { method: request.method });
+    if (env && env.LIMITER) {
+      let okRate = true;
+      try { okRate = (await env.LIMITER.limit({ key: RATE_KEY(request) })).success; } catch (e) { okRate = true; } // si falla el límite, no se corta el servicio
+      if (!okRate) return deny(429, 'Demasiadas peticiones', origin);
+    }
 
     const target = new URL(request.url).searchParams.get('url');
     let u; try { u = new URL(target); } catch { return deny(400, 'Parámetro url inválido', origin); }

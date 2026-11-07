@@ -4,6 +4,46 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.3.0-rc.1] — 2026-11-07
+
+**Hardening** según OWASP Top 10:2025, CIS Controls v8.1 y NIST CSF 2.0/SSDF. Detalle, hallazgos y pendientes en `docs/HARDENING-ACARS.md`; la norma común a todos los proyectos está en el Claude Doc «Estándar de seguridad AirNubeiro». Preparada y probada; **sin publicar** hasta probarla en el PC.
+
+### Corregido
+- **Cifrado de secretos v2** (A04): la API key de phpVMS y el webhook de Discord se cifran con una clave AES-256 aleatoria y **no extraíble** guardada en IndexedDB.
+  - Antes la clave salía del User-Agent: era predecible y cambiaba con cada actualización del navegador.
+  - Lo cifrado con los esquemas antiguos se migra solo, cada secreto en su propia clave. Se corrige además que la migración antigua escribiera el webhook en `an_ak`.
+- **SSRF por redirecciones** (A01), tanto en el Worker como en el proxy local: cada redirección se revalida contra la lista blanca (máx. 3) y la API key de IVAO nunca viaja tras redirigir.
+- **Servidor local** (A01/A02):
+  - Solo responde a Host `localhost` o `127.0.0.1` de su puerto, lo que lo protege del DNS rebinding.
+  - `/proxy` y `/techlog` solo atienden a la propia app (Origin y `Sec-Fetch-Site`).
+  - Sin listados de carpetas ni ficheros ocultos, y con cabeceras de seguridad.
+- **CSP** (A05/A02): cada página lleva su política con el hash SHA-256 de cada script inline; solo se ejecuta el código del build. `object-src 'none'`, `base-uri 'none'` y `form-action 'none'`.
+- **Cabeceras de seguridad** en el Worker: HSTS, `nosniff`, `X-Frame-Options`/`frame-ancestors 'self'`, `Referrer-Policy: no-referrer`, `Permissions-Policy` y COOP.
+- **Respuestas del proxy**: aisladas con `CSP: sandbox` y `nosniff`. Solo GET, HEAD y POST, y errores sin detalles internos (A10).
+- Datos de SimBrief en el dispatch y el id de CPDLC escapados (A05). `esc()` ya escapaba las comillas desde la 5.1.
+- Dependencia de pruebas `ws` actualizada a 8.22.1 (vulnerabilidad alta, A03).
+- Carrera en la carga del webhook: si cambiaba en la otra ventana mientras se descifraba, el OPS se quedaba con el anterior. Ahora se repite la carga. La derivación PBKDF2 se calcula una sola vez por sesión.
+
+### Nuevo
+- **Eventos de seguridad** (`NBV.security`, A09/A10): acciones bloqueadas, violaciones de CSP, ficheros de ajustes rechazados y errores no controlados.
+  - Se guardan en `nbv_secevents` (máx. 100) y aparecen en la actividad del OPS, sin pila ni datos sensibles.
+  - El Worker registra sus rechazos en Workers Logs sin la consulta ni los cuerpos.
+- **Puertas de seguridad en la release**:
+  - `tests/security-check.js` (S1–S6): sin eval, manejadores inline ni secretos, CSP correcta, `noopener` y trinquete de interpolaciones sin escapar.
+  - `npm audit` (altas).
+  - `tests/browser-security.test.js` en Chromium: la CSP no bloquea la app y sí lo inyectado, y se comprueba el cifrado v2.
+  - `tests/local-server.test.js`.
+  - `live-check`: 0 violaciones de CSP en producción.
+- Regresiones nuevas: X19 (evento de seguridad) y X20 (SimBrief sin escapar).
+
+### Pendiente (ver HARDENING §2 y §5)
+- Logon de Hoppie cifrado (5.3.1).
+- `connect-src` cerrado (5.3.1).
+- Acciones manuales de cuentas, repositorio y Cloudflare.
+- Revisión del PC con el CIS Benchmark de Windows 11.
+
+---
+
 ## [v5.2.0-rc.2] — 2026-11-07
 
 Segunda candidata de la 5.2: **TechLog** y **comprobación de PIREP**, con las decisiones de Álvaro (integración completa con TechLog; PIREP con vmsACARS en modo «preparar y confirmar»).

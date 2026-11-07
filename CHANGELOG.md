@@ -4,7 +4,12 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
-## [Sin publicar — 5.4]
+## [v5.4.0] — 2026-11-07
+
+Seguridad: C1 de `docs/PLAN-PRUEBAS-5.4.md` (P-03 cerrado) y las correcciones de la revisión de código.
+
+### Seguridad
+- **`connect-src` aplicado** (C1 · P-03 · OWASP A02): el Worker publica `CSP_MODE=enforce`; cualquier conexión fuera de la lista cerrada se bloquea y la app lo avisa («Seguridad: csp-bloqueo»). Vuelta atrás sin recompilar: `CSP_MODE=report` (`deploy/DEPLOY.md`). Inventario de integraciones probado en Node y en Chromium con el Worker en `enforce`; mutantes X37–X38. `live-check.py` espera `enforce` por defecto desde la 5.4.0 (sin sufijo `-rc`).
 
 ### Corregido
 - **Aviso csp-bloqueo:** los intentos repetidos contra el mismo host (p. ej. reconectar FSUIPC) ya no gastan el cupo de 5 avisos por minuto; un host nuevo siempre aparece. Mutantes X31 y X35 (privacidad de `cspTarget`).

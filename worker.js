@@ -2,7 +2,7 @@
 // Uso en la app: Ajustes → Proxy personalizado = https://<tu-worker>.workers.dev/?url=
 // Misma lista blanca que nbv-server.py. Solo atiende a los orígenes de ALLOWED_ORIGINS.
 // 5.4 (C2): CSP_MODE (variable del Worker, deploy/wrangler.jsonc) decide si connect-src se APLICA («enforce») o solo se informa
-// («report», valor publicado). Es el interruptor de vuelta atrás: cambiarlo y redesplegar solo el Worker, sin recompilar la app.
+// («report»). Valor publicado desde la 5.4.0: «enforce». Es el interruptor de vuelta atrás: cambiarlo a «report» y redesplegar solo el Worker, sin recompilar la app.
 // 5.3 (hardening, docs/HARDENING-ACARS.md): cabeceras de seguridad en la app (OWASP A02), redirecciones
 // revalidadas contra la lista blanca (A01/SSRF), solo GET/HEAD/POST, respuestas del proxy aisladas (nosniff +
 // CSP sandbox), errores sin detalles internos (A10) y registro estructurado sin datos sensibles (A09).
@@ -32,7 +32,7 @@ export const SECURITY_HEADERS = {
 };
 // 5.3.1 (P-03): lista cerrada de conexiones en modo INFORME (Report-Only): no bloquea nada; cada conexión fuera de
 // la lista llega al registro de seguridad de la app («Seguridad: csp-informe») y a los Workers Logs (/__csp-report).
-// 5.4: con CSP_MODE=enforce se aplica de verdad (C1, tras el periodo de observación sin informes).
+// 5.4.0 (C1): el valor publicado es CSP_MODE=enforce: lo que no esté en esta lista se bloquea (y la app lo avisa: «Seguridad: csp-bloqueo»).
 export const CONNECT_ALLOW = ["'self'", 'https://nbv-proxy.ilfuzza.workers.dev', 'https://www.hoppie.nl', 'https://api.ivao.aero',
   'https://metar.vatsim.net', 'https://discord.com', 'https://discordapp.com', 'https://operaciones.airnubeiro.es', 'https://*.airnubeiro.es',
   'https://aviationweather.gov', 'https://www.simbrief.com', 'https://tgftp.nws.noaa.gov',

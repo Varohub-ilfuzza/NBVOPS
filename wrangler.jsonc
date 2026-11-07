@@ -6,9 +6,9 @@
   "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": true },
   // 5.3 (hardening, NIST CSF DE.CM): registros del Worker en Cloudflare (Workers Logs), sin datos sensibles
   "observability": { "enabled": true },
-  // 5.4 (C2): interruptor de la CSP de conexiones. "report" (publicado) = connect-src solo en Report-Only; "enforce" = aplicada (C1).
+  // 5.4.0 (C1): "enforce" (publicado) aplica connect-src; "report" = solo informe (Report-Only).
   // Vuelta atrás: poner "report" y redesplegar solo el Worker (docs: deploy/DEPLOY.md, «Vuelta atrás de la CSP»).
-  "vars": { "CSP_MODE": "report" },
+  "vars": { "CSP_MODE": "enforce" },
   // 5.3.1 (P-02, OWASP A06 · CIS 13): máx. 240 peticiones/min por IP al proxy (env.LIMITER en worker.js)
   "ratelimits": [{ "name": "LIMITER", "namespace_id": "1001", "simple": { "limit": 240, "period": 60 } }]
 }

@@ -4,12 +4,34 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.4.1] — 2026-11-08
+
+Limpieza tras la 5.4.0; sin cambios de `CSP_MODE`.
+
+### Seguridad
+- `CONNECT_ALLOW` sin orígenes `http:` (el servidor local `:8433` no lo usa ninguna página servida por el Worker y la `<meta>` ya lo bloqueaba). Quitar entradas no añade tráfico permitido: no reabre el periodo de observación. Mutante X50.
+
+### Corregido
+- Stream Mode: un estado de IVAO que la app no conoce se pintaba sin escapar; ahora es texto. Mutante X51.
+
+### Pruebas e interno
+- S6: interpolaciones sin `esc()` de 77 a 3, con cuatro formas seguras reconocidas por el verificador, autoprueba y `--s6-list` (X52). El golden `clics-controles` gana `esc` en 7 líneas (la traza de funciones llamadas; la salida no cambia).
+- tsc: errores de tipo de 48 a 8 (anotaciones JSDoc y valores por defecto; quedan los 7 de `window.NBV` y el de `Window`).
+- UTF-16 BE impar con secreto en el barrido, con otro fichero detrás en el mismo staged (X49), y mutante de `markBlocked` con un host suelto (X48).
+- `tests/characterization.js` partido en `tests/char/<sección>.js` (misma interfaz y los mismos 246 casos).
+
+---
+
 ## [v5.4.0] — 2026-11-07
 
 Seguridad: C1 de `docs/PLAN-PRUEBAS-5.4.md` (P-03 cerrado) y las correcciones de la revisión de código.
 
 ### Seguridad
 - **`connect-src` aplicado** (C1 · P-03 · OWASP A02): el Worker publica `CSP_MODE=enforce`; cualquier conexión fuera de la lista cerrada se bloquea y la app lo avisa («Seguridad: csp-bloqueo»). Vuelta atrás sin recompilar: `CSP_MODE=report` (`deploy/DEPLOY.md`). Inventario de integraciones probado en Node y en Chromium con el Worker en `enforce`; mutantes X37–X38. `live-check.py` espera `enforce` por defecto desde la 5.4.0 (sin sufijo `-rc`).
+
+### Verificación en producción
+- Publicada en NBVOPS `2544005` (07-nov-2026). `live-check --version 5.4.0 --browser all --csp-mode enforce` (07-nov 23:31Z–23:35Z, desde el contenedor): 191/191 OK y 0 violaciones de CSP en Chromium y WebKit 26.6; una sola cabecera de CSP (base + `connect-src` + `report-uri`), sin `Report-Only`.
+- Pendientes: ensayo de vuelta atrás en producción (`CSP_MODE=report` y vuelta) y vuelo de prueba (§5 de `docs/PLAN-PRUEBAS-5.4.md`).
 
 ### Corregido
 - **Aviso csp-bloqueo:** los intentos repetidos contra el mismo host (p. ej. reconectar FSUIPC) ya no gastan el cupo de 5 avisos por minuto; un host nuevo siempre aparece. Mutantes X31 y X35 (privacidad de `cspTarget`).

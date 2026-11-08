@@ -33,10 +33,11 @@ export const SECURITY_HEADERS = {
 // 5.3.1 (P-03): lista cerrada de conexiones en modo INFORME (Report-Only): no bloquea nada; cada conexión fuera de
 // la lista llega al registro de seguridad de la app («Seguridad: csp-informe») y a los Workers Logs (/__csp-report).
 // 5.4.0 (C1): el valor publicado es CSP_MODE=enforce: lo que no esté en esta lista se bloquea (y la app lo avisa: «Seguridad: csp-bloqueo»).
+// 5.4.1: sin orígenes http: (el servidor local no lo usa ninguna página servida por el Worker y la <meta> no admite http:).
 export const CONNECT_ALLOW = ["'self'", 'https://nbv-proxy.ilfuzza.workers.dev', 'https://www.hoppie.nl', 'https://api.ivao.aero',
   'https://metar.vatsim.net', 'https://discord.com', 'https://discordapp.com', 'https://operaciones.airnubeiro.es', 'https://*.airnubeiro.es',
   'https://aviationweather.gov', 'https://www.simbrief.com', 'https://tgftp.nws.noaa.gov',
-  'ws://localhost:2048', 'ws://127.0.0.1:2048', 'http://localhost:8433', 'http://127.0.0.1:8433'];
+  'ws://localhost:2048', 'ws://127.0.0.1:2048'];
 export const CONNECT_POLICY = `connect-src ${CONNECT_ALLOW.join(' ')}; report-uri /__csp-report`;
 // 5.3.1 (P-02): límite de peticiones al proxy por IP (binding LIMITER de Cloudflare; sin él, no se limita)
 const RATE_KEY = request => request.headers.get('CF-Connecting-IP') || 'sin-ip';

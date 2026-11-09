@@ -4,6 +4,21 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.4.2] — 2026-11-09
+
+Deuda técnica de la 5.4.1; sin cambios de `CSP_MODE` ni de cabeceras.
+
+### Seguridad
+- Los mensajes de la bandeja del ACARS se guardan como datos y se reconstruyen al cargar (`buildMsgEl`); antes se guardaba su `outerHTML` y se reinyectaba. Lo ya guardado por versiones anteriores se migra leyendo solo el texto con un `DOMParser` inerte, de modo que un `<img onerror>` o un `<script>` antiguos no se reinyectan. Mutante X56.
+- S6 (interpolaciones sin `esc()` en HTML generado) pasa a analizar el código por AST: ya ve las plantillas anidadas, que el análisis por expresiones regulares no veía, y no acepta formas como `esc(a) + otro`. Total: 3 interpolaciones sin `esc()`, revisadas e internas (etiquetas constantes de las tarjetas del OPS y dos funciones que devuelven HTML ya escapado); tres variables que ya contenían HTML construido con `esc()` pasan a llamarse `…Html`, que es el contrato que S6 reconoce. Tras la revisión final: una plantilla anidada sin etiqueta también se evalúa (antes se daba por buena), `icon(x)` solo es seguro con literales (el nombre del icono se interpola en el SVG: ahora `esc(n)`) y los identificadores `i`/`n`/`idx` dejan de bastar; `Number()` en cuatro números que S6 ya veía. Mutantes X54, X55, X57, X58 y X52 (reorientado a «||»).
+
+### Pruebas e interno
+- tsc de 8 a 0 errores de tipo y ESLint de 1 a 0 (anotaciones JSDoc); `node tests/lint.js --list` muestra todos los avisos actuales. Mutante X53.
+- El golden `clics-controles` ya es reproducible bajo carga: con la máquina ocupada, la respuesta de red del clic anterior llegaba antes o después del siguiente y la traza cambiaba. La prueba espera ahora a las peticiones en vuelo (18 de 18 generaciones en paralelo idénticas; antes 2 de 6 distintas). Sin cambios en `tests/golden/`.
+- `DOMParser` en la lista de globales conocidos del comprobador estático; sección `mensajes` en `tests/char/`; nombres de las pruebas de `CONNECT_ALLOW` separados; dedupe de `csp-bloqueo` por host evaluado, sin cambios.
+
+---
+
 ## [v5.4.1] — 2026-11-08
 
 Limpieza tras la 5.4.0; sin cambios de `CSP_MODE`.

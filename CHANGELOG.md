@@ -4,6 +4,34 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.5.0] — 2026-11-09
+
+OOOI desde el simulador, PDC con datos del OFP y ATIS sintético; sin cambios de `CSP_MODE` ni de cabeceras.
+
+### Añadido
+- OOOI desde FSUIPC para tu avión (`NBV.oooi`, módulo sin DOM): OUT tras 10 s moviéndose a ≥3 kt, OFF y ON por el cambio de `onGround` (5 s), IN tras 3 min parado a <1 kt (`IN_STILL_MS = 180000`; una espera de 30-45 s en el rodaje de llegada no es el IN; la hora sigue siendo el inicio de la parada). Si el OPS se abre o se recarga con `flt.oooi` vacío, el detector usa la fase de vuelo de IVAO: con `LANDED` o `DESCENT` y en tierra pasa a rodaje de llegada y nunca arma un OUT. La hora del evento es la del inicio de la condición. Los tiempos se guardan en el vuelo, en el registro de vuelos (`off/on` pasan a ser los del simulador en tu vuelo) y en el CSV (columnas `out_utc` e `in_utc`). FSUIPC solo existe en el OPS Center para «Mi callsign»; para otros aviones nada cambia. Mutantes X60, X61, X62, X66, X67, X69.
+- TELEX OOOI opcional a tu avión (Ajustes → «Enviar TELEX OOOI a mi avión», desactivado por defecto): cuatro TELEX en total (OUT, OFF, ON e IN); el del IN lleva el resumen (BLK y FLT). Como FSUIPC solo existe en el OPS, el TELEX sale de la estación del OPS (NBVOPS) hacia tu avión, no desde el avión. Deduplicado por tramo (callsign, ruta y evento, con `firstSeen`) y con reintentos a los 30 s y a los 120 s. Añade hasta 4 mensajes por vuelo a Hoppie. Solo envía la ventana del OPS con el monitor en marcha (la embebida en el ACARS y otra abierta aparte reciben las mismas muestras; los tiempos se registran en todas): antes de enviar se relee el registro compartido (`an_ops_sent_registry`) y se reserva el envío 60 s, así que con dos ventanas activas salen 4 TELEX, no 8, aunque cada una haya detectado el vuelo en su propio escaneo (la reserva no depende de `firstSeen`). Un reintento tras fallo sale aunque entretanto se haya detenido el monitor. El IN se retiene («retenido», como los mensajes de llegada) si el avión ya no está conectado a Hoppie, y se envía a mano desde la tarjeta. Tras el tercer fallo el TELEX queda en «error» con su texto y el botón de la tarjeta lo reenvía. Los tiempos OOOI se guardan en cuanto hay un evento (no solo al final del escaneo): recargar justo después del OFF no emite otro OFF ni pisa `t.off`. Mutantes X63, X72, X73, X74, X75, X76, X77 y X78.
+- Flota → «Historial de mensajes»: cuando el avión recoge un mensaje, su fila pasa de «✓ ENVIADO» a «✓✓ RECIBIDO <hora de recogida de Hoppie>». Usa la misma comprobación de entrega de las tarjetas de vuelo (cada minuto, solo mientras el monitor está activo); las filas anteriores a esta versión no llevan clave y se quedan como «enviado». Cada mensaje de Hoppie confirma como mucho una clave, se compara con el texto completo (el primer paquete `[1/N]` si se troceó) y solo cuenta si Hoppie lo recibió después del envío (hora `DD-HH:MMZ`, con 1 min de margen): al recoger el ON, el IN pendiente sigue «enviado». Mutantes X59 y X71.
+- PDC con `{SID} {RWY} {CRZ} {ROUTE}` tomados del OFP de SimBrief, solo cuando `ofp.atc.callsign` coincide con el callsign del destinatario del PDC; si no coincide, las variables salen como `____`. Además, el origen y el destino del OFP deben coincidir con el plan presentado en IVAO por ese callsign (el vuelo de vuelta no hereda el SID y la pista de la ida); sin plan en IVAO también salen `____`. Las plantillas ya guardadas ocultan los nuevos valores por defecto de PDC hasta pulsar «Restaurar por defecto». Mutantes X64 y X68.
+- ATIS sintético a partir del METAR, en el panel Info del ACARS: se ofrece solo como último recurso, tras el ATIS real y la respuesta de Hoppie, y sustituye la respuesta corta «ATIS IS NOT AVAILABLE» de Hoppie únicamente si hay METAR. Quick Dispatch y Stream Mode no cambian. Mutante X65.
+
+### Pruebas e interno
+- Mutantes X59–X78 (X65 corregido: solo comprueba que el ATIS sintético no se ponga por delante de Hoppie; X70 cubre la publicación de FSUIPC en el bus); sección `oooi` en `tests/char/` (más casos en `ops`, `registro`, `ajustes` y `atis`). Golden del CSV del registro actualizado con las columnas nuevas. S6 sigue en 3.
+- A comprobar con tu primer OFP: los nombres de campo de SimBrief (`general.sid_ident`, `origin.plan_rwy`, `general.initial_altitude`, `general.route`, `atc.callsign`) salen de la documentación de SimBrief, sin comprobar con un OFP real (`origin.icao_code` y `destination.icao_code` incluidos); el repositorio no tiene ningún OFP real en los datos de prueba.
+
+### Limitaciones conocidas
+- Recargar el OPS durante un reintento pendiente del TELEX OOOI (≤150 s) pierde ese reintento.
+- Un objeto de vuelo nuevo (OPS cerrado más de 20 min o vuelo purgado) puede reenviar un TELEX OOOI ya enviado.
+- Los umbrales del OOOI (OUT tras 10 s a ≥3 kt, IN tras 3 min a <1 kt) se ajustarán tras el primer vuelo de prueba.
+- Si se cierra el simulador antes de 3 min parado en la puerta, el IN se pierde.
+- Tras un reinicio con la fase PREFLIGHT y el avión parado en el punto de espera, el OUT sale allí (al empezar a rodar hacia la pista), no en la puerta.
+- Un reinicio rodando con la fase PREFLIGHT pasa a AIRBORNE sin OFF al despegar: el OUT y el OFF de esa pierna se pierden.
+- Tras un reinicio ya aterrizado, si el IN se registra al reconectar, su hora es la de la reconexión, no la de la llegada real a la puerta.
+- Con las notificaciones de Discord de TELEX activadas, los TELEX OOOI suman hasta 4 publicaciones por vuelo.
+- La comprobación de entrega no recuerda tras recargar qué mensajes de Hoppie ya confirmaron una clave; lo suple la hora de recepción, así que dos mensajes de texto idéntico enviados en el mismo minuto podrían intercambiarse entre sí.
+
+---
+
 ## [v5.4.2] — 2026-11-09
 
 Deuda técnica de la 5.4.1; sin cambios de `CSP_MODE` ni de cabeceras.

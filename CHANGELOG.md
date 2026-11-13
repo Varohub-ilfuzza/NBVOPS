@@ -4,6 +4,40 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.5.1] — 2026-11-13
+
+Revisión completa del código y rediseño de la interfaz («Sala de operaciones»); sin cambios de `CSP_MODE` ni de cabeceras. La caché del service worker pasa a `an-acars-v5.5.1`: al actualizar se descarta la de la 5.5.0 (con las entradas `version.json?t=…` acumuladas).
+
+### Corregido
+- El OPS Center dejaba de funcionar tras unas 200 líneas de actividad (≈2 h de monitor): `log()` recortaba `#logBox` por el último hijo y borraba `#logEmpty`, y desde entonces cada escaneo lanzaba un `TypeError` (no se detectaban vuelos ni salían mensajes hasta recargar). Ahora solo recorta las entradas. Probable causa del «tras aterrizar no detecta el avión» de los pendientes de la 5.5.1. Mutante X79.
+- «Limpiar» el historial de mensajes ya no borra el antiduplicado (antes se reenviaban fases y TELEX OOOI). X80.
+- La pantalla AOC ya no manda los vuelos en PREFLIGHT al final. X81.
+- El parking y el EET de SimBrief se anotan en el vuelo vigente aunque el escaneo haya sustituido el objeto durante la espera, y nunca en una pierna nueva del mismo callsign. X82, X83, X100, X101.
+- Conexiones PAX y próximo vuelo sin «GATE» duplicado («GATE STAND T18» → «STAND T18»). X84, X85.
+- LOGON ACCEPTED, STANDBY, UNABLE y LOGOFF comprueban la respuesta de Hoppie y muestran su error, sin avanzar el MIN. Tras un LOGOFF fallido, un segundo clic en la ✕ quita la estación solo en local y avisa de que el avión no lo ha recibido. X86, X96.
+- El MIN de CPDLC sigue al último enviado en las últimas 24 h tras recargar (antes volvía a 1 y un WILCO tardío se asociaba al mensaje equivocado); solo valen MIN de 1 a 999 y tras el 999 vuelve a 1. X87, X97–X99.
+- Dispatch: el METAR de WX EN-ROUTE va por `NBV.wx.metarLatest` (antes un JSON de error del proxy podía llegar al piloto como METAR) y el tipo de avión desconocido sale «????», no «NBV». X88, X89.
+- Service worker: no intercepta `/techlog`, peticiones `no-store` ni recursos con consulta (`version.json?t=…` llenaba la caché); sin red, `ops-center.html?embed=1` se sirve aunque no se haya visitado antes con red. X90–X92, X102.
+- FSUIPC: el contador de reintentos ya no sube de dos en dos al vencer el tiempo de conexión. X93.
+- Un aeropuerto sin coordenadas ya no queda marcado para siempre: el fallo caduca a los 7 días. X94, X95.
+
+### Cambiado
+- Rediseño «Sala de operaciones»: paleta pizarra con el azul AirNubeiro solo para acciones; Barlow, Barlow Semi Condensed e IBM Plex Mono; fichas de vuelo como fichas de progresión (banda de fase, celdas de datos, casillas de mensajes); mensajes y dispatch como impreso de datalink (ámbar en oscuro, papel térmico en claro); contadores en una banda continua; radios por jerarquía; contraste AA medido en ambos temas. Mismos ids, clases y controles: golden `clics-controles` sin cambios.
+- Enviado en azul y entregado en verde en todas las vistas (antes estaba invertido en el historial).
+- Colores fijos del JS (estado de phpVMS, Discord y FSUIPC, marbete «SB» del AOC, editor de plantillas, `theme-color`) pasan a tokens del tema.
+- Accesibilidad: se permite el zoom (fuera `user-scalable=no`), los campos van a 16 px en móvil para que iOS no amplíe al enfocarlos, `aria-label` en los botones de solo icono y el contador de no leídos sigue anunciándose.
+- Respaldo sin `color-mix()` en los bordes para Safari < 16.2.
+
+### Interno
+- Fuera tres ficheros sin código: `acars/05-ops-legado.js`, `ops/05-apikey-fsuipc.js`, `ops/07-discord.js`.
+- Sección `revision` en `tests/char/` y mutantes X79–X102. 411 pruebas de caracterización y 105 mutantes detectados. S6 sigue en 3; lint a 0.
+
+### Pendiente
+- El próximo vuelo sale de un stand al azar distinto del asignado al llegar (`11-generadores.js`, `genParking`); va con el encargo de la puerta en ARR INFO.
+- La conversión del rumbo de FSUIPC (offset 0x0580) parece usar `grados·65536` en vez de `grados·2³²/360`; comprobar con una captura de `tools/nbv-diag.py` antes de cambiarla.
+
+---
+
 ## [v5.5.0] — 2026-11-09
 
 OOOI desde el simulador, PDC con datos del OFP y ATIS sintético; sin cambios de `CSP_MODE` ni de cabeceras.

@@ -4,6 +4,34 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.5.2] — 2026-11-15
+
+Aterrizaje y mensajes de llegada fiables, puerta y autorización de rodaje por CPDLC, ROUTE INFO desde el crucero y bienvenidas por flota. Sin cambios de `CSP_MODE` ni de cabeceras. **Bienvenidas: los 78 textos son un borrador pendiente de revisión de Álvaro** (decidir Moscú-Sheremétievo o Antalya, y revisión del texto en gallego por alguien que lo hable).
+
+### Añadido
+- **Aterrizaje por FSUIPC, tarjeta en gris, retención y «recibido».** El ON de FSUIPC da el aterrizaje de tu avión y lanza los mensajes de llegada en el rodaje (IVAO queda de respaldo); hace falta además GS < 40 kt sostenida 10 s tras el ON, un go-around borra la marca y la guarda caduca a los 5 min. La tarjeta de un vuelo que IVAO deja de dar queda en gris «sin señal IVAO» (15 min en llegada, 5 min en el resto) en vez de desaparecer. En tierra se retiene el mensaje si el avión tiene uno sin recoger en Hoppie desde hace más de 5 min; el desfase entre el reloj del PC y el de Hoppie se corrige con los mensajes propios del historial. Un mensaje de llegada sin recoger en 3 min pasa a «sin recoger» con reenvío y aún puede pasar a «recibido»; el historial tiene etiquetas propias para retenido y sin recoger y «recibido» es fiable (comillas, reloj adelantado, dos ventanas). Aviso si FSUIPC está conectado y «Mi callsign» no coincide con el de IVAO. X103–X115.
+- **Puerta y autorización de rodaje por CPDLC.** Una sola puerta por vuelo en ROUTE INFO, ARR INFO (con «STAND»), LANDED y próximo vuelo. Puertas y calles reales del aeropuerto de llegada desde OpenStreetMap (Overpass, por el proxy: tres servidores, caché de 30 días, fallos de 6 h), con el manual de AirNubeiro como primera opción; ruta de rodaje por las calles (camino más corto, como mucho 6 calles, con respaldos). El OPS pide la autorización cuando el avión deja la pista y el ACARS la envía por CPDLC y trata WILCO y UNABLE por el MRN (alternativa y CONTACT NBV OPS); LOGON CPDLC persistente de 3 h. La ficha muestra la puerta y el estado de la autorización (con © OpenStreetMap) y el historial, sus filas TAXI CLR. X116–X131.
+- **ROUTE INFO desde el crucero.** En «Cada N min» el primer ROUTE INFO sale a los N min de crucero, no al entrar en ENROUTE. X159.
+- **Bienvenidas de llegada por aeropuerto y flota** (etiquetas `ICAO:FLOTA`, `ICAO`, `*:FLOTA`; A320, A350, 737) con 78 textos del borrador, fusionados una sola vez en las plantillas guardadas (`nbv_tpl.dv=2`). **Textos pendientes de revisión.** X160–X166.
+
+### Seguridad
+- H-16 (`docs/HARDENING-ACARS.md`): la lista blanca del proxy (Worker y `nbv-server.py`) admite `overpass-api.de`, `overpass.kumi.systems` y `overpass.private.coffee`; son datos públicos y la consulta solo lleva las coordenadas del aeropuerto. `CONNECT_ALLOW` y la CSP no cambian. Lo de OSM pasa por `esc()` y lo que va por CPDLC, por `sanitizeForHoppie`. X118.
+
+### Corregido en las revisiones
+- Revisión del punto 4 (X132–X146): con el reloj del PC adelantado, los LANDED se retenían por el TELEX OOOI propio (X132, X144); tras una toma y despegue o un go-around el vuelo se quedaba en LANDED (X133); «Limpiar» el historial lo resucitaba la otra ventana y ya no borra los envíos de otra ventana (X134, X146); con dos ventanas los LANDED salían dos veces (X135); el aviso de «Mi callsign» salía en falso al arrancar y no se borraba (X136, X142); reenviar un «sin recoger» ya recogido lo duplicaba y un doble clic lo enviaba dos veces (X137, X141); falso «sin recoger» por el intervalo de comprobación (X138, X143); recargar entre el ON y el envío perdía los LANDED, o los reenviaba pasados 60/90 min (X139, X140); `markHistoryDelivered` no marca filas de otra pierna (X145).
+- Revisión del punto 1 (X147–X158): cualquier CPDLC del avión renueva su LOGON (X147); un encargo «pedida» de más de 10 min caduca sin enviarse y una pierna nueva descarta el de la anterior (X148); NBV.osm prueba el siguiente servidor si Overpass da un «remark» de error y una respuesta sin puestos ni calles cuenta como fallo (X149); la respuesta a un UNABLE sale del encargo guardado, no de una cola en memoria (X150); `acarsTaxiSend` no pisa lo que el OPS cambió entretanto (X151); el MIN de CPDLC se reserva antes del envío y lo usan todos los CPDLC, y un envío fallido lo devuelve (X152); la pierna nueva solo invalida un LOGON anterior al aterrizaje de la anterior (X153); una ruta solo por calles sin nombre usa el respaldo (X154); respaldo por tiempo para pedir la autorización (X155); las filas TAXI CLR anotadas no vuelven con «Limpiar» (X156); sin aeropuerto de llegada válido no se pide ni se avisa (X157); la caché de OSM no pasa de ~1,5 MB (X158).
+
+### Interno
+- Mutantes X103–X166. El golden `clics-controles` se regenera (`manualSendNow` y `reloadSentRegistry`). Las cifras finales de pruebas y mutantes quedan para la salida de `release.js --e2e`.
+
+### Verificación en vuelo (pendiente)
+- Aterrizaje: tras el ON y GS < 40 kt llegan los mensajes de llegada sin esperar a IVAO; tras un go-around no salen.
+- Rodaje: el avión recibe la autorización con la puerta y las calles del aeropuerto, y responde WILCO/UNABLE.
+- ROUTE INFO: con «Cada N min», el primero sale a los N min de crucero.
+- Bienvenida: sale la de su aeropuerto y flota.
+
+---
+
 ## [v5.5.1] — 2026-11-13
 
 Revisión completa del código y rediseño de la interfaz («Sala de operaciones»); sin cambios de `CSP_MODE` ni de cabeceras. La caché del service worker pasa a `an-acars-v5.5.1`: al actualizar se descarta la de la 5.5.0 (con las entradas `version.json?t=…` acumuladas).

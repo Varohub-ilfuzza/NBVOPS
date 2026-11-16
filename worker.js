@@ -10,13 +10,14 @@ const ALLOW_HOSTS = new Set([
   'aviationweather.gov', 'api.ivao.aero', 'www.hoppie.nl', 'www.simbrief.com',
   'discord.com', 'discordapp.com', 'operaciones.airnubeiro.es',
   'tgftp.nws.noaa.gov', 'metar.vatsim.net',
+  'overpass-api.de', 'overpass.kumi.systems', 'overpass.private.coffee', // 5.5.2 (P2): OpenStreetMap (puertas y calles de rodaje), datos públicos
 ]);
 const ALLOW_SUFFIXES = ['.airnubeiro.es'];
 // Orígenes que pueden usar el proxy (añade tu dominio propio si lo usas)
 const ALLOWED_ORIGINS = ['https://varohub-ilfuzza.github.io', 'https://nbv-proxy.ilfuzza.workers.dev', 'http://localhost:8433', 'http://127.0.0.1:8433'];
 const FWD_REQ_HEADERS = ['content-type', 'accept', 'x-api-key', 'authorization'];
 const METHODS = ['GET', 'HEAD', 'POST', 'OPTIONS'];
-const MAX_BODY = 5 * 1024 * 1024, MAX_REDIRECTS = 3;
+const MAX_BODY = 5 * 1024 * 1024, MAX_RESP = 25 * 1024 * 1024, MAX_REDIRECTS = 3; // MAX_RESP igual que el proxy local (nbv-server.py)
 
 // Cabeceras de seguridad de la app (las páginas añaden su propia CSP con los hashes de sus scripts en un <meta>;
 // esta CSP de cabecera cubre lo que un <meta> no puede: frame-ancestors). Todas las CSP se aplican a la vez.
@@ -110,7 +111,7 @@ export default {
     if (!METHODS.includes(request.method)) return deny(405, 'Método no permitido', origin, { method: request.method });
     if (env && env.LIMITER) {
       let okRate = true;
-      try { okRate = (await env.LIMITER.limit({ key: RATE_KEY(request) })).success; } catch (e) { okRate = true; } // si falla el límite, no se corta el servicio
+      try { okRate = (await env.LIMITER.limit({ key: RATE_KEY(request) })).success; } catch (e) { okRate = true; audit('limiter_error', { error: String(e && e.name || 'Error') }); } // shortcut: si falla el límite se deja pasar (no cortar el servicio); queda registrado, revisar si se repite
       if (!okRate) return deny(429, 'Demasiadas peticiones', origin);
     }
 
@@ -143,10 +144,16 @@ export default {
       if (!allowedTarget(next)) return deny(403, `Redirección a un host no permitido: ${next.hostname}`, origin, { from: where(u), host: next.hostname });
       if (resp.status === 303 || ((resp.status === 301 || resp.status === 302) && method === 'POST')) { method = 'GET'; body = undefined; headers.delete('content-type'); }
       headers.delete('apiKey');
+      // claves del usuario (phpVMS, Authorization): solo viajan al host al que iban dirigidas
+      if (next.host !== u.host) for (const h of ['x-api-key', 'authorization']) headers.delete(h);
       u = next;
     }
     const out = new Headers({ ...cors(origin), ...PROXY_HEADERS });
     const ct = resp.headers.get('Content-Type'); if (ct) out.set('Content-Type', ct);
-    return new Response(resp.body, { status: resp.status, headers: out });
+    if (Number(resp.headers.get('Content-Length')) > MAX_RESP) return deny(502, 'Respuesta demasiado grande', origin, { where: where(u) });
+    // sin Content-Length (troceado) se corta al pasar el límite
+    let seen = 0;
+    const capped = resp.body && resp.body.pipeThrough(new TransformStream({ transform(c, ctl) { seen += c.byteLength; if (seen > MAX_RESP) ctl.error(new Error('Respuesta demasiado grande')); else ctl.enqueue(c); } }));
+    return new Response(capped, { status: resp.status, headers: out });
   },
 };

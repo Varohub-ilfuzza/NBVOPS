@@ -4,6 +4,24 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.5.3] — 2026-11-16
+
+Cierre de la 5.5.2: el TELEX OOOI ya no se pierde ni se duplica al recargar el OPS. Sin cambios de `CSP_MODE` ni de cabeceras.
+
+### Corregido
+- **Reintento del TELEX OOOI tras recargar.** Mientras espera el reintento (30 s / 120 s) el vuelo queda «enviando» y se guarda; si se recarga, pasa a «error» y la tarjeta permite reenviarlo. El reintento exitoso o fallido guarda su estado. Si el reintento se cancela (casilla desactivada) queda «error» reenviable, y si otra ventana ya lo envió, «enviado»; no queda «enviando» sin botón.
+- **Sin TELEX OOOI repetido con un vuelo nuevo.** El antiduplicado ya no depende de `firstSeen`: caduca a los 90 min (`OOOI_DEDUP_MS`) y persiste. El reenvío manual de un OOOI registra la clave entera (`oooi_out`, …) en el antiduplicado.
+- **Iconos del OPS Center.** Declara `icon-192` y el navegador deja de pedir `/favicon.ico` (404).
+
+### Pruebas e interno
+- Sección `vuelo` en `tests/char/`: vuelo simulado de puerta a puerta (OUT, OFF, ON, IN, llegada, segunda pasada tras recargar). Mutantes X173–X179.
+
+### Limitaciones conocidas
+- Con el mismo callsign, la vuelta en menos de 90 min (p. ej. LEST–LECO–LEVX) pierde los TELEX OOOI del segundo vuelo: el antiduplicado usa la clave `callsign + fase` sin ruta y solo queda «omitido (dedup)» en el registro. Aceptado.
+- El aviso de Discord agrupado (un solo mensaje por vuelo) queda para la 5.6.0.
+
+---
+
 ## [v5.5.2] — 2026-11-15
 
 Aterrizaje y mensajes de llegada fiables, puerta y autorización de rodaje por CPDLC, ROUTE INFO desde el crucero y bienvenidas por flota. Sin cambios de `CSP_MODE` ni de cabeceras. **Bienvenidas: los 78 textos son un borrador pendiente de revisión de Álvaro** (decidir Moscú-Sheremétievo o Antalya, y revisión del texto en gallego por alguien que lo hable).
@@ -16,13 +34,21 @@ Aterrizaje y mensajes de llegada fiables, puerta y autorización de rodaje por C
 
 ### Seguridad
 - H-16 (`docs/HARDENING-ACARS.md`): la lista blanca del proxy (Worker y `nbv-server.py`) admite `overpass-api.de`, `overpass.kumi.systems` y `overpass.private.coffee`; son datos públicos y la consulta solo lleva las coordenadas del aeropuerto. `CONNECT_ALLOW` y la CSP no cambian. Lo de OSM pasa por `esc()` y lo que va por CPDLC, por `sanitizeForHoppie`. X118.
+- Revisión de seguridad posterior a la publicación (commit `299b62e`):
+  - El Worker no reenvía `x-api-key` ni `authorization` cuando una redirección apunta a otro host. X169.
+  - Tope de 25 MB a la respuesta del proxy, en el Worker (`MAX_RESP`, X170) y en `nbv-server.py` (`MAX_BODY`, X171).
+  - El limitador del Worker sigue abriéndose ante un fallo, pero ahora lo registra (`limiter_error`). Sin mutante propio.
+  - El secreto cifrado con el esquema anterior (más débil, sin IndexedDB) deja un evento de seguridad (`cifrado-debil`) y se ve en el estado de la clave. Sin mutante propio.
 
 ### Corregido en las revisiones
 - Revisión del punto 4 (X132–X146): con el reloj del PC adelantado, los LANDED se retenían por el TELEX OOOI propio (X132, X144); tras una toma y despegue o un go-around el vuelo se quedaba en LANDED (X133); «Limpiar» el historial lo resucitaba la otra ventana y ya no borra los envíos de otra ventana (X134, X146); con dos ventanas los LANDED salían dos veces (X135); el aviso de «Mi callsign» salía en falso al arrancar y no se borraba (X136, X142); reenviar un «sin recoger» ya recogido lo duplicaba y un doble clic lo enviaba dos veces (X137, X141); falso «sin recoger» por el intervalo de comprobación (X138, X143); recargar entre el ON y el envío perdía los LANDED, o los reenviaba pasados 60/90 min (X139, X140); `markHistoryDelivered` no marca filas de otra pierna (X145).
 - Revisión del punto 1 (X147–X158): cualquier CPDLC del avión renueva su LOGON (X147); un encargo «pedida» de más de 10 min caduca sin enviarse y una pierna nueva descarta el de la anterior (X148); NBV.osm prueba el siguiente servidor si Overpass da un «remark» de error y una respuesta sin puestos ni calles cuenta como fallo (X149); la respuesta a un UNABLE sale del encargo guardado, no de una cola en memoria (X150); `acarsTaxiSend` no pisa lo que el OPS cambió entretanto (X151); el MIN de CPDLC se reserva antes del envío y lo usan todos los CPDLC, y un envío fallido lo devuelve (X152); la pierna nueva solo invalida un LOGON anterior al aterrizaje de la anterior (X153); una ruta solo por calles sin nombre usa el respaldo (X154); respaldo por tiempo para pedir la autorización (X155); las filas TAXI CLR anotadas no vuelven con «Limpiar» (X156); sin aeropuerto de llegada válido no se pide ni se avisa (X157); la caché de OSM no pasa de ~1,5 MB (X158).
 
+- Revisión de seguridad (commit `299b62e`): `NBV.net` ya no falla con URL relativas y respeta el `signal` del llamante junto al tiempo límite; `phpvmsMergeWithFlights` conserva `riFrom` y `lastRouteInfo` (X172; no es un cambio de seguridad).
+
 ### Interno
-- Mutantes X103–X166. El golden `clics-controles` se regenera (`manualSendNow` y `reloadSentRegistry`). Las cifras finales de pruebas y mutantes quedan para la salida de `release.js --e2e`.
+- Mutantes X103–X172 (172 en total, 0 supervivientes); seguridad de navegador 23/23 y `security-check` OK. El golden `clics-controles` se regenera (`manualSendNow` y `reloadSentRegistry`). Cifra final de pruebas: no registrada en esta nota.
+- Comprobación en producción (16-nov, `live-check` 5.5.2): 197/197 OK, 0 violaciones de CSP y una sola cabecera CSP.
 
 ### Verificación en vuelo (pendiente)
 - Aterrizaje: tras el ON y GS < 40 kt llegan los mensajes de llegada sin esperar a IVAO; tras un go-around no salen.
@@ -82,8 +108,6 @@ OOOI desde el simulador, PDC con datos del OFP y ATIS sintético; sin cambios de
 - A comprobar con tu primer OFP: los nombres de campo de SimBrief (`general.sid_ident`, `origin.plan_rwy`, `general.initial_altitude`, `general.route`, `atc.callsign`) salen de la documentación de SimBrief, sin comprobar con un OFP real (`origin.icao_code` y `destination.icao_code` incluidos); el repositorio no tiene ningún OFP real en los datos de prueba.
 
 ### Limitaciones conocidas
-- Recargar el OPS durante un reintento pendiente del TELEX OOOI (≤150 s) pierde ese reintento.
-- Un objeto de vuelo nuevo (OPS cerrado más de 20 min o vuelo purgado) puede reenviar un TELEX OOOI ya enviado.
 - Los umbrales del OOOI (OUT tras 10 s a ≥3 kt, IN tras 3 min a <1 kt) se ajustarán tras el primer vuelo de prueba.
 - Si se cierra el simulador antes de 3 min parado en la puerta, el IN se pierde.
 - Tras un reinicio con la fase PREFLIGHT y el avión parado en el punto de espera, el OUT sale allí (al empezar a rodar hacia la pista), no en la puerta.

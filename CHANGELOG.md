@@ -4,6 +4,23 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v5.5.4] — 2026-11-17
+
+Los mensajes de llegada retenidos ya no se pierden cuando el Fenix A320 borra el init del MCDU al aterrizar y deja de consultar Hoppie. Sin cambios de `CSP_MODE` ni de cabeceras.
+
+### Añadido
+- **Reenvío automático de lo retenido.** Un LANDED u OOOI IN en estado «retenido» (avión sin consultar Hoppie) se envía solo, una vez, cuando el avión vuelve a aparecer y escuchar, si se generó hace menos de 60 min (`RESEND_MAX_MS`). Más viejo, sin hora guardada, «sin recoger» o ON/OUT/OFF: solo con el clic del despachador. Las horas de los retenidos se guardan en `msgSentAt`.
+- **Aviso en la tarjeta.** Con el vuelo en LANDED y algún mensaje retenido: «avión desconectado: reintroducir FLT NBR + NOTIFY en el MCDU».
+
+### Cambiado
+- «Retenido» y «sin recoger» muestran el mismo texto en el dashboard: «pendiente: el avión no consulta — se enviará al reconectar (clic para enviar ya)».
+
+### Limitaciones conocidas
+- Hoppie es pull: no se puede forzar al avión a consultar. Si el avión no reaparece, lo retenido espera al clic manual.
+- Con el mismo callsign, la vuelta en menos de 90 min pierde los TELEX OOOI del segundo vuelo (antiduplicado por `callsign + fase`). Aceptado.
+
+---
+
 ## [v5.5.3] — 2026-11-16
 
 Cierre de la 5.5.2: el TELEX OOOI ya no se pierde ni se duplica al recargar el OPS. Sin cambios de `CSP_MODE` ni de cabeceras.

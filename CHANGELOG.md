@@ -4,6 +4,69 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v6.0.0] — 2026-11-22 (perfiles de avión, informe de fin de vuelo y despacho de flota)
+
+El OPS genera su propio informe de cada pierna terminada, sin depender de que el avión recoja nada por Hoppie (fase 1). En la fase 2 vigila la flota: avisa de desvíos, retrasos y desconexiones en vuelo, mantiene una tarjeta viva por vuelo en Discord y envía un resumen diario. Sin dependencias nuevas, sin cambios de `CSP_MODE`, de cabeceras, del Worker ni del proxy. Diseño: `docs/superpowers/specs/2026-11-21-6.0-perfiles-informe-design.md` (fase 1) y `docs/superpowers/specs/2026-11-21-6.0-fase2-despacho-flota-design.md` (fase 2).
+
+### Añadido
+- **Perfiles de avión por tipo OACI** (`NBV.acProfiles`). Consumo medio para el combustible estimado y comportamiento de llegada. El A320 y el A321 se tratan como Fenix (borra el init al aterrizar). Los A350 llevan la nota de su FLIGHTREPORT local (INIB). Un tipo desconocido usa un perfil genérico sin consumo.
+- **Informe de fin de vuelo** (`NBV.flightReport`) para todos los vuelos. Incluye OOOI, tiempo de bloque y de vuelo, FL máximo frente al planificado, GS máxima y media de crucero sin la subida, combustible **estimado**, toma (TechLog), mensajes y PIREP. El informe está completo cuando hay IN, o 15 min después del ON.
+- **Ficha del informe** en «Registro de vuelos» (botón «Informe»), con «Copiar para PIREP», que solo copia el texto.
+- **Aviso de Discord** con el informe, una sola vez por pierna, también tras recargar y con varias ventanas del OPS en el mismo PC. Usa el mismo webhook que los demás avisos y tiene su propio interruptor («Informe de fin de vuelo»). No se avisa de piernas que tomaron tierra hace más de 2 h.
+- **CSV del registro**: columnas nuevas al final (`fl_max`, `fl_plan`, `gs_max`, `gs_crz`, `bloque_min`, `fuel_est_kg`, `fuel_real_kg`, `perfil`).
+- **Alertas de despacho** (`NBV.dispatch`), una vez por vuelo y tipo, también tras recargar y con varias ventanas del OPS en el mismo PC:
+  - **Desvío**: cambio de destino en el aire respecto al destino original del plan, o aterrizaje a más de 10 NM de él.
+  - **Retraso de salida**: «sin despegar +N min» en PREFLIGHT, o «despegue +N min» con un despegue observado, a partir de 15 min sobre la salida prevista del plan IVAO.
+  - **Retraso de llegada**: a partir de 15 min sobre la salida prevista más el EET del plan.
+  - **Desconexión en vuelo**: vuelo perdido de IVAO en ENROUTE o DESCENT, con FL y última posición.
+  Cada alerta deja una línea en el registro, suena y, con la casilla «Alertas de despacho (desvío, retraso, desconexión)», sale en Discord (rojo para desvío y desconexión, ámbar para retrasos). En el dashboard, etiquetas DESVÍO, RETRASO +N, LLEG +N, PERDIDO y «desconectado».
+- **Tarjeta viva por vuelo en Discord.** Un solo mensaje por pierna IVAO que se edita según avanza el vuelo: ruta (con el desvío, si lo hay), avión, piloto, fase y una línea con hora por evento (detección, OOOI, fases, TELEX con su estado y alertas). Las ediciones se agrupan cada 4 s y solo se envían si la tarjeta cambia. Si el mensaje se borra en Discord, se deja de editar y se avisa una vez en el registro.
+- **Resumen diario en Discord** («📊 Resumen del día AAAA-MM-DD»), entre las 23:59Z y las 00:05Z, una sola vez por día también con varias ventanas: vuelos aterrizados con su bloque (OUT→IN, u OFF→ON como respaldo) y bloque total, piernas sin aterrizar (en vuelo, desconectado, sin datos), retrasos y desvíos. Casilla propia «Resumen diario (23:59Z)», marcada por defecto. No se envía si el día no tiene ninguna pierna.
+- **Registro de vuelos**: guarda el destino original del plan, la salida prevista y las marcas de las alertas y de la tarjeta. CSV con dos columnas nuevas al final: `retraso_min` (despegue frente a salida prevista) y `desvio` (`ORIG>ARR`).
+
+### Cambiado
+- Tarjeta de un A320 o A321 con mensajes de llegada retenidos: «retenido — normal en Fenix (borra el init al aterrizar); si vuela FBW, revisar». Lo retenido no se silencia y el reenvío de la 5.5.4 no cambia.
+- El texto de «Preparar» (PIREP manual) es ahora el del informe.
+- **Los avisos sueltos de Discord de los vuelos IVAO se sustituyen por la tarjeta viva**: ya no hay mensajes separados de vuelo detectado, cambio de fase (incluido el LANDED por FSUIPC) ni TELEX para un vuelo con tarjeta; todo va a su tarjeta. Los TELEX a callsigns que no son vuelos activos siguen saliendo sueltos.
+- Los vuelos solo de phpVMS conservan los mensajes sueltos de siempre (detectado, fase, TELEX).
+- Con «Vuelo detectado» desmarcado no hay tarjeta, y los vuelos IVAO tampoco tienen mensajes de fase ni de TELEX.
+- El DELAY REPORT usa la misma lectura de la salida prevista que las alertas. Un texto de 4 dígitos o con «:» se lee ahora como HHMM (antes, como segundos); IVAO da un número, así que en la práctica no cambia.
+- Retraso de salida con **15 min de rodaje** (`NBV.dispatch.TAXI_MIN`): sin OUT del simulador, «sin despegar» y «despegue +N» cuentan desde la salida prevista + 15 min (N = minutos sobre esa hora); con OUT, «salida (OUT) +N» frente a la salida prevista. La llegada prevista es salida prevista + 15 + EET.
+- El retraso de llegada solo se calcula en crucero estable (ENROUTE en el aire, cerca del nivel máximo y sin subir) o en DESCENT: con la GS de la subida salía una ETA tardía.
+- El desvío por cambio de plan solo cuenta en el aire y con el mismo origen: el plan de la pierna siguiente presentado ya aterrizado no es un desvío. El de aterrizaje a más de 10 NM no cambia.
+- Destino original: «????» (sin plan) no cuenta como destino, y la fila del registro sigue al plan mientras el vuelo está en PREFLIGHT en tierra (plan presentado o corregido en la puerta).
+- CSV: `retraso_min` solo con el despegue observado (OFF al menos 1 min después de la detección, o con OUT del simulador); un vuelo visto ya en el aire lo deja vacío. Lo mismo para «despegue +N».
+- **Tarjeta con varias ventanas del OPS**: solo la edita su ventana dueña (la que la publicó, `dcOwner` en la fila). Otra ventana la toma si la dueña lleva más de 5 min sin renovarla.
+- La tarjeta ya no repite «Fase ENROUTE» y «Fase LANDED» en el mismo minuto que OFF y ON.
+- El 404 al editar una tarjeta también se ve en el estado de Discord de Ajustes (puede ser el webhook el borrado).
+- El resumen diario no marca el día si tiene algo que contar y no se puede enviar (casilla desmarcada o webhook aún sin cargar): sale en una pasada posterior de la ventana.
+
+### Corregido
+- «Preparar» no hacía nada: el identificador del vuelo llegaba partido por «|».
+
+### Pruebas e interno
+- Sección `despacho` en `tests/char/`: lógica de `NBV.dispatch` (salida prevista con el cambio de día, desvío, retrasos, desconexión), alertas en el OPS con recarga y dos ventanas, etiquetas del dashboard, vuelo solo de phpVMS y resumen diario.
+- Sección `tarjeta`: publicación con `?wait=true`, edición por PATCH, agrupado de 4 s, mensaje borrado (404), TELEX en la tarjeta sin duplicar y sin avisos sueltos.
+- Mutantes X199–X224 (X213–X224: revisión final de la fase 2). Golden del CSV del registro y de clics regenerados.
+- El núcleo lee los vuelos del OPS por el enganche `NBV.app.flight`, no por la global `flights`. Clave nueva `nbv_dc_daily` en el almacén.
+
+### Limitaciones conocidas
+- **Combustible real pendiente.** La dirección FSUIPC del combustible (`0x0AF8`) no está verificada en el simulador, así que el informe solo lleva el estimado.
+- Los vuelos de otros pilotos no tienen OUT, IN ni tiempo de bloque: IVAO solo da despegue y toma.
+- Dos OPS en PCs distintos envían cada uno su aviso de Discord. Se resolverá con el monitor en servidor (fase C).
+- Los consumos de la tabla son medias públicas redondeadas.
+- El informe de Discord se envía como mucho una vez: si el webhook falla en ese momento, no se reintenta (el informe queda en «Registro de vuelos»). Con el interruptor apagado la pierna también se marca y no se envía después.
+- Dos OPS en PCs distintos publican cada uno su tarjeta y sus alertas.
+- **El retraso de llegada necesita el EET del plan IVAO.** «Sin despegar» y «despegue +N» necesitan la hora de salida prevista del plan; un vuelo visto por primera vez ya en el aire no tiene alerta de retraso de salida.
+- Si falla el primer envío de la tarjeta, no se reintenta: esa pierna se queda sin tarjeta. Si se borra el mensaje en Discord, no se vuelve a crear.
+- **El resumen diario solo sale con el monitor en marcha** (no basta con tener la página abierta) entre las 23:59Z y las 00:05Z. Los vuelos que aterrizan entre las 23:59Z y las 24:00Z después de enviado el resumen no aparecen en él.
+- Los vuelos solo de phpVMS no tienen tarjeta ni alertas.
+- El sonido de las alertas es el tono de error: no hay un tono propio de alerta.
+- El rodaje concedido es fijo (15 min) para todos los aeropuertos.
+- Si se cierra la ventana dueña de una tarjeta, la otra ventana no la edita hasta pasados 5 min desde la última renovación (la dueña la renueva como mucho cada minuto, solo cuando edita).
+
+---
+
 ## [v5.5.4] — 2026-11-17
 
 Los mensajes de llegada retenidos ya no se pierden cuando el Fenix A320 borra el init del MCDU al aterrizar y deja de consultar Hoppie. Sin cambios de `CSP_MODE` ni de cabeceras.

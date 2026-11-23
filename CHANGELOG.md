@@ -4,6 +4,48 @@ Todos los cambios notables del proyecto. Formato: [vX.Y.Z] — YYYY-MM-DD
 
 ---
 
+## [v6.1.0] — 2026-11-23 (rediseño visual)
+
+Cambio de imagen del ACARS Dispatch y del OPS Center con la sencillez de la web de una aerolínea: barra azul de la
+compañía arriba, contenido claro y color solo cuando informa. Ninguna función, texto operativo, id ni orden de los
+controles cambia.
+
+### Añadido
+- **Portada del ACARS**: pantalla en el azul del trisquel con el logo que entra girando, «Bienvenido al ACARS», el botón
+  **Entrar** y, si hay dato, una línea con los vuelos de la flota en el aire. Sale **una vez por sesión del navegador**
+  (una recarga en mitad del vuelo entra directa) y viaja oculta en el HTML hasta que su botón funciona. Sin giro con
+  «reducir movimiento».
+- **`DESIGN.md`** en la raíz: el sistema visual «Vestíbulo de salidas» (colores, tipos, radios, componentes y reglas).
+- **Logo en SVG** (`src/icons/nbv-mark.svg`), el mismo trisquel y azul, nítido a cualquier tamaño: barras del ACARS y del
+  OPS, portada y pantalla AOC. La PWA lo guarda con el resto de la app para tenerlo sin red.
+
+### Cambiado
+- **Barra superior de marca** en el ACARS (sustituye al menú lateral: logo, nombre, menú y estado de Hoppie) y en el
+  OPS Center (logo, nombre y los controles de su cabecera, sin menú). En pantallas estrechas el menú no se parte ni
+  tapa controles.
+- **Flota en vivo del ACARS como panel de salidas**: una fila por vuelo (callsign y avión, ruta, estado en píldora y
+  hora); al pulsarla se despliega todo el detalle de hoy (reenvío, «Escribir», puerta y rodaje), también con teclado, y
+  sigue abierta entre repintados. El OPS Center suelto conserva las tarjetas completas con el estilo nuevo.
+- **Avisos y pérdida, cada uno con su color**: en la fila del panel de salidas, los avisos (DESVÍO, RETRASO, LLEG,
+  retenido) van en una píldora ámbar y la pérdida o el fallo (PERDIDO, «desconectado», error de envío) en otra roja, así
+  que un vuelo perdido con retraso no pinta el retraso de rojo. En el detalle desplegado y en la tarjeta del OPS Center
+  suelto, PERDIDO y «desconectado» van en rojo y el resto de etiquetas en ámbar.
+- **Tema claro por defecto** para quien no tenga nada guardado; `auto`, `light` y `dark` guardados se respetan.
+- **Estilo de las pantallas** (Mensajes, Meteorología, Dispatch, Ajustes, redactor, incorporación, Stream y AOC) con los
+  tokens nuevos: el color solo informa (azul marca y lo que se pulsa, ámbar avisos, verde aterrizado, rojo errores y
+  pérdida). Las fases de vuelo van en neutro en Stream, AOC, el redactor y la píldora PREFLIGHT del OPS; la plantilla
+  PDC deja de ser ámbar. El texto ACARS/CPDLC sigue en letra de terminal dentro de una caja limpia.
+- Manifiesto de la PWA con el color claro del lienzo (`#f5f7f9`) en lugar del oscuro antiguo.
+
+### Pruebas
+- Sección de caracterización `rediseno` y mutantes **X225–X232**.
+
+### Limitaciones
+- La línea de vuelos en el aire de la portada depende de que el monitor haya guardado estado en los últimos 20 min;
+  sin dato no se muestra (la portada no hace peticiones).
+
+---
+
 ## [v6.0.0] — 2026-11-22 (perfiles de avión, informe de fin de vuelo y despacho de flota)
 
 El OPS genera su propio informe de cada pierna terminada, sin depender de que el avión recoja nada por Hoppie (fase 1). En la fase 2 vigila la flota: avisa de desvíos, retrasos y desconexiones en vuelo, mantiene una tarjeta viva por vuelo en Discord y envía un resumen diario. Sin dependencias nuevas, sin cambios de `CSP_MODE`, de cabeceras, del Worker ni del proxy. Diseño: `docs/superpowers/specs/2026-11-21-6.0-perfiles-informe-design.md` (fase 1) y `docs/superpowers/specs/2026-11-21-6.0-fase2-despacho-flota-design.md` (fase 2).
